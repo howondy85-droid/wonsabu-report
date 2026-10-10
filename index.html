@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#191512">
+<title>원사부 업무보고</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: ink-black brand bar; auth screens are a single centered card; admin works in tabs, staff see only their own page. */
+:root{
+  --bg:#F4F2EE; --surface:#FFFFFF; --sunk:#F8F6F2; --ink:#191512; --muted:#6E665C; --line:#E4DED4;
+  --accent:#FCB426; --accent-ink:#8A5A00; --accent-soft:#FFF1CF;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --bad:#C2412D; --bad-soft:#FBE6E1;
+  --cs:#2F6FB3; --cs-soft:#E3EDF8; --ds:#8A3E7D; --ds-soft:#F3E4F0;
+  --bar:#191512; --bar-ink:#F4EFE6; --scrim:rgba(20,17,16,.72);
+  --f-body:"IBM Plex Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#141110; --surface:#1E1A17; --sunk:#181513; --ink:#F2EDE6; --muted:#A79E93; --line:#342E29;
+  --accent:#FCB426; --accent-ink:#FCB426; --accent-soft:#3A2D12;
+  --ok:#62BE88; --ok-soft:#1D3326; --bad:#E77B66; --bad-soft:#3D221D;
+  --cs:#7DB2EA; --cs-soft:#1B2A3B; --ds:#D58BC8; --ds-soft:#35202F;
+  --bar:#0E0C0B; --scrim:rgba(0,0,0,.8); color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+input,textarea,select,button{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+.topbar{position:sticky;top:0;z-index:30;background:var(--bar);color:var(--bar-ink);display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-right:auto}
+.brand i{width:10px;height:10px;border-radius:3px;background:var(--accent);display:block}
+.brand small{font-weight:400;opacity:.7;font-size:12px}
+.seg{display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--bar-ink);padding:6px 12px;border-radius:999px;font-size:13px;position:relative}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#191512;font-weight:700}
+.seg .dot{display:inline-block;min-width:17px;height:17px;line-height:17px;border-radius:99px;background:var(--bad);color:#fff;font-size:10.5px;font-weight:700;margin-left:4px;padding:0 4px}
+.ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:var(--bar-ink);border-radius:8px;padding:6px 10px;font-size:12.5px}
+
+.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:16px 60px}
+.wrap.wide{max-width:1080px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.panel h2{font-size:15px;margin:0 0 12px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;text-wrap:balance}
+.panel h2 .s{font-size:12px;font-weight:400;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted)}
+.empty{padding:26px 12px;text-align:center;color:var(--muted);font-size:13px}
+.center{max-width:420px;margin:32px auto}
+
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.auth-logo i{width:34px;height:34px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.auth-logo i::after{content:"";width:12px;height:12px;border-radius:3px;background:var(--accent)}
+.auth-logo b{font-size:18px}
+.auth-logo small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;min-width:0}
+.field label{font-size:12px;color:var(--muted)}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:15px}
+.field .hint{font-size:11.5px;color:var(--muted)}
+.field .err{font-size:11.5px;color:var(--bad)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:540px){.grid2{grid-template-columns:1fr}}
+
+.primary{border:0;background:var(--accent);color:#191512;font-weight:700;border-radius:10px;padding:12px 20px;font-size:15px}
+.primary.block{width:100%}
+.primary:disabled{opacity:.55}
+.secondary{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-size:13px}
+.danger{border:1px solid var(--bad);background:transparent;color:var(--bad);border-radius:8px;padding:8px 12px;font-size:13px}
+.okbtn{border:0;background:var(--ok);color:#fff;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700}
+.linkbtn{border:0;background:none;color:var(--accent-ink);font-weight:700;font-size:13px;padding:4px 0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.switch{text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
+
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--sunk);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.tag.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.tag.acc{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.tag.cs{background:var(--cs-soft);color:var(--cs);border-color:transparent}
+.tag.ds{background:var(--ds-soft);color:var(--ds);border-color:transparent}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-family:var(--f-num);font-size:24px;font-weight:600}
+.kpi .v small{font-size:13px;color:var(--muted);font-weight:500}
+.kpi.alert .v{color:var(--bad)}
+
+.req{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;background:var(--sunk);margin-bottom:10px}
+.req .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.req .top b{font-size:15px}
+.req .top .note{margin-left:auto}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.scard{border:1px solid var(--line);border-left:4px solid var(--cs);border-radius:10px;padding:12px;background:var(--sunk);display:flex;flex-direction:column;gap:8px;min-width:0}
+.scard.ds{border-left-color:var(--ds)}
+.scard.off{opacity:.6}
+.scard .nm{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.scard .nm b{font-size:15px}
+.scard .meta{font-size:12px;color:var(--muted)}
+
+.tpl-group{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--surface)}
+.tpl-group .gh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.tpl-group .gh b{font-size:13.5px}
+.tpl-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.opt{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px;min-width:0}
+.opt input{width:17px;height:17px;accent-color:var(--accent);margin:1px 0 0;flex:none}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt small{display:block;color:var(--muted);font-size:11.5px}
+.pick-part{display:flex;gap:8px}
+.pick-part label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1px solid var(--line);border-radius:8px;font-weight:700;background:var(--surface)}
+.pick-part input{position:absolute;opacity:0;pointer-events:none}
+.pick-part label.cs:has(input:checked){border-color:var(--cs);background:var(--cs-soft);color:var(--cs)}
+.pick-part label.ds:has(input:checked){border-color:var(--ds);background:var(--ds-soft);color:var(--ds)}
+
+.hello{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hello b{font-size:17px}
+.sec-group h3{font-size:13px;color:var(--muted);margin:16px 0 8px;font-weight:700;letter-spacing:.3px}
+.sec-group:first-child h3{margin-top:0}
+.sec{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.sec b{font-size:14px}
+.sec p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+
+.drop{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px;border:1.5px dashed var(--muted);border-radius:10px;color:var(--muted);background:var(--sunk);text-align:center;font-size:13px}
+.drop input{display:none}
+.drop.busy{opacity:.6;pointer-events:none}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}
+.th{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sunk);padding:0}
+.th img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.th span{position:absolute;left:0;right:0;bottom:0;font-size:10.5px;padding:2px 5px;background:var(--scrim);color:#fff;font-family:var(--f-num);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.overlay{position:fixed;inset:0;background:var(--scrim);z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.overlay img{max-width:100%;max-height:78vh;border-radius:8px;background:var(--surface)}
+.overlay .cap{color:#fff;font-size:12.5px;margin-top:8px;text-align:center}
+.overlay .bar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.dialog{background:var(--surface);border-radius:12px;padding:18px;max-width:420px;width:100%;max-height:88vh;overflow:auto}
+.dialog.wide{max-width:760px}
+.dialog p{margin:0 0 14px}
+
+.toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:13px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small></div>
+  <div class="seg" id="adminTabs" hidden>
+    <button data-tab="home" aria-pressed="true">홈</button>
+    <button data-tab="req" aria-pressed="false">가입 승인<span class="dot" id="reqDot" hidden></span></button>
+    <button data-tab="staff" aria-pressed="false">직원 관리</button>
+  </div>
+  <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
+</header>
+<div class="toast" id="toast" role="status"></div>
+
+<main class="wrap" id="vLoading"><div class="panel center"><p class="note">불러오는 중…</p></div></main>
+
+<!-- 로그인 -->
+<main class="wrap" id="vLogin" hidden>
+  <div class="panel center">
+    <div class="auth-logo"><i></i><div><b>원사부 업무보고</b><small>직원 로그인</small></div></div>
+    <form id="loginForm" novalidate>
+      <div class="field"><label for="liId">아이디</label><input id="liId" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+      <div class="field"><label for="liPw">비밀번호</label><input id="liPw" type="password" autocomplete="current-password"></div>
+      <button class="primary block" id="liBtn" type="submit">로그인</button>
+    </form>
+    <div class="switch">처음이신가요? <button class="linkbtn" id="goSignup">회원가입</button></div>
+  </div>
+</main>
+
+<!-- 회원가입 -->
+<main class="wrap" id="vSignup" hidden>
+  <div class="panel center">
+    <div class="auth-logo"><i></i><div><b>원사부 업무보고</b><small>직원 회원가입</small></div></div>
+    <form id="signupForm" novalidate>
+      <div class="field"><label for="suName">직원명</label><input id="suName" maxlength="20" autocomplete="name"></div>
+      <div class="field"><label for="suId">아이디</label><input id="suId" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false">
+        <span class="hint">영문 소문자·숫자·밑줄(_) 4~20자</span></div>
+      <div class="field"><label for="suPw">비밀번호</label><input id="suPw" type="password" autocomplete="new-password"><span class="hint">8자 이상</span></div>
+      <div class="field"><label for="suPw2">비밀번호 확인</label><input id="suPw2" type="password" autocomplete="new-password"><span class="err" id="pwErr" hidden>비밀번호가 일치하지 않아요</span></div>
+      <button class="primary block" id="suBtn" type="submit">가입 신청</button>
+    </form>
+    <div class="switch">이미 계정이 있나요? <button class="linkbtn" id="goLogin">로그인</button></div>
+  </div>
+</main>
+
+<!-- 승인 대기 / 반려 / 중지 -->
+<main class="wrap" id="vWait" hidden>
+  <div class="panel center">
+    <div class="auth-logo"><i></i><div><b id="waitTitle">승인 대기 중</b><small id="waitName"></small></div></div>
+    <p id="waitMsg" style="margin:0 0 14px">가입 신청이 접수됐어요. 대표님이 승인하면 이 화면이 자동으로 업무보고 페이지로 바뀝니다.</p>
+    <button class="secondary" id="waitLogout">로그아웃</button>
+  </div>
+</main>
+
+<!-- 직원 페이지 -->
+<main class="wrap" id="vStaff" hidden>
+  <div class="panel">
+    <div class="hello"><b id="stName"></b><span class="tag" id="stPart"></span><span class="note" id="stToday"></span></div>
+    <p class="note" style="margin:8px 0 0">이 페이지는 본인과 대표님만 볼 수 있어요.</p>
+  </div>
+  <div class="panel">
+    <h2>내 업무보고 양식 <span class="s">대표님이 지정한 항목</span></h2>
+    <div id="stSections"></div>
+  </div>
+  <div class="panel">
+    <h2>캡쳐 업로드 테스트 <span class="s">사진·캡쳐가 압축되어 저장되는지 확인용</span></h2>
+    <label class="drop" id="drop"><input type="file" accept="image/*" multiple id="fileIn">＋ 캡쳐·사진 선택 (여러 장 가능)</label>
+    <div class="thumbs" id="myThumbs"></div>
+  </div>
+</main>
+
+<!-- 관리자 -->
+<main class="wrap wide" id="vAdmin" hidden>
+  <section id="tabHome">
+    <div class="kpis" id="kpis"></div>
+    <div class="panel">
+      <h2>최근 업로드 <span class="s">누르면 원본</span></h2>
+      <div class="thumbs" id="allThumbs"></div>
+    </div>
+    <p class="note">CS·디자인 업무보고 요약(전일·오늘·내일)과 통계는 이후 단계에서 이 화면에 추가됩니다.</p>
+  </section>
+  <section id="tabReq" hidden>
+    <div class="panel">
+      <h2>가입 승인 대기 <span class="s">승인할 때 파트와 업무보고 양식을 지정해요</span></h2>
+      <div id="reqList"></div>
+    </div>
+  </section>
+  <section id="tabStaff" hidden>
+    <div class="panel">
+      <h2>직원 목록</h2>
+      <div class="staff-grid" id="staffGrid"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 승인/수정 대화상자 -->
+<div class="overlay" id="dlgStaff" hidden>
+  <div class="dialog wide" role="dialog" aria-labelledby="dsTitle">
+    <h2 id="dsTitle" style="margin:0 0 4px;font-size:16px"></h2>
+    <p class="note" id="dsSub" style="margin:0 0 14px"></p>
+    <div class="field"><label>파트</label>
+      <div class="pick-part">
+        <label class="cs"><input type="radio" name="dsPart" value="CS" checked>CS</label>
+        <label class="ds"><input type="radio" name="dsPart" value="디자인">디자인</label>
+      </div>
+    </div>
+    <div class="btnrow" style="margin-bottom:8px"><b style="font-size:13.5px">업무보고 양식</b><span class="note">파트 기본값이 체크돼요. 빼거나 다른 파트 항목을 더할 수 있어요.</span><button class="linkbtn" id="dsPreset" type="button">기본값으로</button></div>
+    <div id="dsTpl"></div>
+    <div class="btnrow" style="margin-top:6px">
+      <button class="okbtn" id="dsSave">승인</button>
+      <button class="secondary" id="dsCancel">닫기</button>
+      <span style="flex:1"></span>
+      <button class="danger" id="dsToggle" hidden>사용 중지</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="lb" hidden>
+  <img id="lbImg" alt="원본 이미지">
+  <div class="cap" id="lbCap"></div>
+  <div class="bar"><button class="secondary" id="lbClose">닫기</button><button class="danger" id="lbDel" hidden>이 이미지 삭제</button></div>
+</div>
+<div class="overlay" id="cf" hidden><div class="dialog"><p id="cfMsg"></p><div class="btnrow"><button class="danger" id="cfYes">확인</button><button class="secondary" id="cfNo">취소</button></div></div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBm8Pq16Z-nF15qYOJmg6IyCFsheb13oiQ",
+  authDomain: "wonsabu-report.firebaseapp.com",
+  projectId: "wonsabu-report",
+  storageBucket: "wonsabu-report.firebasestorage.app",
+  messagingSenderId: "338700097931",
+  appId: "1:338700097931:web:da7b132acb8c4c45ad778e"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const ID_DOMAIN = "wonsabu-report.app";
+const ADMIN_EMAIL = "wonsabu@" + ID_DOMAIN;
+const idToEmail = id => `${id}@${ID_DOMAIN}`;
+
+/* ---------- 양식 라이브러리 ---------- */
+const LIB=[
+ {g:'cs-daily',label:'CS · 일일업무',items:[
+  ['cs.order','주문접수 완료','스스·자사몰·카카오·토스 캡쳐'],
+  ['cs.ship','발송처리 내역','캡쳐 + 배송준비중 엑셀로 미발송 파악'],
+  ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],
+  ['cs.quick','퀵/방문수령','출고완료 사진'],
+  ['cs.bulk','대량주문 문의','일시·내용·견적서 업로드'],
+  ['cs.claim','클레임 발생내역','아이디·일시·내용·처리, 캡쳐 필수'],
+  ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],
+  ['cs.tasks','진행중 업무','관리자 생성 업무에 진행상황 기재'],
+  ['cs.purchase','발주내역','품목·수량·예상입고일, 캡쳐'],
+  ['cs.notes','특이사항 또는 의견','자유 기재'],
+  ['cs.adcharge','스스 광고비 충전','충전화면 캡쳐']]},
+ {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
+  ['cs.sticker','스티커 로스 체크','종류·수량·사유'],
+  ['cs.satinv','토요일 송장 등록·발송처리','엑셀 업로드'],
+  ['cs.friinv','금요일 송장 관공서·회사 확인','한진 송장파일 업로드'],
+  ['cs.supplies','부자재 체크','파일 업로드, 발주 여부'],
+  ['cs.store','매장 관리품목 훼손여부','사진 업로드'],
+  ['cs.callfwd','전화 착신전환','퇴근 전 전환 확인']]},
+ {g:'cs-monthly',label:'CS · 월간업무 (말일)',items:[
+  ['cs.carrot','당근알바 출퇴근 기록부','파일 업로드'],
+  ['cs.payslip','고정알바 급여명세서 전달','파일 업로드'],
+  ['cs.bestreview','베스트리뷰 선정','관리자 선택'],
+  ['cs.ordercount','주문서 카운팅','상품별 판매수량'],
+  ['cs.material','원재료 납품가 정리',''],
+  ['cs.health','직원 보건증 체크',''],
+  ['cs.taxinv','계산서 발행 조회 (매출/매입)','익월 10일까지'],
+  ['cs.vendorpay','거래처 대금지급 확인','익월 10일까지']]},
+ {g:'ds-weekly',label:'디자인 · 월·금 보고',items:[
+  ['ds.waiting','대기업무','관리자 작성'],
+  ['ds.thisweek','이번주 업무','관리자 작성'],
+  ['ds.nextweek','차주 업무','관리자 작성'],
+  ['ds.result','이번주 완료 / 미완료 업무','작업자 작성'],
+  ['ds.smartstore','스마트스토어','업무명·시작/종료·비고·캡쳐'],
+  ['ds.mall','자사몰','업무명·시작/종료·비고·캡쳐'],
+  ['ds.openmarket','오픈마켓','업무명·시작/종료·비고·캡쳐'],
+  ['ds.sns','SNS 업무','금요일 피드 예약 · 화/목 릴스']]}
+];
+const ITEM={};LIB.forEach(g=>g.items.forEach(([k,l,d])=>ITEM[k]={label:l,desc:d}));
+const PRESET={CS:LIB.filter(g=>g.g.startsWith('cs')).flatMap(g=>g.items.map(i=>i[0])),'디자인':LIB.filter(g=>g.g.startsWith('ds')).flatMap(g=>g.items.map(i=>i[0]))};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,'0');
+const fmtT=iso=>{if(!iso)return'';const t=new Date(iso);return `${pad(t.getMonth()+1)}/${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;};
+const kb=n=>n>1048576?(n/1048576).toFixed(1)+'MB':Math.round(n/1024)+'KB';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),2800);}
+function ask(msg){return new Promise(res=>{$('#cfMsg').textContent=msg;$('#cf').hidden=false;const done=v=>{$('#cf').hidden=true;res(v);};$('#cfYes').onclick=()=>done(true);$('#cfNo').onclick=()=>done(false);});}
+const VIEWS=['vLoading','vLogin','vSignup','vWait','vStaff','vAdmin'];
+function show(v){VIEWS.forEach(x=>$('#'+x).hidden=(x!==v));window.scrollTo(0,0);}
+function authMsg(e){
+  const c=e&&e.code||'';
+  if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')||c.includes('invalid-email'))return '아이디 또는 비밀번호가 맞지 않아요.';
+  if(c.includes('email-already-in-use'))return '이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요.';
+  if(c.includes('weak-password'))return '비밀번호를 8자 이상으로 정해주세요.';
+  if(c.includes('too-many-requests'))return '시도가 너무 많아요. 잠시 후 다시 시도해주세요.';
+  if(c.includes('network'))return '인터넷 연결을 확인해주세요.';
+  if(c.includes('unauthorized-domain'))return '이 주소는 아직 로그인이 허용되지 않았어요. 대표님께 알려주세요.';
+  if(c.includes('permission-denied'))return '권한이 없어요. 대표님께 확인해주세요.';
+  return '처리하지 못했어요. 잠시 후 다시 시도해주세요.';
+}
+
+/* ---------- 이미지 압축 ---------- */
+function loadImg(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=r.result;};r.onerror=rej;r.readAsDataURL(file);});}
+function draw(img,max,q){const s=Math.min(1,max/Math.max(img.width,img.height));const w=Math.round(img.width*s),h=Math.round(img.height*s);const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);return c.toDataURL('image/jpeg',q);}
+async function compress(file){
+  const img=await loadImg(file);let max=1600,q=.78,full='';
+  for(let i=0;i<6;i++){full=draw(img,max,q);if(full.length<300000)break;if(q>.55)q-=.08;else max=Math.round(max*.82);}
+  return{full,thumb:draw(img,240,.6),orig:file.size};
+}
+
+/* ---------- 원본 보기 ---------- */
+let lbCtx=null;
+async function openFull(ownerUid,iid,caption,canDelete){
+  lbCtx={ownerUid,iid};$('#lbImg').removeAttribute('src');$('#lbCap').textContent='원본 불러오는 중…';$('#lbDel').hidden=!canDelete;$('#lb').hidden=false;
+  try{const s=await getDoc(doc(db,'users',ownerUid,'images',iid));if(s.exists()){$('#lbImg').src=s.data().full;$('#lbCap').textContent=caption;}else $('#lbCap').textContent='원본을 찾을 수 없어요.';}catch(e){$('#lbCap').textContent='원본을 불러오지 못했어요.';}
+}
+$('#lbClose').onclick=()=>{$('#lb').hidden=true;lbCtx=null;};
+$('#lbDel').onclick=async()=>{if(!lbCtx)return;if(!(await ask('이 이미지를 삭제할까요? 되돌릴 수 없어요.')))return;
+  const{ownerUid,iid}=lbCtx;try{await deleteDoc(doc(db,'users',ownerUid,'images',iid));await deleteDoc(doc(db,'users',ownerUid,'thumbs',iid));toast('삭제했어요');$('#lb').hidden=true;}catch(e){toast(authMsg(e));}};
+function thumbHtml(t,ownerUid,label){return `<button class="th" data-full="${esc(ownerUid)}|${esc(t.id)}" data-cap="${esc(label)}"><img src="${esc(t.thumb)}" alt="${esc(label)}"><span>${esc(fmtT(t.createdAt))} · ${esc(kb(t.size||0))}</span></button>`;}
+document.addEventListener('click',e=>{const th=e.target.closest('[data-full]');if(!th)return;const[u,i]=th.dataset.full.split('|');openFull(u,i,th.dataset.cap,isAdminUser);});
+
+/* ---------- 로그인 / 가입 ---------- */
+$('#goSignup').onclick=()=>show('vSignup');
+$('#goLogin').onclick=()=>show('vLogin');
+$('#loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const id=$('#liId').value.trim().toLowerCase(),pw=$('#liPw').value;
+  if(!id||!pw){toast('아이디와 비밀번호를 입력해주세요');return;}
+  const b=$('#liBtn');b.disabled=true;
+  try{await signInWithEmailAndPassword(auth,idToEmail(id),pw);$('#liPw').value='';}
+  catch(err){toast(authMsg(err));}finally{b.disabled=false;}
+});
+$('#suPw2').addEventListener('input',()=>{$('#pwErr').hidden=!$('#suPw2').value||$('#suPw2').value===$('#suPw').value;});
+$('#signupForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const name=$('#suName').value.trim(),id=$('#suId').value.trim().toLowerCase(),pw=$('#suPw').value,pw2=$('#suPw2').value;
+  if(!name){toast('직원명을 입력해주세요');$('#suName').focus();return;}
+  if(!/^[a-z0-9_]{4,20}$/.test(id)){toast('아이디는 영문 소문자·숫자·밑줄 4~20자로 정해주세요');$('#suId').focus();return;}
+  if(id==='wonsabu'){toast('사용할 수 없는 아이디예요');return;}
+  if(pw.length<8){toast('비밀번호를 8자 이상으로 정해주세요');$('#suPw').focus();return;}
+  if(pw!==pw2){$('#pwErr').hidden=false;toast('비밀번호 확인이 일치하지 않아요');$('#suPw2').focus();return;}
+  const b=$('#suBtn');b.disabled=true;
+  try{
+    pendingSignup={name,loginId:id};
+    const cred=await createUserWithEmailAndPassword(auth,idToEmail(id),pw);
+    await setDoc(doc(db,'users',cred.user.uid),{name,loginId:id,status:'pending',createdAt:new Date().toISOString()});
+    pendingSignup=null;
+    $('#signupForm').reset();toast('가입 신청이 접수됐어요');
+    watchMe(cred.user.uid);
+  }catch(err){pendingSignup=null;toast(authMsg(err));}finally{b.disabled=false;}
+});
+let pendingSignup=null;
+const logout=async()=>{cleanup();await signOut(auth);};
+$('#logoutBtn').onclick=logout;$('#waitLogout').onclick=logout;
+
+/* ---------- 세션 라우팅 ---------- */
+let unsubs=[],isAdminUser=false,meUid=null;
+function cleanup(){unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];Object.values(thumbSubs).forEach(u=>{try{u();}catch(e){}});thumbSubs={};thumbs={};}
+onAuthStateChanged(auth,user=>{
+  cleanup();
+  $('#adminTabs').hidden=true;$('#logoutBtn').hidden=!user;$('#barSub').textContent='업무보고';
+  if(!user){isAdminUser=false;meUid=null;show('vLogin');return;}
+  meUid=user.uid;isAdminUser=(user.email===ADMIN_EMAIL);
+  if(isAdminUser){startAdmin();return;}
+  if(pendingSignup)return; // 가입 직후 문서 저장 중
+  watchMe(user.uid);
+});
+
+/* ================= 직원 ================= */
+let meThumbSub=null,meDocSub=null;
+function watchMe(uid){
+  if(meDocSub&&unsubs.includes(meDocSub))return;
+  meDocSub=onSnapshot(doc(db,'users',uid),s=>{
+    if(!s.exists()){showWait('가입 정보가 없어요','가입 신청이 완료되지 않았어요. 로그아웃 후 다시 가입해주세요.','');return;}
+    const me=s.data();
+    if(me.status==='pending'){showWait('승인 대기 중','가입 신청이 접수됐어요. 대표님이 승인하면 이 화면이 자동으로 업무보고 페이지로 바뀝니다.',me.name);return;}
+    if(me.status==='rejected'){showWait('가입이 반려됐어요','대표님께 확인해주세요.',me.name);return;}
+    if(me.status==='disabled'){showWait('사용이 중지된 계정이에요','대표님께 확인해주세요.',me.name);return;}
+    renderStaff(me,uid);
+  },e=>toast(authMsg(e)));
+  unsubs.push(meDocSub);
+}
+function showWait(t,m,name){$('#waitTitle').textContent=t;$('#waitMsg').textContent=m;$('#waitName').textContent=name?name+'님':'';show('vWait');}
+function renderStaff(me,uid){
+  $('#barSub').textContent=(me.part||'')+' 업무보고';
+  $('#stName').textContent=me.name;
+  $('#stPart').textContent=me.part||'';$('#stPart').className='tag '+(me.part==='디자인'?'ds':'cs');
+  const d=new Date();$('#stToday').textContent=`${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} (${'일월화수목금토'[d.getDay()]})`;
+  const secs=(me.sections||[]).filter(k=>ITEM[k]);
+  if(!secs.length)$('#stSections').innerHTML='<div class="empty">아직 지정된 양식 항목이 없어요. 대표님께 확인해주세요.</div>';
+  else{let h='';LIB.forEach(g=>{const its=g.items.filter(i=>secs.includes(i[0]));if(!its.length)return;
+    h+=`<div class="sec-group"><h3>${esc(g.label)}</h3>${its.map(([k,l,dd])=>`<div class="sec"><div><b>${esc(l)}</b>${dd?`<p>${esc(dd)}</p>`:''}</div><span class="tag">양식 준비중</span></div>`).join('')}</div>`;});
+    $('#stSections').innerHTML=h;}
+  if($('#vStaff').hidden)show('vStaff');
+  if(!unsubs.includes(meThumbSub)){
+    meThumbSub=onSnapshot(query(collection(db,'users',uid,'thumbs'),orderBy('createdAt','desc'),limit(24)),q=>{
+      const ts=q.docs.map(x=>({...x.data(),id:x.id}));
+      $('#myThumbs').innerHTML=ts.length?ts.map(t=>thumbHtml(t,uid,'내 업로드')).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드한 이미지가 없어요.</p>';
+    },()=>{});
+    unsubs.push(meThumbSub);
+  }
+}
+$('#fileIn').onchange=async()=>{
+  const files=[...$('#fileIn').files];if(!files.length||!meUid)return;
+  const drop=$('#drop');drop.classList.add('busy');let ok=0;
+  for(const f of files){
+    try{
+      const c=await compress(f);const iid=rid();const now=new Date().toISOString();
+      await setDoc(doc(db,'users',meUid,'images',iid),{full:c.full,createdAt:now,section:'test'});
+      await setDoc(doc(db,'users',meUid,'thumbs',iid),{thumb:c.thumb,createdAt:now,section:'test',size:Math.round(c.full.length*.75),orig:c.orig});
+      ok++;
+    }catch(e){toast(e&&e.code?authMsg(e):'이미지를 처리하지 못했어요: '+f.name);}
+  }
+  drop.classList.remove('busy');$('#fileIn').value='';
+  if(ok)toast(`${ok}장 업로드 완료`);
+};
+
+/* ================= 관리자 ================= */
+let users={},thumbs={},thumbSubs={},dlgUid=null;
+function startAdmin(){
+  $('#adminTabs').hidden=false;$('#barSub').textContent='업무보고 · 관리자';
+  show('vAdmin');setTab('home');
+  unsubs.push(onSnapshot(collection(db,'users'),q=>{
+    users={};q.docs.forEach(x=>users[x.id]={...x.data(),uid:x.id});
+    Object.values(users).filter(u=>u.status==='approved'||u.status==='disabled').forEach(u=>{
+      if(thumbSubs[u.uid])return;
+      thumbSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'thumbs'),orderBy('createdAt','desc'),limit(24)),s=>{thumbs[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));renderAdmin();},()=>{});
+    });
+    renderAdmin();
+  },e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
+}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));$('#tabHome').hidden=t!=='home';$('#tabReq').hidden=t!=='req';$('#tabStaff').hidden=t!=='staff';}
+$$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
+function renderAdmin(){
+  const list=Object.values(users);
+  const pend=list.filter(u=>u.status==='pending').sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  const act=list.filter(u=>u.status==='approved');
+  const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  $('#reqDot').hidden=!pend.length;$('#reqDot').textContent=pend.length;
+  $('#kpis').innerHTML=`
+    <div class="kpi ${pend.length?'alert':''}"><div class="l">가입 승인 대기</div><div class="v">${pend.length}<small> 명</small></div></div>
+    <div class="kpi"><div class="l">CS 직원</div><div class="v">${act.filter(u=>u.part==='CS').length}<small> 명</small></div></div>
+    <div class="kpi"><div class="l">디자인 직원</div><div class="v">${act.filter(u=>u.part==='디자인').length}<small> 명</small></div></div>
+    <div class="kpi"><div class="l">저장된 이미지</div><div class="v">${allT.length}<small> 장 · ${kb(allT.reduce((a,t)=>a+(t.size||0),0))}</small></div></div>`;
+  $('#allThumbs').innerHTML=allT.length?allT.slice(0,24).map(t=>thumbHtml(t,t.uid,(users[t.uid]?.name||'직원')+' 업로드')).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
+  $('#reqList').innerHTML=pend.length?pend.map(u=>`<div class="req"><div class="top"><b>${esc(u.name)}</b><span class="tag">아이디 ${esc(u.loginId)}</span><span class="note num">${esc(fmtT(u.createdAt))} 신청</span></div>
+      <div class="btnrow"><button class="okbtn" data-approve="${esc(u.uid)}">파트·양식 정하고 승인</button><button class="danger" data-reject="${esc(u.uid)}">반려</button></div></div>`).join('')
+    :'<div class="empty">승인을 기다리는 가입 신청이 없어요. 직원이 사이트에서 회원가입하면 여기에 표시됩니다.</div>';
+  const staff=list.filter(u=>u.status==='approved'||u.status==='disabled'||u.status==='rejected').sort((a,b)=>(a.status>b.status?1:-1)||(a.createdAt||'').localeCompare(b.createdAt||''));
+  $('#staffGrid').innerHTML=staff.length?staff.map(u=>`<div class="scard ${u.part==='디자인'?'ds':''} ${u.status!=='approved'?'off':''}">
+      <div class="nm"><b>${esc(u.name)}</b>${partTag(u.part)}${u.status==='approved'?'<span class="tag ok">사용 중</span>':u.status==='disabled'?'<span class="tag">사용 중지</span>':'<span class="tag bad">반려</span>'}</div>
+      <div class="meta">아이디 ${esc(u.loginId)} · 양식 ${(u.sections||[]).length}개 항목</div>
+      <div class="meta">가입 ${esc((u.createdAt||'').slice(0,10))}${u.approvedAt?` · 승인 ${esc(u.approvedAt.slice(0,10))}`:''}</div>
+      <div class="btnrow">${u.status==='rejected'?`<button class="secondary" data-approve="${esc(u.uid)}">다시 승인</button>`:`<button class="secondary" data-edit="${esc(u.uid)}">파트·양식 수정</button>`}</div></div>`).join('')
+    :'<div class="empty">승인된 직원이 아직 없어요.</div>';
+}
+$('#vAdmin').addEventListener('click',async e=>{
+  const a=e.target.closest('[data-approve]');if(a){openDlg(a.dataset.approve,true);return;}
+  const ed=e.target.closest('[data-edit]');if(ed){openDlg(ed.dataset.edit,false);return;}
+  const r=e.target.closest('[data-reject]');if(r){const u=users[r.dataset.reject];if(!(await ask(`${u.name}(${u.loginId}) 가입을 반려할까요?`)))return;
+    try{await updateDoc(doc(db,'users',u.uid),{status:'rejected',rejectedAt:new Date().toISOString()});toast('반려했어요');}catch(err){toast(authMsg(err));}}
+});
+function tplHtml(sel){
+  return LIB.map(g=>`<div class="tpl-group"><div class="gh"><b>${esc(g.label)}</b><button type="button" class="linkbtn" data-all>전체 선택/해제</button></div><div class="tpl-items">${
+    g.items.map(([k,l,d])=>`<label class="opt"><input type="checkbox" value="${k}" ${sel.includes(k)?'checked':''}><span>${esc(l)}${d?`<small>${esc(d)}</small>`:''}</span></label>`).join('')}</div></div>`).join('');
+}
+function openDlg(uid,approving){
+  const u=users[uid];if(!u)return;dlgUid=uid;
+  $('#dsTitle').textContent=approving?`${u.name} 승인`:`${u.name} 파트·양식 수정`;
+  $('#dsSub').textContent=`아이디 ${u.loginId}`;
+  const part=u.part||'CS';$$('input[name=dsPart]').forEach(r=>r.checked=r.value===part);
+  $('#dsTpl').innerHTML=tplHtml(u.sections&&u.sections.length?u.sections:PRESET[part]);
+  $('#dsSave').textContent=approving?'승인':'저장';$('#dsSave').dataset.mode=approving?'approve':'edit';
+  $('#dsToggle').hidden=approving;$('#dsToggle').textContent=u.status==='disabled'?'다시 사용':'사용 중지';
+  $('#dlgStaff').hidden=false;
+}
+$$('input[name=dsPart]').forEach(r=>r.onchange=()=>{$('#dsTpl').innerHTML=tplHtml(PRESET[r.value]);});
+$('#dsPreset').onclick=()=>{$('#dsTpl').innerHTML=tplHtml(PRESET[$('input[name=dsPart]:checked').value]);};
+$('#dsTpl').addEventListener('click',e=>{const a=e.target.closest('[data-all]');if(!a)return;const cbs=$$('input',a.closest('.tpl-group'));const on=!cbs.every(c=>c.checked);cbs.forEach(c=>c.checked=on);});
+$('#dsCancel').onclick=()=>{$('#dlgStaff').hidden=true;dlgUid=null;};
+$('#dsSave').onclick=async()=>{
+  const u=users[dlgUid];if(!u)return;
+  const sections=$$('#dsTpl input:checked').map(c=>c.value);if(!sections.length){toast('양식 항목을 하나 이상 선택해주세요');return;}
+  const part=$('input[name=dsPart]:checked').value;const approving=$('#dsSave').dataset.mode==='approve';
+  const b=$('#dsSave');b.disabled=true;
+  try{
+    const patch={part,sections,updatedAt:new Date().toISOString()};
+    if(approving){patch.status='approved';patch.approvedAt=new Date().toISOString();}
+    await updateDoc(doc(db,'users',u.uid),patch);
+    toast(approving?`${u.name}님을 승인했어요`:'저장했어요');$('#dlgStaff').hidden=true;dlgUid=null;
+  }catch(e){toast(authMsg(e));}finally{b.disabled=false;}
+};
+$('#dsToggle').onclick=async()=>{
+  const u=users[dlgUid];if(!u)return;const on=u.status==='disabled';
+  if(!on&&!(await ask(`${u.name}님 계정을 사용 중지할까요? 직원 화면이 바로 잠기고, 데이터는 남아 있어요.`)))return;
+  try{await updateDoc(doc(db,'users',u.uid),{status:on?'approved':'disabled'});toast(on?'다시 사용하도록 했어요':'사용 중지했어요');$('#dlgStaff').hidden=true;dlgUid=null;}catch(e){toast(authMsg(e));}
+};
+</script>
+</body>
+</html>
