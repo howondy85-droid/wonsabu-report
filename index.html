@@ -114,7 +114,7 @@ button:disabled{opacity:.5;cursor:default}
 .chcard{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--sunk);display:flex;flex-direction:column;gap:8px;min-width:0}
 .chcard .cn{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px}
 .logo{display:inline-flex;align-items:center;justify-content:center;height:22px;min-width:22px;padding:0 5px;border-radius:6px;font-size:11px;font-weight:800}
-.lg-naver{background:#03C75A;color:#fff}.lg-mall{background:#FCB426;color:#191512}.lg-kakao{background:#FEE500;color:#3A1D1D}.lg-toss{background:#0064FF;color:#fff;font-size:10px}
+.lg-naver{background:#03C75A;color:#fff}.lg-kch{background:#FEE500;color:#3A1D1D;font-size:10px}.lg-npay{background:#191919;color:#fff;font-size:10px}.lg-mall{background:#FCB426;color:#191512}.lg-kakao{background:#FEE500;color:#3A1D1D}.lg-toss{background:#0064FF;color:#fff;font-size:10px}
 .row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--sunk);margin-bottom:8px}
 .row-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .row-h b{font-size:13px}
@@ -134,6 +134,15 @@ fieldset:disabled .attach,fieldset:disabled .add,fieldset:disabled .rm,fieldset:
 .fchip .fname{border:0;background:none;padding:0;color:var(--cs);text-decoration:underline;font-size:13px;text-align:left;min-width:0;overflow-wrap:anywhere}
 .fchip .x2{border:0;background:var(--bad);color:#fff;width:20px;height:20px;border-radius:50%;font-size:12px;line-height:20px;padding:0;flex:none}
 fieldset:disabled .fchip .fname{pointer-events:auto}
+.ocr{margin:0;font-size:12.5px;line-height:1.45}
+.ocr.ok{color:var(--ok);font-weight:700}
+.ocr.bad{color:var(--bad);font-weight:700}
+.ocr.chk{color:var(--accent-ink)}
+.ocr.wait{color:var(--muted)}
+.chcard .opt:has(input:disabled){opacity:.5}
+.chgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:900px){.chgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.chgrid{grid-template-columns:1fr}}
 .shipsum{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}
 .shipd{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--surface)}
 .shipd summary{cursor:pointer;font-size:13.5px}
@@ -434,11 +443,11 @@ const idToEmail=id=>`${id}@${ID_DOMAIN}`;
 /* ===================== 양식 정의 ===================== */
 const LIB=[
  {g:'cs-daily',label:'CS · 일일업무',items:[
-  ['cs.order','주문접수 완료','스스·자사몰·카카오·토스 캡쳐'],['cs.ship','발송처리 내역','한진 송장 × 네이버 주문 엑셀 대조'],
+  ['cs.ship','발송처리 내역','한진 송장 × 네이버 주문 엑셀 대조'],
   ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
   ['cs.bulk','대량주문 문의','일시·내용·견적서'],['cs.claim','클레임 발생내역','캡쳐 필수'],
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
-  ['cs.purchase','발주내역','품목·수량·예상입고일'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐']]},
+  ['cs.purchase','발주내역','품목·수량·예상입고일'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 6개 채널 캡쳐 17:25 이후']]},
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
   ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 송장 등록·발송처리','엑셀 업로드'],
   ['cs.friinv','금요일 송장 관공서·회사 확인','한진 송장파일'],['cs.supplies','부자재 체크','발주 여부'],
@@ -453,11 +462,11 @@ const LIB=[
 ];
 const ITEM={};LIB.forEach(g=>g.items.forEach(([k,l,d])=>ITEM[k]={label:l,desc:d,g:g.g}));
 const PRESET={CS:LIB.filter(g=>g.g.startsWith('cs')).flatMap(g=>g.items.map(i=>i[0])),'디자인':LIB.filter(g=>g.g.startsWith('ds')).flatMap(g=>g.items.map(i=>i[0]))};
-const CHS=[['naver','스마트스토어','N','lg-naver'],['mall','자사몰','몰','lg-mall'],['kakao','카카오','K','lg-kakao'],['toss','토스','toss','lg-toss']];
+const CHS=[['naver','스마트스토어','N','lg-naver'],['mall','자사몰 (카페24)','몰','lg-mall'],['kakao','카카오 톡체크아웃','K','lg-kakao'],['toss','토스쇼핑','toss','lg-toss'],['kch','카카오채널','Ch','lg-kch'],['npay','네이버페이센터','pay','lg-npay']];
 const CONSULT_DONE='완료 기준: 담당자 마지막 메시지가 "네네! 또 궁금하신점 있으시면 톡톡하기 남겨주세요 ෆ", "네네! 좋은 선물 되실수 있도록 잘 준비해서 보내드리도록 하겠습니다! 감사합니다:)", "감사합니다"로 끝난 경우. 그 외는 진행중.';
 // field: [key, type, label, options]
 const SCHEMA={
- 'cs.order':{type:'channels',hint:'채널별 주문 접수 후 대시보드 캡쳐 (날짜·시간이 보이게)',fields:[['done','check','접수 완료'],['imgs','imgs','대시보드 캡쳐']]},
+ 'cs.order':{type:'channels',hint:'업무보고 마지막 단계예요. 17:25 이후 채널별 화면을 전체화면으로 캡쳐해 올리면, 화면 오른쪽 위 시계를 읽어 오늘·17:25 이후인지 확인한 뒤 접수 완료를 켤 수 있어요',fields:[['done','check','접수 완료'],['imgs','imgs','전체화면 캡쳐']]},
  'cs.ship':{type:'ship',hint:'한진 송장 엑셀(재출력_세부내역)과 네이버 주문내역 엑셀(전체주문발주발송관리)을 함께 올리면, 이미 송장이 나간 주문(중복)과 미발송 주문을 찾아줘요'},
  'cs.prevday':{type:'group',hint:'한진택배 세부내역 캡쳐로 전체 배송완료 확인',fields:[['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
    list:{label:'미완료 건',showIf:['allDone','no'],fields:[['name','text','주문자명'],['invoice','text','송장번호'],['note','text','배송완료시각 또는 통화내역']]}},
@@ -557,6 +566,45 @@ const SHIP={
   }
 };
 /*SHIP-LOGIC-END*/
+/*CLOCK-LOGIC-START*/
+// 캡쳐 속 시계 글자 → 날짜·시간 판정 (순수 함수)
+const CLOCK={
+  CUT:17*60+25,   // 17:25 이후 캡쳐만 통과
+  p2:n=>String(n).padStart(2,'0'),
+  parse(text){
+    const s=String(text||'').replace(/\s+/g,'');
+    const out={mo:null,da:null,H:null,M:null,amb:false};
+    const md=s.match(/(\d{1,2})[월윌원](\d{1,2})(?!\d)/);   // '일'이 '임·인'으로 읽혀도 숫자만으로 판단
+    const full=s.match(/(20\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+    if(md){out.mo=+md[1];out.da=+md[2];}else if(full){out.mo=+full[2];out.da=+full[3];}
+    if(out.mo!=null&&!(out.mo>=1&&out.mo<=12&&out.da>=1&&out.da<=31)){out.mo=out.da=null;}
+    const tm=s.match(/(오전|오후)([\d:;.,]{3,6})/);
+    if(tm){
+      const raw=tm[2];const d=raw.replace(/\D/g,'');let H=null,M=null;
+      if(/[:;.,]/.test(raw)){const[a,b]=raw.split(/[:;.,]/);H=+a.replace(/\D/g,'');M=+String(b||'').replace(/\D/g,'').slice(0,2);if(String(b||'').replace(/\D/g,'').length<2)H=null;}
+      else if(d.length===3){H=+d[0];M=+d.slice(1);}
+      else if(d.length===4){if(/^1[0-2]/.test(d)){out.amb=true;H=+d.slice(0,2);M=+d.slice(2);}else{H=+d[0];M=+d.slice(2);}}  // 쌍점이 0·5로 읽히는 경우: 분은 항상 마지막 두 자리
+      else if(d.length===5){H=+d.slice(0,2);M=+d.slice(3);}
+      if(H!=null&&H>=1&&H<=12&&M>=0&&M<60){if(tm[1]==='오후'&&H<12)H+=12;if(tm[1]==='오전'&&H===12)H=0;out.H=H;out.M=M;}
+      else out.amb=false;
+    }else{
+      const t24=s.match(/(?:^|\D)([01]?\d|2[0-3]):([0-5]\d)(?!\d)/);
+      if(t24){out.H=+t24[1];out.M=+t24[2];}
+    }
+    return out;
+  },
+  judge(p,rd){
+    const[y,m,d]=rd.split('-').map(Number);
+    if(p.mo==null)return{state:'check',why:'화면 시계를 읽지 못했어요'};
+    const tl=p.H!=null?` ${CLOCK.p2(p.H)}:${CLOCK.p2(p.M)}`:'';const read=`${p.mo}/${p.da}${tl}`;
+    if(p.mo!==m||p.da!==d)return{state:'date',why:`캡쳐 날짜(${p.mo}/${p.da})가 보고 날짜(${m}/${d})와 달라요`,read};
+    if(p.H==null)return{state:'check',why:'시간을 읽지 못했어요',read};
+    if(p.amb)return{state:'check',why:`시간이 애매하게 읽혔어요 (${tl.trim()}?)`,read};
+    if(p.H*60+p.M<CLOCK.CUT)return{state:'early',why:`17:25 이전 캡쳐예요 (${tl.trim()})`,read};
+    return{state:'ok',why:'',read};
+  }
+};
+/*CLOCK-LOGIC-END*/
 const DK=k=>k.replace('.','_');
 const KD=d=>d.replace('_','.');
 
@@ -732,7 +780,9 @@ function openReport(date){
   },e=>toast(authMsg(e)));
 }
 const editable=()=>R&&(R.status==='draft'||R.status==='hold');
-function mySections(){return (me.sections||[]).filter(k=>ITEM[k]);}
+const LIB_ORDER=LIB.flatMap(g=>g.items.map(i=>i[0]));
+const byLib=(a,b)=>LIB_ORDER.indexOf(a)-LIB_ORDER.indexOf(b);
+function mySections(){return (me.sections||[]).filter(k=>ITEM[k]).sort(byLib);}
 
 function renderBanner(){
   const n=Object.values(R.review||{}).filter(v=>v&&v.state==='revise').length+myTasks.filter(t=>t.status==='revise').length;
@@ -803,7 +853,7 @@ function sectionHtml(key){
       ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reship>다시 비교하기</button>`:''}
       ${fieldHtml(dk+'|memo',['memo','textarea','메모 (배송일 변경·미발송 사유 등)'],d.memo)}`;
   }else if(S.type==='channels'){
-    h+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>`<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}</div>${fieldsHtml(dk+'|'+c,S.fields,d[c])}</div>`).join('')}</div>`;
+    h+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>chCardHtml(dk,c,l,b,cls,d[c]||{})).join('')}</div>`;
     if(S.extra)h+=fieldsHtml(dk,S.extra,d);
   }else if(S.type==='group'){
     h+=fieldsHtml(dk,S.fields,d);
@@ -855,6 +905,71 @@ $('#rForm').addEventListener('change',async e=>{
   R.dirty=true;
   if(isShip){await analyzeShip();rerenderSection('cs_ship');}else saveDraft();
 });
+
+/* ---------- 주문접수 완료: 캡쳐 시각 확인 ---------- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+let ocrWorker=null,ocrLoading=null;
+async function getOcr(){
+  if(ocrWorker)return ocrWorker;
+  if(!ocrLoading)ocrLoading=(async()=>{
+    if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js');
+    return await Tesseract.createWorker('kor',1);
+  })().catch(e=>{ocrLoading=null;throw e;});
+  ocrWorker=await ocrLoading;return ocrWorker;
+}
+// 화면 시계 위치만 잘라서 흑백으로 또렷하게: top = 맥 메뉴바 오른쪽, bottom = 윈도우 작업표시줄 오른쪽
+function clockStrip(img,where){
+  const W=img.naturalWidth,H=img.naturalHeight;let x0,y0,w,h;
+  if(where==='top'){h=Math.max(14,Math.round(W*0.0112));x0=Math.round(W*0.80);y0=0;}
+  else{h=Math.max(28,Math.round(H*0.05));x0=Math.round(W*0.82);y0=H-h;}
+  w=W-x0;const sc=Math.max(2,Math.round(90/h));const pad=20;
+  const c=document.createElement('canvas');c.width=w*sc+pad*2;c.height=h*sc+pad*2;
+  const x=c.getContext('2d');x.drawImage(img,x0,y0,w,h,pad,pad,w*sc,h*sc);
+  const id=x.getImageData(pad,pad,w*sc,h*sc);const a=id.data;const g=new Float32Array(a.length/4);
+  let sum=0,mx=0,mn=255;for(let i=0;i<g.length;i++){const v=a[i*4]*.299+a[i*4+1]*.587+a[i*4+2]*.114;g[i]=v;sum+=v;if(v>mx)mx=v;if(v<mn)mn=v;}
+  const mean=sum/g.length;const light=(mx-mean)>(mean-mn);const thr=light?mean+(mx-mean)*.45:mean-(mean-mn)*.45;
+  for(let i=0;i<g.length;i++){const ink=light?g[i]>thr:g[i]<thr;const v=ink?0:255;a[i*4]=a[i*4+1]=a[i*4+2]=v;a[i*4+3]=255;}
+  x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.putImageData(id,pad,pad);
+  return c;
+}
+async function readCaptureClock(file){
+  const img=await loadImg(file);const w=await getOcr();let last={parsed:{mo:null},src:'',text:''};
+  for(const where of ['top','bottom']){
+    await w.setParameters({tessedit_pageseg_mode:where==='top'?'7':'6'});
+    const{data:{text}}=await w.recognize(clockStrip(img,where));
+    const parsed=CLOCK.parse(text);last={parsed,src:where,text};
+    if(parsed.mo!=null)break;
+  }
+  return last;
+}
+async function checkCapture(c,file){
+  setP(R.data,['cs_order',c,'ocr'],{state:'pending'});paintCh(c);
+  let res={parsed:{mo:null},src:'',text:''},loadFail=false;
+  try{res=await readCaptureClock(file);}catch(e){loadFail=true;}
+  const j=loadFail?{state:'check',why:'글자 인식 도구를 불러오지 못했어요'}:CLOCK.judge(res.parsed,R.date);
+  const o={state:j.state,why:j.why||'',read:j.read||'',src:res.src||'',raw:String(res.text||'').slice(0,80),at:new Date().toISOString(),fileTime:file.lastModified?new Date(file.lastModified).toISOString():''};
+  setP(R.data,['cs_order',c,'ocr'],o);
+  if(o.state==='date'||o.state==='early')setP(R.data,['cs_order',c,'done'],false);
+  paintCh(c);R.dirty=true;
+  if(o.state==='early'||o.state==='date')toast(o.why);
+}
+const OCR_BLOCK=st=>st==='date'||st==='early'||st==='pending';
+function ocrLine(o,admin){
+  if(!o)return '';
+  if(o.state==='pending')return '<p class="ocr wait">캡쳐 시각 확인 중… (처음 한 번은 10초 정도 걸려요)</p>';
+  if(o.state==='ok')return `<p class="ocr ok">✓ ${esc(o.read)} 캡쳐 확인</p>`;
+  if(o.state==='early')return `<p class="ocr bad">✕ ${esc(o.why)}${admin?'':'. 17:25 이후에 다시 캡쳐해서 올려주세요'}</p>`;
+  if(o.state==='date')return `<p class="ocr bad">✕ ${esc(o.why)}</p>`;
+  return `<p class="ocr chk">${admin?'확인 필요 · ':'⚠ '}${esc(o.why)}${o.read?` (읽은 값 ${esc(o.read)})`:''}${admin?'':' · 접수 완료는 가능하지만 대표님 확인이 필요해요'}</p>`;
+}
+function chCardHtml(dk,c,l,b,cls,cd){
+  const has=(cd.imgs||[]).length>0;const st=cd.ocr?.state;const locked=!has||OCR_BLOCK(st);
+  return `<div class="chcard" id="ch-${c}"><div class="cn"><span class="logo ${cls}">${b}</span>${esc(l)}</div>
+    ${fieldHtml(`${dk}|${c}|imgs`,['imgs','imgs','전체화면 캡쳐'],cd.imgs)}
+    <div>${cd.ocr?ocrLine(cd.ocr):(has?'':'<p class="ocr wait">캡쳐를 올리면 화면 시계를 읽어 확인해요</p>')}</div>
+    <label class="opt"><input type="checkbox" data-p="${dk}|${c}|done" ${cd.done&&!locked?'checked':''} ${locked?'disabled':''}><span>접수 완료</span></label></div>`;
+}
+function paintCh(c){const el=$('#ch-'+c);if(!el)return;const ch=CHS.find(x=>x[0]===c);el.outerHTML=chCardHtml('cs_order',ch[0],ch[1],ch[2],ch[3],R.data.cs_order?.[c]||{});}
 
 /* ---------- 한진 × 네이버 대조 실행 ---------- */
 let xlsxReady=null;
@@ -930,16 +1045,22 @@ $('#rForm').addEventListener('change',async e=>{
   const up=e.target.closest('[data-up]');if(!up||!editable())return;
   const path=up.dataset.up;const lab=up.closest('.attach');lab.classList.add('busy');
   const arr=Array.isArray(getP(R.data,path.split('|')))?getP(R.data,path.split('|')).slice():[];
-  for(const f of [...up.files]){try{arr.push(await uploadImg(meUid,f,{section:path.split('|')[0],report:R.date}));}catch(err){toast('사진을 올리지 못했어요: '+f.name);}}
-  setP(R.data,path.split('|'),arr);up.value='';
+  const files=[...up.files];
+  for(const f of files){try{arr.push(await uploadImg(meUid,f,{section:path.split('|')[0],report:R.date}));}catch(err){toast('사진을 올리지 못했어요: '+f.name);}}
+  setP(R.data,path.split('|'),arr);up.value='';lab.classList.remove('busy');
   const box=$(`[data-imgs="${CSS.escape(path)}"]`);if(box)box.innerHTML=imgsInner(path,arr);
-  R.dirty=true;saveDraft();
+  R.dirty=true;
+  const m=path.match(/^cs_order\|(\w+)\|imgs$/);
+  if(m&&files.length){await checkCapture(m[1],files[files.length-1]);}
+  saveDraft();
 });
 $('#rForm').addEventListener('click',async e=>{
   if(!editable())return;
   const rm=e.target.closest('[data-rmimg]');
   if(rm){e.stopPropagation();const path=rm.dataset.rmimg;const ps=path.split('|');const arr=(getP(R.data,ps)||[]).slice();const[im]=arr.splice(+rm.dataset.i,1);setP(R.data,ps,arr);
-    const box=$(`[data-imgs="${CSS.escape(path)}"]`);if(box)box.innerHTML=imgsInner(path,arr);if(im)removeImg(meUid,im.id);R.dirty=true;saveDraft();return;}
+    const box=$(`[data-imgs="${CSS.escape(path)}"]`);if(box)box.innerHTML=imgsInner(path,arr);if(im)removeImg(meUid,im.id);
+    const m=path.match(/^cs_order\|(\w+)\|imgs$/);if(m&&!arr.length){setP(R.data,['cs_order',m[1],'ocr'],null);setP(R.data,['cs_order',m[1],'done'],false);paintCh(m[1]);}
+    R.dirty=true;saveDraft();return;}
   const rf=e.target.closest('[data-rmfile]');
   if(rf){e.stopPropagation();const path=rf.dataset.rmfile;const ps=path.split('|');const arr=(getP(R.data,ps)||[]).slice();const[f]=arr.splice(+rf.dataset.i,1);setP(R.data,ps,arr);
     const box=$(`[data-files="${CSS.escape(path)}"]`);if(box)box.innerHTML=filesInner(path,arr,box.dataset.accept);
@@ -997,6 +1118,10 @@ $('#sendBtn').onclick=async()=>{
   const secs=mySections();const miss=[];
   if(secs.includes('cs.claim'))(R.data.cs_claim?.rows||[]).forEach((r,i)=>{if(!(r.imgs||[]).length)miss.push(`클레임 ${i+1} 캡쳐`);});
   if(miss.length){toast(`필수 항목이 비어 있어요: ${miss.join(', ')}`);$('#sec-cs_claim')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  if(secs.includes('cs.order')){
+    const notDone=CHS.filter(([c])=>!R.data.cs_order?.[c]?.done).map(x=>x[1]);
+    if(notDone.length&&!(await ask(`주문접수 완료가 체크되지 않은 채널이 있어요:\n${notDone.join(', ')}\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_order')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  }
   if(!(await ask(`${fmtD(R.date)}(${dayName(R.date)}) 업무보고를 전송할까요?\n전송 후에는 대표님 확인 전까지 수정할 수 없어요.`,'전송')))return;
   const b=$('#sendBtn');b.disabled=true;b.textContent='전송 중…';clearTimeout(saveT);
   try{
@@ -1111,7 +1236,7 @@ function sectionView(u,key,d,rv,grp,canReview){
     body+=shipResultHtml(d?.result);
     if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
   }else if(S.type==='channels'){
-    body+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>{const cd=d?.[c]||{};return `<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}${cd.done?'<span class="tag ok">완료</span>':'<span class="tag">미체크</span>'}</div>${(cd.imgs||[]).length?`<div class="gthumbs">${cd.imgs.map(im=>galThumb(u.uid,im,`${ITEM[key].label} · ${l}`,grp)).join('')}</div>`:'<span class="note">캡쳐 없음</span>'}</div>`;}).join('')}</div>`;
+    body+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>{const cd=d?.[c]||{};return `<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}${cd.done?'<span class="tag ok">완료</span>':'<span class="tag">미체크</span>'}</div>${cd.ocr?ocrLine(cd.ocr,true):''}${(cd.imgs||[]).length?`<div class="gthumbs">${cd.imgs.map(im=>galThumb(u.uid,im,`${ITEM[key].label} · ${l}`,grp)).join('')}</div>`:'<span class="note">캡쳐 없음</span>'}</div>`;}).join('')}</div>`;
     if(S.extra)body+=kvHtml(u.uid,S.extra,d,grp);
   }else if(S.type==='group'){
     body+=kvHtml(u.uid,S.fields,d,grp);
@@ -1132,7 +1257,7 @@ function reportView(u,r,date){
   if(!r)return head+'<div class="panel empty">이 날짜에 작성된 보고서가 없어요.</div>';
   if(r.status==='draft')return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>';
   const grp=`rep-${u.uid}-${date}`;const canReview=r.status==='submitted'||r.status==='hold';
-  let secs=(u.sections||[]).filter(k=>SCHEMA[k]);
+  let secs=(u.sections||[]).filter(k=>SCHEMA[k]).sort(byLib);
   let h=head;
   // 이 보고서와 함께 전송된 업무
   let tks=(tasksBy[u.uid]||[]).filter(t=>(t.log||[]).some(e=>e.report===date)||(t.status!=='done'&&t.status!=='todo'));
