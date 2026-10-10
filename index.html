@@ -143,6 +143,16 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
 .chgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:900px){.chgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.chgrid{grid-template-columns:1fr}}
+.fx{overflow-x:auto}
+.fx table{border-collapse:collapse;width:100%;min-width:360px}
+.fx th,.fx td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;font-size:13px;vertical-align:middle}
+.fx th{color:var(--muted);font-weight:500;font-size:12px}
+.fx td input{width:100%;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.fx td.k{white-space:nowrap;font-weight:700;width:70px}
+.calrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px;flex-wrap:wrap}
+.calrow:last-child{border-bottom:0}
+.calrow .num{min-width:110px}
+.warnrow td{color:var(--bad);font-weight:700}
 .shipsum{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}
 .shipd{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--surface)}
 .shipd summary{cursor:pointer;font-size:13.5px}
@@ -259,6 +269,42 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
 
 .toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:13px;z-index:95;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
 .toast.on{opacity:1}
+.tl table{min-width:640px}
+.tl th{white-space:nowrap}
+.tl td input,.tl td select{width:100%;min-width:64px;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+.tl td input[type=checkbox]{width:auto;min-width:0}
+.tl td .imgs{min-width:150px}
+.tl td.calc,.fx td.calc{white-space:nowrap;color:var(--muted);font-size:12.5px}
+.tl td.calc.bad,.fx td.calc.bad{color:var(--bad);font-weight:700}
+.worker{border-left:4px solid var(--accent)}
+.paysum{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;padding:10px 12px;background:var(--sunk);border-radius:8px;font-size:13px}
+.paysum b{font-family:var(--f-num)}
+.paysum .net{color:var(--accent-ink);font-size:14px}
+.subh{font-size:13.5px;margin:14px 0 4px}
+.flagbox{border-left:4px solid var(--bad)}
+.paybtn{display:inline-block;white-space:nowrap;font-size:12px;font-weight:700;padding:5px 10px;border-radius:7px;background:var(--ok);color:#fff;text-decoration:none}
+.paybtn.undo{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.agrow{padding:4px 0}
+.agrow .opt{width:100%}
+.agrow.late .opt{border-color:var(--bad)}
+tr.off td{opacity:.45;text-decoration:line-through}
+.matrow{cursor:pointer}
+.matrow:hover td,.matrow.sel td{background:var(--accent-soft)}
+.sumrow td{border-top:2px solid var(--line);font-weight:700}
+.paydet td{background:var(--sunk)}
+.paygrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+@media (max-width:700px){.paygrid{grid-template-columns:1fr}}
+.spark polyline{fill:none;stroke:var(--cs);stroke-width:1.6}
+.chartbox{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--sunk)}
+.chart{width:100%;height:auto;display:block;margin-top:6px}
+.chart .gr{stroke:var(--line);stroke-width:1}
+.chart .ln{fill:none;stroke:var(--cs);stroke-width:2.5}
+.chart .pt{fill:var(--surface);stroke:var(--cs);stroke-width:2.5}
+.chart text{font-family:var(--f-num);font-size:12px}
+.chart .ax{fill:var(--muted)}
+.chart .vl{fill:var(--ink);font-weight:600}
+.seg{row-gap:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -272,6 +318,10 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
     <button data-tab="task" aria-pressed="false">업무 지시<span class="dot" id="taskDot" hidden></span></button>
     <button data-tab="req" aria-pressed="false">가입 승인<span class="dot" id="reqDot" hidden></span></button>
     <button data-tab="staff" aria-pressed="false">직원 관리</button>
+    <button data-tab="cal" aria-pressed="false">휴무일</button>
+    <button data-tab="pay" aria-pressed="false">알바급여</button>
+    <button data-tab="mat" aria-pressed="false">원재료</button>
+    <button data-tab="inv" aria-pressed="false">계산서<span class="dot" id="invDot" hidden></span></button>
   </div>
   <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
 </header>
@@ -318,14 +368,18 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
   <div class="panel">
     <div class="btnrow" style="justify-content:space-between">
       <div class="btnrow"><b style="font-size:17px" id="stName"></b><span class="tag" id="stPart"></span></div>
+      <div id="rKind" style="flex-basis:100%"></div>
       <div class="field" style="margin:0;min-width:160px"><label for="rDate" class="lb">보고 날짜</label><input type="date" id="rDate"></div>
     </div>
   </div>
   <div id="rBanner"></div>
+  <div id="rDue"></div>
   <form id="rForm" novalidate><fieldset id="rSet">
+    <div id="rToday"></div>
     <div id="rTasks"></div>
     <div id="rIncoming"></div>
     <div id="rSections"></div>
+    <div id="rAgenda"></div>
   </fieldset></form>
   <div class="panel" id="rLater" hidden></div>
 </main>
@@ -337,6 +391,7 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
 <main class="wrap wide" id="vAdmin" hidden>
   <section id="tabHome">
     <div class="kpis" id="kpis"></div>
+    <div class="panel" id="homeDue" hidden></div>
     <div class="panel">
       <h2>오늘 업무보고 <span class="s" id="homeDate"></span></h2>
       <div class="staff-grid" id="homeStatus"></div>
@@ -388,11 +443,68 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
     </div>
   </section>
 
+  <section id="tabCal" hidden>
+    <div class="panel">
+      <h2>회사 휴무일 <span class="s">공휴일·임시휴무를 넣으면 주간·월간 보고일 계산에 반영돼요</span></h2>
+      <form id="hForm" class="btnrow" novalidate style="margin-bottom:12px"><input type="date" id="hDate" aria-label="휴무 날짜" style="padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><input id="hName" maxlength="20" placeholder="예: 추석, 임시휴무" aria-label="휴무 이름" style="flex:1;min-width:140px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="primary" style="padding:9px 16px;font-size:14px" type="submit">추가</button></form>
+      <div id="hList"></div>
+    </div>
+    <div class="panel">
+      <h2>직원 연차·휴무 <span class="s">금요일 연차면 그 직원의 주간보고가 목요일로 당겨져요</span></h2>
+      <form id="lForm" class="btnrow" novalidate style="margin-bottom:12px"><select id="lWho" aria-label="직원" style="padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"></select><input type="date" id="lDate" aria-label="연차 날짜" style="padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="primary" style="padding:9px 16px;font-size:14px" type="submit">추가</button></form>
+      <div id="lList"></div>
+    </div>
+    <div class="panel"><h2>보고일 미리보기 <span class="s">이번 주·이번 달 기준</span></h2><div id="calKinds"></div></div>
+  </section>
   <section id="tabReq" hidden>
     <div class="panel"><h2>가입 승인 대기 <span class="s">승인할 때 파트와 업무보고 양식을 지정해요</span></h2><div id="reqList"></div></div>
   </section>
   <section id="tabStaff" hidden>
     <div class="panel"><h2>직원 목록</h2><div class="staff-grid" id="staffGrid"></div></div>
+  </section>
+
+  <section id="tabPay" hidden>
+    <div class="panel">
+      <div class="btnrow" style="justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">당근알바 급여 <span class="s">월간 보고서의 출퇴근 기록부를 모아 보여줘요</span></h2>
+        <div class="btnrow" style="align-items:flex-end">
+          <div class="field" style="margin:0"><label for="payMonth" class="lb">월</label><input type="month" id="payMonth"></div>
+          <button class="secondary" id="payReload" type="button">새로고침</button>
+          <button class="primary" id="payXlsx" type="button" style="padding:9px 14px;font-size:14px">엑셀 내려받기</button>
+        </div>
+      </div>
+      <div id="payBody"></div>
+    </div>
+  </section>
+
+  <section id="tabMat" hidden>
+    <div class="kpis" id="matKpis"></div>
+    <div class="panel">
+      <div class="btnrow" style="justify-content:space-between;margin-bottom:10px">
+        <h2 style="margin:0">원재료 납품가 <span class="s">월마감 목록이 쌓이면 품목별 가격 변동을 보여줘요 · 품목을 누르면 그래프</span></h2>
+        <label class="attach"><input type="file" accept=".xlsx,.xls" id="matFile">지난 월마감 엑셀 가져오기</label>
+      </div>
+      <div class="btnrow" style="margin-bottom:8px">
+        <div class="tfilter" id="matFilter" style="margin:0"><button data-f="chg" aria-pressed="true">이번 달 변동</button><button data-f="all" aria-pressed="false">전체</button></div>
+        <input id="matQ" placeholder="품목·분류 검색" aria-label="품목 검색" style="flex:1;min-width:140px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)">
+      </div>
+      <div id="matChart"></div>
+      <div id="matTable"></div>
+    </div>
+  </section>
+
+  <section id="tabInv" hidden>
+    <div class="kpis" id="invKpis"></div>
+    <div class="panel">
+      <div class="btnrow" style="justify-content:space-between;margin-bottom:10px">
+        <h2 style="margin:0">계산서 (매출/매입) <span class="s">기한: 작성일 기준 익월 10일</span></h2>
+        <div class="btnrow">
+          <div class="tfilter" id="invFilter" style="margin:0"><button data-f="open" aria-pressed="true">미처리</button><button data-f="done" aria-pressed="false">처리 완료</button><button data-f="all" aria-pressed="false">전체</button></div>
+          <div class="tfilter" id="invKind" style="margin:0"><button data-f="" aria-pressed="true">매출+매입</button><button data-f="매입" aria-pressed="false">매입</button><button data-f="매출" aria-pressed="false">매출</button></div>
+        </div>
+      </div>
+      <div id="invList"></div>
+    </div>
   </section>
 </main>
 
@@ -423,7 +535,7 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, arrayUnion, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBm8Pq16Z-nF15qYOJmg6IyCFsheb13oiQ",
@@ -449,13 +561,13 @@ const LIB=[
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
   ['cs.purchase','발주내역','품목·수량·예상입고일'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 6개 채널 캡쳐 17:25 이후']]},
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
-  ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 송장 등록·발송처리','엑셀 업로드'],
-  ['cs.friinv','금요일 송장 관공서·회사 확인','한진 송장파일'],['cs.supplies','부자재 체크','발주 여부'],
+  ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 발송처리 내역','한진 송장 × 네이버 주문 대조 (토요일 출고분)'],
+  ['cs.supplies','부자재 체크','발주 여부'],
   ['cs.store','매장 관리품목 훼손여부','사진'],['cs.callfwd','전화 착신전환','퇴근 전 확인']]},
  {g:'cs-monthly',label:'CS · 월간업무 (말일)',items:[
   ['cs.carrot','당근알바 출퇴근 기록부',''],['cs.payslip','고정알바 급여명세서 전달',''],['cs.bestreview','베스트리뷰 선정',''],
   ['cs.ordercount','주문서 카운팅','상품별 판매수량'],['cs.material','원재료 납품가 정리',''],['cs.health','직원 보건증 체크',''],
-  ['cs.taxinv','계산서 발행 조회 (매출/매입)','익월 10일까지'],['cs.vendorpay','거래처 대금지급 확인','익월 10일까지']]},
+  ['cs.taxinv','계산서 조회 (매출/매입)','국세청 엑셀 → 목록·기한 관리'],['cs.vendorpay','거래처 대금지급 확인','익월 10일까지']]},
  {g:'ds-weekly',label:'디자인 · 월·금 보고',items:[
   ['ds.waiting','대기업무','관리자 작성'],['ds.thisweek','이번주 업무','관리자 작성'],['ds.nextweek','차주 업무','관리자 작성'],
   ['ds.result','이번주 완료 / 미완료 업무',''],['ds.smartstore','스마트스토어',''],['ds.mall','자사몰',''],['ds.openmarket','오픈마켓',''],['ds.sns','SNS 업무','']]}
@@ -471,13 +583,28 @@ const SCHEMA={
  'cs.prevday':{type:'group',hint:'한진택배 세부내역 캡쳐로 전체 배송완료 확인',fields:[['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
    list:{label:'미완료 건',showIf:['allDone','no'],fields:[['name','text','주문자명'],['invoice','text','송장번호'],['note','text','배송완료시각 또는 통화내역']]}},
  'cs.quick':{type:'group',hint:'포장완료 후 매장·픽업대에 올라간 사진. 없으면 비워두세요',fields:[['imgs','imgs','출고완료 사진']],
-   list:{label:'퀵/방문 건',fields:[['name','text','주문자명'],['date','date','출고일'],['hour','hour','시간'],['note','text','내용 및 특이사항']]}},
+   list:{label:'퀵/방문 건',fields:[['name','text','주문자명'],['date','date','출고일'],['hour','hour','시간'],['kq','check','카카오퀵 배차 완료'],['notice','check','톡톡·문자 안내 발송 완료'],['note','text','내용 및 특이사항']]}},
  'cs.bulk':{type:'list',label:'문의',hint:'회사·관공서·단체 문의 (유선 포함). 없으면 비워두세요',fields:[['at','datehour','문의일시'],['talk','text','톡톡 아이디'],['phone','tel','유선문의 번호'],['content','textarea','문의내용'],['imgs','imgs','견적서 (사진·캡쳐)']]},
  'cs.claim':{type:'list',label:'클레임',hint:'문의·리뷰·톡·전화 / 오해로 인한 건 제외 / 캡쳐 필수',fields:[['who','text','아이디 또는 주문자명'],['at','datehour','발생일시'],['phone','tel','유선문의 번호'],['content','textarea','클레임 내용'],['action','textarea','처리 & 대응 내용'],['imgs','imgs','캡쳐','',{required:true}]]},
- 'cs.consult':{type:'list',label:'상담',hint:CONSULT_DONE,fields:[['ch','select','채널','',{opts:[['talktalk','네이버 톡톡'],['kakao','카카오채널'],['insta','인스타DM']]}],['id','text','아이디'],['content','text','내용'],['state','radio','상태','',{opts:[['ing','진행중'],['done','완료']]}]]},
- 'cs.purchase':{type:'list',label:'발주',hint:'예상입고일이 되면 그날 보고서에 입고확인이 자동으로 추가돼요',fields:[['item','text','발주 품목'],['qty','text','수량'],['eta','date','예상입고일'],['imgs','imgs','발주 캡쳐']]},
+ 'cs.consult':{type:'list',table:true,label:'상담',hint:CONSULT_DONE,fields:[['ch','select','채널','',{opts:[['talktalk','네이버 톡톡'],['kakao','카카오채널'],['insta','인스타DM']]}],['id','text','아이디'],['content','text','내용'],['state','radio','상태','',{opts:[['ing','진행중'],['done','완료']]}]]},
+ 'cs.purchase':{type:'list',label:'발주',hint:'예상입고일이 되면 그날 보고서에 "입고 내역"이 자동으로 생겨요. 입고 수량과 정리 사진을 올려 발주 내역과 비교해요',fields:[['item','text','발주 품목'],['qty','text','수량'],['eta','date','예상입고일'],['imgs','imgs','발주 캡쳐']]},
  'cs.notes':{type:'group',fields:[['text','textarea','공유할 내용']]},
  'cs.adcharge':{type:'group',hint:'충전한 날만 입력하세요',fields:[['amount','text','충전금액'],['imgs','imgs','충전화면 캡쳐']]},
+ // ----- 주간 -----
+ 'cs.sticker':{type:'fixedrows',hint:'로스가 난 종류만 수량과 사유를 적어주세요',rows:[['heart','하트'],['star','별'],['ribbon','리본'],['balloon','풍선'],['flower','꽃'],['plain','무지'],['circle','원형']],cols:[['qty','num','수량'],['why','text','발생 사유']]},
+ 'cs.satinv':{type:'ship',hint:'토요일 출고분 한진 송장 엑셀과 네이버 주문내역 엑셀을 올려주세요. 방식은 발송처리 내역과 같아요'},
+ 'cs.supplies':{type:'group',fields:[['state','radio','부자재 재고','',{opts:[['ok','재고 충분'],['need','발주 필요'],['ordered','발주 완료']]}],['files','files','부자재 재고표','',{accept:'.xlsx,.xls,.csv,.pdf'}],['imgs','imgs','재고 사진'],['memo','textarea','부족 품목·발주 내용']]},
+ 'cs.store':{type:'group',fields:[['state','radio','훼손 여부','',{opts:[['ok','이상 없음'],['bad','훼손 있음']]}],['imgs','imgs','매장 관리품목 사진','',{required:true}],['note','textarea','훼손 내용','',{showIf:['state','bad']}]]},
+ 'cs.callfwd':{type:'group',hint:'퇴근 전 전화 착신전환이 됐는지 확인하세요',fields:[['done','check','착신전환 완료'],['to','text','착신 번호 (선택)']]},
+ // ----- 월간 -----
+ 'cs.carrot':{type:'carrot',hint:'알바별로 근무일을 입력하면 근무시간·주휴수당·급여합계·실지급액(3.3% 공제)이 자동 계산돼요'},
+ 'cs.payslip':{type:'group',fields:[['sent','check','급여명세서 전달 완료'],['files','files','급여명세서','',{accept:'.pdf,.xlsx,.xls'}],['memo','text','전달 대상·방법']]},
+ 'cs.bestreview':{type:'list',label:'후보 리뷰',importer:'best',hint:'후보 리뷰 엑셀(리뷰글번호·작성날짜·아이디·리뷰내용 캡쳐·주문자명·구매내역)을 그대로 가져올 수 있어요. 대표님이 선정하면 다음날 회신 업무가 자동 등록돼요',fields:[['no','text','리뷰글번호'],['date','date','작성날짜'],['who','text','아이디'],['imgs','imgs','리뷰내용 (캡쳐)'],['buyer','text','주문자명'],['items','text','구매내역']]},
+ 'cs.ordercount':{type:'ordercount',hint:'이번 달 네이버 주문내역 엑셀을 올리면 상품별 판매수량을 자동으로 세어줘요. 다른 채널은 아래에 직접 적어주세요'},
+ 'cs.material':{type:'list',table:true,label:'원재료',importer:'material',calc:'perg',hint:'g당가격은 자동 계산돼요. "지난달 목록 불러오기"로 시작하면 편해요',fields:[['cat','text','분류'],['item','text','내용'],['site','text','사이트'],['price','num','가격'],['g','num','g'],['change','text','변동가격']]},
+ 'cs.health':{type:'list',table:true,label:'직원',importer:'health',calc:'dday',hint:'도래일은 자동 계산되고, 30일 안으로 남으면 빨갛게 표시돼요',fields:[['name','text','성명'],['title','text','직책'],['duty','text','직무'],['issued','date','보건증 발급일'],['exp','date','유효기간']]},
+ 'cs.taxinv':{type:'taxinv',hint:'홈택스에서 받은 매출·매입 전자세금계산서 목록 엑셀을 올리면 목록으로 정리돼요. 기한은 작성일 기준 익월 10일이에요'},
+ 'cs.vendorpay':{type:'vendorpay',label:'거래처',hint:'매입 계산서 중 대금 미지급 건이 자동으로 나와요. 계산서 없는 거래처는 아래에 직접 적어주세요',fields:[['vendor','text','거래처'],['amount','text','금액'],['date','date','지급일'],['paid','check','지급 확인']]},
 };
 /*SHIP-LOGIC-START*/
 // 한진 송장 × 네이버 주문내역 대조 (순수 함수 — 화면과 분리)
@@ -514,7 +641,7 @@ const SHIP={
     let a=ix('통합배송지');if(a<0)a=ix('기본배송지');if(a<0)a=H.findIndex(h=>h.includes('배송지')||h.includes('주소'));const a2=ix('상세배송지');
     const g=(r,i)=>i>=0?SHIP.cell(r[i]):'';
     return rows.slice(hi+1).filter(r=>r&&g(r,c.po)).map(r=>({file,po:g(r,c.po),ord:g(r,c.ord),buyer:g(r,c.buyer),rcv:g(r,c.rcv),tel:SHIP.dg(g(r,c.tel)),zip:SHIP.zp(g(r,c.zip)),
-      addr:g(r,a)+(a2>=0&&a2!==a?' '+g(r,a2):''),prod:g(r,c.prod)+(g(r,c.opt)?` (${g(r,c.opt)})`:''),kind:g(r,c.kind),qty:g(r,c.qty)}));
+      addr:g(r,a)+(a2>=0&&a2!==a?' '+g(r,a2):''),prod:g(r,c.prod)+(g(r,c.opt)?` (${g(r,c.opt)})`:''),pname:g(r,c.prod),kind:g(r,c.kind),qty:g(r,c.qty)}));
   },
   parseHanjin(rows,file){
     const hi=rows.findIndex((r,i)=>i<15&&(r||[]).some(x=>{x=String(x??'').trim();return x==='운송장번호'||x==='송장번호';}));if(hi<0)return[];
@@ -532,7 +659,7 @@ const SHIP={
     return rows.slice(hi+(two?2:1)).filter(r=>r&&SHIP.dg(g(r,c.inv))).map(r=>{
       const rawTel=g(r,c.tel);const telPre=SHIP.dg(rawTel.split('*')[0]);
       const rawAddr=g(r,c.addr);const addrPre=SHIP.ad(rawAddr.split('*')[0]).slice(0,14);
-      return{file,inv:SHIP.dg(g(r,c.inv)),seq:g(r,c.seq),rcv:g(r,c.rcv),tel:telPre,telFull:!rawTel.includes('*'),zip:SHIP.zp(g(r,c.zip)),addrPre,
+      return{file,inv:SHIP.dg(g(r,c.inv)),seq:g(r,c.seq),rcv:g(r,c.rcv),tel:telPre,telFull:!rawTel.includes('*'),zip:SHIP.zp(g(r,c.zip)),addrPre,addr:rawAddr,
         prod:g(r,c.prod).replace(/★+\[식품\]★+\[파손주의\]★+/g,'').trim()};
     });
   },
@@ -565,7 +692,139 @@ const SHIP={
       counts:{dup:dup.length,partial:partial.length,unshipped:unshipped.length,hanjinOnly:hanjinOnly.length}};
   }
 };
+// 금요일 송장: 관공서·회사로 보이는 주소/받는분
+SHIP.ORG=/(주식회사|\(주\)|㈜|유한회사|회사|시청|구청|군청|도청|청사|주민센터|행정복지센터|공단|공사|관리사무소|사무소|사무실|연구원|연구소|학교|대학|병원|의원|은행|우체국|경찰|소방|법원|검찰|교육청|센터|빌딩|타워|오피스|지식산업|산업단지|공장|본사|지점|사옥|협회|재단|조합|부대)/;
+SHIP.orgHits=hanjin=>hanjin.map(h=>{const m=`${h.rcv} ${h.addr||''} ${h.prod||''}`.match(SHIP.ORG);return m?{inv:h.inv,seq:h.seq,rcv:h.rcv,addr:h.addr||'',prod:h.prod,kw:m[1]}:null;}).filter(Boolean);
+// 주문서 카운팅: 상품명별 수량 합계
+SHIP.countBy=naver=>{const m=new Map();let total=0;for(const n of naver){const q=parseInt(String(n.qty).replace(/\D/g,''),10)||1;const k=n.pname||n.prod||'(상품명 없음)';m.set(k,(m.get(k)||0)+q);total+=q;}
+  return{total,orders:new Set(naver.map(n=>n.ord||n.po)).size,lines:naver.length,rows:[...m.entries()].sort((a,b)=>b[1]-a[1]).map(([p,q])=>({p,q}))};};
 /*SHIP-LOGIC-END*/
+/*EXTRA-LOGIC-START*/
+// ===== 공통: 날짜 =====
+const DT={
+  ymd(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;},
+  // 엑셀 셀 값 → YYYY-MM-DD (Date, 2026-05-29, 2026.05.29, 20260529, 26.09.22, 엑셀 일련번호)
+  norm(v){
+    if(v==null||v===''||v===false)return '';
+    if(v instanceof Date&&!isNaN(v))return DT.ymd(v);
+    if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*86400000));return DT.ymd(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));}
+    const s=String(v).trim();let m;
+    if((m=s.match(/^(20\d{2})[.\-\/ ]?(\d{1,2})[.\-\/ ]?(\d{1,2})/)))return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    if((m=s.match(/^(\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/)))return `20${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    return '';
+  },
+  addDays(ds,n){const d=new Date(ds+'T00:00');d.setDate(d.getDate()+n);return DT.ymd(d);},
+  diff(a,b){return Math.round((new Date(a+'T00:00')-new Date(b+'T00:00'))/86400000);},   // a - b (일)
+  nextMonth10(ds){const d=new Date(ds+'T00:00');return DT.ymd(new Date(d.getFullYear(),d.getMonth()+1,10));}
+};
+
+// ===== 당근알바 급여 (보내주신 급여명세서 엑셀과 같은 계산) =====
+const PAY={
+  WD:'일월화수목금토',
+  mins(t){const m=String(t||'').match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):null;},
+  // 근무시간 = 퇴근-출근 (자정 넘으면 +24시간) - 휴게(점심+저녁, 시간 단위)
+  hours(r){const a=PAY.mins(r.in),b=PAY.mins(r.out);if(a==null||b==null)return 0;let m=b>a?b-a:b<a?1440+b-a:0;return Math.max(0,m/60-(+r.b1||0)-(+r.b2||0));},
+  // 주차 = 그 달 1일이 속한 주(월요일 시작)를 1주차로
+  week(ds){const d=new Date(ds+'T00:00');const off=(new Date(d.getFullYear(),d.getMonth(),1).getDay()+6)%7;return Math.floor((d.getDate()-1+off)/7)+1;},
+  calc(w){
+    const wage=+w.wage||0;
+    const rows=(w.days||[]).filter(r=>r.d).map(r=>({...r,wd:PAY.WD[new Date(r.d+'T00:00').getDay()],wk:PAY.week(r.d),h:PAY.hours(r)})).sort((a,b)=>a.d.localeCompare(b.d));
+    const weeks=[];
+    for(let k=1;k<=6;k++){const h=rows.filter(r=>r.wk===k).reduce((s,r)=>s+r.h,0);const pay=wage*h;
+      const hol=h>=15?(h>=40?8*wage:(h/40)*8*wage):0;   // 주휴수당: 주 15시간 이상
+      weeks.push({wk:k,h,pay,hol,sum:pay+hol});}
+    const total=weeks.reduce((s,x)=>s+x.sum,0);const ded=total*0.033;
+    return{rows,weeks,days:rows.filter(r=>r.h>=0.1).length,hours:rows.reduce((s,r)=>s+r.h,0),total,ded,net:total-ded,wage};
+  }
+};
+
+// ===== 글 속 날짜 → 일정 =====
+const AG={
+  KW:/(출고|발송|수령|도착|입고|픽업|방문|미팅|마감|배송|회신|연락|재발송|교환|반품|납품|촬영|결제|입금)/,
+  resolve(mo,da,base){
+    const b=new Date(base+'T00:00');let y=b.getFullYear();
+    if(mo==null){mo=b.getMonth()+1;if(da<=b.getDate())return '';}   // 일(日)만 쓴 경우: 이번 달 남은 날만 (지난 날짜는 무시)
+    else if(mo<b.getMonth()+1-6)y++;
+    if(!(mo>=1&&mo<=12&&da>=1&&da<=31))return '';
+    const d=new Date(y,mo-1,da);if(d.getMonth()!==mo-1)return '';
+    return DT.ymd(d);
+  },
+  // "12일 출고", "10/13 수령", "10월 15일(목) 픽업" → 보고 날짜 이후의 일정만
+  detect(text,base){
+    const out=[];const s=String(text||'');
+    const re=/(?:(\d{1,2})\s*(?:\/|월)\s*(\d{1,2})\s*일?|(?<![\d\/.:])(\d{1,2})\s*일)(?:\s*\([월화수목금토일]\))?/g;let m;
+    while((m=re.exec(s))){
+      const after=s.slice(m.index+m[0].length,m.index+m[0].length+14);
+      const kw=after.match(AG.KW);if(!kw)continue;
+      const date=AG.resolve(m[1]!=null?+m[1]:null,+(m[2]||m[3]),base);
+      if(!date||date<=base)continue;
+      const phrase=(m[0]+after.slice(0,kw.index+kw[0].length)).replace(/\s+/g,' ').trim();
+      out.push({date,phrase});
+    }
+    return out;
+  },
+  hash(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return 'a'+(h>>>0).toString(36);}
+};
+
+// ===== 엑셀 표 가져오기 (머리글 이름으로 열 찾기) =====
+const IMP={
+  headerRow(rows,need){return rows.findIndex((r,i)=>i<20&&need.every(n=>(r||[]).some(c=>String(c??'').replace(/\s/g,'')===n)));},
+  // map: {머리글: 필드키}
+  table(rows,map,need){
+    const hi=IMP.headerRow(rows,need);if(hi<0)return[];
+    const H=rows[hi].map(c=>String(c??'').replace(/\s/g,''));
+    const idx=Object.fromEntries(Object.entries(map).map(([h,k])=>[k,H.indexOf(h.replace(/\s/g,''))]));
+    const out=[];
+    for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[];const o={_row:i};let any=false;
+      for(const[k,j] of Object.entries(idx)){if(j<0)continue;const v=r[j];if(v!==''&&v!=null&&v!==false){o[k]=v;any=true;}}
+      if(any)out.push(o);}
+    return out;
+  },
+  num(v){if(v==null||v==='')return '';const n=Number(String(v).replace(/[^\d.\-]/g,''));return isNaN(n)?'':n;},
+  // 원재료 단가 마감 파일: 시트 이름 "09월마감" → 해당 월
+  materials(sheets,year){
+    const months={};
+    for(const{name,rows} of sheets){
+      const mm=name.match(/(\d{1,2})\s*월/);if(!mm)continue;const key=`${year}-${mm[1].padStart(2,'0')}`;
+      const t=IMP.table(rows,{'분류':'cat','내용':'item','사이트':'site','가격':'price','g':'g','변동가격':'change'},['내용','가격']);
+      const list=t.filter(r=>r.item).map(r=>({cat:String(r.cat||'').trim(),item:String(r.item).trim(),site:String(r.site||'').trim(),price:IMP.num(r.price),g:IMP.num(r.g),change:String(r.change||'').trim()}));
+      if(list.length)months[key]=list;
+    }
+    return months;
+  },
+  // 국세청 전자(세금)계산서 목록 엑셀
+  invoices(rows,forceKind){
+    const hi=rows.findIndex((r,i)=>i<20&&(r||[]).some(c=>String(c??'').replace(/\s/g,'')==='승인번호'));if(hi<0)return{kind:'',list:[]};
+    const head=rows.slice(0,hi).flat().map(c=>String(c??'')).join(' ');
+    const kind=forceKind||(/매입/.test(head)?'매입':/매출/.test(head)?'매출':'');
+    const H=rows[hi].map(c=>String(c??'').replace(/\s/g,''));
+    const all=n=>H.map((h,i)=>h===n?i:-1).filter(i=>i>=0);
+    const one=(...ns)=>{for(const n of ns){const i=H.indexOf(n);if(i>=0)return i;}return -1;};
+    const biz=H.map((h,i)=>/사업자등록번호/.test(h)?i:-1).filter(i=>i>=0);const names=all('상호');
+    const c={date:one('작성일자'),no:one('승인번호'),total:one('합계금액'),supply:one('공급가액'),tax:one('세액'),item:one('품목명'),type:one('전자세금계산서종류','종류')};
+    const list=[];
+    for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[];const no=String(r[c.no]??'').trim();if(!no||!/\d/.test(no))continue;
+      const date=DT.norm(r[c.date]);const sup={biz:String(r[biz[0]]??''),name:String(r[names[0]]??'')},buy={biz:String(r[biz[1]]??''),name:String(r[names[1]]??'')};
+      const other=kind==='매입'?sup:buy;
+      list.push({no,kind,date,name:other.name.trim(),biz:other.biz.trim(),supply:IMP.num(r[c.supply]),tax:IMP.num(r[c.tax]),total:IMP.num(r[c.total]),item:String(r[c.item]??'').trim(),due:date?DT.nextMonth10(date):''});}
+    return{kind,list};
+  }
+};
+/*EXTRA-LOGIC-END*/
+
+/*CAL-LOGIC-START*/
+// 주간 보고일 = 그 주(월~금)의 마지막 근무일, 월간 보고일 = 그 달의 마지막 근무일
+// 근무일이 아닌 날: 토·일, 회사 휴무일, 그 직원의 연차
+const CALC={
+  ymd(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;},
+  off(ds,cal,uid){const w=new Date(ds+'T00:00').getDay();if(w===0||w===6)return true;if((cal.holidays||[]).some(h=>h.d===ds))return true;return((cal.leave||{})[uid]||[]).includes(ds);},
+  weekLast(ds,cal,uid){const d=new Date(ds+'T00:00');const mon=new Date(d);mon.setDate(d.getDate()-((d.getDay()+6)%7));
+    for(let i=4;i>=0;i--){const x=new Date(mon);x.setDate(mon.getDate()+i);const s=CALC.ymd(x);if(!CALC.off(s,cal,uid))return s;}return null;},
+  monthLast(ds,cal,uid){const d=new Date(ds+'T00:00');const n=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    for(let i=n;i>=1;i--){const s=CALC.ymd(new Date(d.getFullYear(),d.getMonth(),i));if(!CALC.off(s,cal,uid))return s;}return null;},
+  kind(ds,cal,uid){if(CALC.monthLast(ds,cal,uid)===ds)return 'monthly';if(CALC.weekLast(ds,cal,uid)===ds)return 'weekly';return 'daily';}
+};
+/*CAL-LOGIC-END*/
 /*CLOCK-LOGIC-START*/
 // 캡쳐 속 시계 글자 → 날짜·시간 판정 (순수 함수)
 const CLOCK={
@@ -716,12 +975,13 @@ $('#logoutBtn').onclick=logout;$('#waitLogout').onclick=logout;
 /* ===================== 세션 ===================== */
 let unsubs=[],isAdminUser=false,meUid=null;
 let users={},thumbs={},thumbSubs={},taskSubs={},tasksBy={},repSubs={},repsBy={},usersSig='';
-let me=null,myTasks=[],R=null,repUnsub=null,saveT=null,myPurch=[];
+let me=null,myTasks=[],R=null,repUnsub=null,saveT=null,myPurch=[],myAgenda=[];
+let invBy={},invSubs={},prices={};
 function cleanup(){
   unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
-  [thumbSubs,taskSubs,repSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));
-  thumbSubs={};thumbs={};taskSubs={};tasksBy={};repSubs={};repsBy={};usersSig='';users={};
-  if(repUnsub){repUnsub();repUnsub=null;}clearTimeout(saveT);R=null;me=null;myTasks=[];myPurch=[];
+  [thumbSubs,taskSubs,repSubs,invSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));
+  thumbSubs={};thumbs={};taskSubs={};tasksBy={};repSubs={};repsBy={};usersSig='';users={};invSubs={};invBy={};prices={};payCache={};
+  if(repUnsub){repUnsub();repUnsub=null;}clearTimeout(saveT);R=null;me=null;myTasks=[];myPurch=[];myAgenda=[];myInv=[];
 }
 onAuthStateChanged(auth,user=>{
   cleanup();$('#adminTabs').hidden=true;$('#logoutBtn').hidden=!user;$('#barSub').textContent='업무보고';
@@ -753,7 +1013,10 @@ function startStaff(first){
   if(first){
     $('#rDate').value=today();show('vStaff');
     unsubs.push(onSnapshot(query(collection(db,'users',meUid,'tasks'),orderBy('createdAt','desc'),limit(100)),q=>{myTasks=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(R)renderTasksBlock();},()=>{}));
+    unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};if(R&&R.loaded&&CALC.kind(R.date,CAL,meUid)!==R.kind)renderReport();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'purchases'),q=>{myPurch=q.docs.map(x=>({...x.data(),id:x.id}));if(R)renderIncoming();},()=>{}));
+    unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(R&&R.loaded){renderDue();['cs_taxinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
+    unsubs.push(onSnapshot(collection(db,'users',meUid,'agenda'),q=>{myAgenda=q.docs.map(x=>({...x.data(),id:x.id}));if(R&&R.loaded)renderToday();},()=>{}));
     openReport($('#rDate').value);
   }else if(R)renderReport();
 }
@@ -780,9 +1043,14 @@ function openReport(date){
   },e=>toast(authMsg(e)));
 }
 const editable=()=>R&&(R.status==='draft'||R.status==='hold');
-const LIB_ORDER=LIB.flatMap(g=>g.items.map(i=>i[0]));
+const LIB_ORDER=[...LIB.flatMap(g=>g.items.map(i=>i[0])).filter(k=>k!=='cs.order'),'cs.order'];   // 주문접수 완료는 항상 맨 마지막
+const KIND_G={daily:['cs-daily'],weekly:['cs-daily','cs-weekly'],monthly:['cs-daily','cs-weekly','cs-monthly']};
+const KIND_L={daily:'일일 보고',weekly:'주간 보고일',monthly:'월간 보고일'};
+const KIND_C={daily:'',weekly:'acc',monthly:'ok'};
+let CAL={holidays:[],leave:{}};
 const byLib=(a,b)=>LIB_ORDER.indexOf(a)-LIB_ORDER.indexOf(b);
 function mySections(){return (me.sections||[]).filter(k=>ITEM[k]).sort(byLib);}
+function secsFor(sections,kind){return (sections||[]).filter(k=>SCHEMA[k]&&ITEM[k]&&KIND_G[kind].includes(ITEM[k].g)).sort(byLib);}
 
 function renderBanner(){
   const n=Object.values(R.review||{}).filter(v=>v&&v.state==='revise').length+myTasks.filter(t=>t.status==='revise').length;
@@ -797,14 +1065,57 @@ function renderBanner(){
   $('#sendBtn').disabled=!editable();$('#sendBtn').textContent=R.status==='hold'?'다시 전송':'전송';
   if(!editable())$('#saveMeta').textContent=R.status==='approved'?'승인된 보고서예요':'전송된 보고서예요';
 }
+function renderKind(){
+  const k=R.kind,wl=CALC.weekLast(R.date,CAL,meUid),ml=CALC.monthLast(R.date,CAL,meUid);
+  const f=x=>x?`${fmtD(x)}(${dayName(x)})`:'없음';
+  $('#rKind').innerHTML=`<div class="btnrow" style="margin-top:8px"><span class="tag ${KIND_C[k]}">${KIND_L[k]}</span><span class="note">이번 주 주간보고 ${f(wl)} · 이번 달 월간보고 ${f(ml)}</span></div>`;
+}
 function renderReport(){
-  if(!R||!me)return;renderBanner();renderTasksBlock();renderIncoming();
-  const secs=mySections();const daily=secs.filter(k=>SCHEMA[k]);
-  $('#rSections').innerHTML=daily.length?daily.map(k=>sectionHtml(k)).join(''):'<div class="panel empty">작성할 일일 양식 항목이 없어요.</div>';
+  if(!R||!me)return;renderBanner();renderToday();renderTasksBlock();renderIncoming();renderDue();
+  R.kind=CALC.kind(R.date,CAL,meUid);renderKind();
+  const secs=mySections();const shown=secsFor(secs,R.kind);
+  $('#rSections').innerHTML=shown.length?shown.map(k=>sectionHtml(k)).join(''):'<div class="panel empty">작성할 양식 항목이 없어요.</div>';
   const later=secs.filter(k=>!SCHEMA[k]&&k!=='cs.tasks');
   $('#rLater').hidden=!later.length;
-  $('#rLater').innerHTML=later.length?`<h2>준비 중인 항목 <span class="s">주간·월간·디자인 양식은 다음 단계에서 추가돼요</span></h2><p class="note" style="margin:0">${later.map(k=>esc(ITEM[k].label)).join(' · ')}</p>`:'';
-  applyShowIf();
+  $('#rLater').innerHTML=later.length?`<h2>준비 중인 항목 <span class="s">디자인 양식은 다음 단계에서 추가돼요</span></h2><p class="note" style="margin:0">${later.map(k=>esc(ITEM[k].label)).join(' · ')}</p>`:'';
+  applyShowIf();renderAgendaPreview();
+}
+// 입력 중인 칸이 있는 섹션은 다시 그리지 않음 (포커스 유지)
+function busyIn(dk){const a=document.activeElement;const el=$('#sec-'+dk);return !!(a&&el&&el.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName));}
+
+/* ---------- 자동 일정 (글 속 날짜 인식) ---------- */
+function agendaFromData(data,base){
+  const out=[];const add=(date,title,src)=>{if(!date||!title)return;const id=AG.hash(date+'|'+title);if(!out.some(x=>x.id===id))out.push({id,date,title,src});};
+  (data.cs_quick?.rows||[]).forEach(r=>{if(r.date&&r.date>base)add(r.date,`퀵/방문 출고 · ${r.name||'주문자 미기재'}${r.hour?` ${+r.hour}시`:''}${r.note?` · ${r.note}`:''}`,'퀵/방문수령');});
+  const scan=(text,pre,src)=>AG.detect(text,base).forEach(x=>add(x.date,`${pre}${x.phrase}`,src));
+  (data.cs_consult?.rows||[]).forEach(r=>{if(r.state!=='done')scan(r.content,`${r.id?r.id+' 상담 · ':'상담 · '}`,'진행중 상담');});
+  (data.cs_bulk?.rows||[]).forEach(r=>scan(r.content,`대량문의${r.talk?' '+r.talk:''} · `,'대량주문 문의'));
+  (data.cs_claim?.rows||[]).forEach(r=>scan(`${r.content||''} ${r.action||''}`,`클레임${r.who?' '+r.who:''} · `,'클레임'));
+  scan(data.cs_notes?.text,'','특이사항');
+  Object.entries(data.tasks||{}).forEach(([tid,v])=>{const t=myTasks.find(x=>x.id===tid);scan(v?.text,`${t?t.title:'업무'} · `,'진행중 업무');});
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+let agT=null;
+function renderAgendaPreview(){
+  const box=$('#rAgenda');if(!box||!R)return;
+  if(!editable()){box.innerHTML='';return;}
+  const known=new Set(myAgenda.map(a=>a.id));const skip=R.data.agendaSkip||{};
+  const list=agendaFromData(R.data,R.date).filter(a=>!known.has(a.id));
+  box.innerHTML=list.length?`<section class="rsec" id="sec-agenda"><div class="rh"><b>자동 일정 미리보기</b><span class="note">작성한 내용에서 날짜를 찾았어요. 전송하면 그 날짜 보고서의 "오늘 일정"에 자동으로 들어가요. 잘못 찾은 건 빼주세요</span></div>
+    <div class="tbl" style="margin-top:0"><table><thead><tr><th>날짜</th><th>일정</th><th>찾은 곳</th><th>등록</th></tr></thead><tbody>${list.map(a=>`<tr class="${skip[a.id]?'off':''}"><td class="num">${esc(fmtD(a.date))}(${dayName(a.date)})</td><td>${esc(a.title)}</td><td class="note">${esc(a.src)}</td><td><label class="opt" style="padding:4px 8px"><input type="checkbox" data-agskip="${esc(a.id)}" ${skip[a.id]?'':'checked'}><span>등록</span></label></td></tr>`).join('')}</tbody></table></div></section>`:'';
+}
+function todayAgenda(){
+  if(!R)return[];
+  return myAgenda.filter(a=>a.date===R.date||(a.date<R.date&&!a.done)||(a.done&&a.doneDate===R.date)).sort((a,b)=>a.date.localeCompare(b.date)||(a.title||'').localeCompare(b.title||''));
+}
+function renderToday(){
+  const box=$('#rToday');if(!box||!R)return;
+  const list=todayAgenda();const later=myAgenda.filter(a=>!a.done&&a.date>R.date).length;
+  if(!list.length){box.innerHTML=later?`<p class="note" style="margin:0 0 10px">예정된 자동 일정 ${later}건 · 그날 보고서에 표시돼요</p>`:'';return;}
+  const st=R.data.agenda||{};
+  box.innerHTML=`<section class="rsec" id="sec-today"><div class="rh"><b>오늘 일정</b><span class="note">지난 보고서에 적은 날짜에서 자동으로 만들어진 일정이에요. 처리했으면 체크하세요${later?` · 이후 예정 ${later}건`:''}</span></div>
+    ${list.map(a=>{const done=st[a.id]?.done??!!a.done;const over=a.date<R.date&&!a.done;
+      return `<div class="agrow ${over?'late':''}"><label class="opt"><input type="checkbox" data-p="agenda|${esc(a.id)}|done" ${done?'checked':''}><span>${esc(a.title)}<small>${esc(fmtD(a.date))}(${dayName(a.date)}) · ${esc(a.src||'')}${over?' · 날짜 지남':''}${a.from?` · ${esc(fmtD(a.from))} 보고서에서`:''}</small></span></label></div>`;}).join('')}</section>`;
 }
 
 /* ---------- 필드 렌더러 ---------- */
@@ -820,8 +1131,8 @@ function fieldHtml(path,f,val){
     case 'hour':return `<div class="field"${wrapIf}><label for="${id}">${lab}</label><select id="${id}" data-p="${p}">${hourOpts(val||'')}</select></div>`;
     case 'datehour':{const[d,t]=(val||'').split('T');return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="dh"><input type="date" data-p="${p}" data-dh="d" value="${esc(d||'')}" aria-label="${esc(label)} 날짜"><select data-p="${p}" data-dh="h" aria-label="${esc(label)} 시각">${hourOpts(t?t.slice(0,2):'')}</select></div></div>`;}
     case 'imgs':return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="imgs" data-imgs="${p}">${imgsInner(path,val)}</div></div>`;
-    case 'files':return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="files" data-files="${p}" data-accept="${esc(o.accept||'')}">${filesInner(path,val,o.accept)}</div><span class="hint">파일당 700KB까지 · xlsx, xls, csv</span></div>`;
-    default:return `<div class="field"${wrapIf}><label for="${id}">${lab}</label><input id="${id}" type="${type==='tel'?'tel':type==='date'?'date':'text'}" data-p="${p}" value="${esc(val)}" placeholder="${esc(ph||'')}"${type==='tel'?' inputmode="tel"':''}></div>`;
+    case 'files':return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="files" data-files="${p}" data-accept="${esc(o.accept||'')}">${filesInner(path,val,o.accept)}</div><span class="hint">파일당 700KB까지 · ${esc((o.accept||'.xlsx,.xls,.csv').replace(/\./g,'').replace(/,/g,', '))}</span></div>`;
+    default:return `<div class="field"${wrapIf}><label for="${id}">${lab}</label><input id="${id}" type="${type==='tel'?'tel':type==='date'?'date':type==='num'?'number':'text'}"${type==='num'?' min="0" inputmode="numeric"':''} data-p="${p}" value="${esc(val)}" placeholder="${esc(ph||'')}"${type==='tel'?' inputmode="tel"':''}></div>`;
   }
 }
 function imgsInner(path,val){
@@ -840,18 +1151,121 @@ function rowsHtml(dk,list,rows){
   return (rows||[]).map((r,i)=>`<div class="row"><div class="row-h"><b>${esc(list.label)} ${i+1}</b><button type="button" class="rm" data-delrow="${dk}|rows" data-i="${i}">삭제</button></div>${fieldsHtml(`${dk}|rows|${i}`,list.fields,r)}</div>`).join('')
     +`<button type="button" class="add" data-addrow="${dk}|rows">+ ${esc(list.label)} 추가</button>`;
 }
+const won=n=>Math.round(+n||0).toLocaleString('ko-KR')+'원';
+const fmtH=h=>{const m=Math.round((+h||0)*60);return `${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`;};
+// 표 형식 목록 (한 줄에 한 건)
+function cellHtml(path,f,val){
+  const[key,type,label,ph,o={}]=f;const p=esc(path),al=esc(label);
+  if(type==='check')return `<input type="checkbox" data-p="${p}" ${val?'checked':''} aria-label="${al}">`;
+  if(type==='select'||type==='radio')return `<select data-p="${p}" aria-label="${al}"><option value=""></option>${o.opts.map(([v,l])=>`<option value="${esc(v)}" ${val===v?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  if(type==='imgs')return `<div class="imgs" data-imgs="${p}">${imgsInner(path,val)}</div>`;
+  if(type==='date')return `<input type="date" data-p="${p}" value="${esc(val||'')}" aria-label="${al}">`;
+  if(type==='num')return `<input type="number" min="0" step="any" inputmode="decimal" data-p="${p}" value="${esc(val??'')}" aria-label="${al}">`;
+  return `<input type="text" data-p="${p}" value="${esc(val??'')}" aria-label="${al}">`;
+}
+const calcCols=S=>S.calc==='dday'?[['_dday','도래일']]:S.calc==='perg'?[['_perg','g당가격']]:[];
+function calcVal(S,r,base){
+  if(S.calc==='dday'){if(!r.exp)return{t:'미발급',bad:true};const n=DT.diff(r.exp,base);return{t:n>=0?`D-${n}`:`만료 ${-n}일 지남`,bad:n<=30};}
+  if(S.calc==='perg'){const pr=+r.price,g=+r.g;return{t:pr&&g?String(Math.round(pr/g*1000)/1000):''};}
+  return{t:''};
+}
+function tableListHtml(dk,S,rows,base){
+  const cc=calcCols(S);
+  return `<div class="fx tl"><table><thead><tr><th>#</th>${S.fields.map(f=>`<th>${esc(f[2])}</th>`).join('')}${cc.map(c=>`<th>${c[1]}</th>`).join('')}<th><span class="sr">삭제</span></th></tr></thead><tbody>${(rows||[]).map((r,i)=>{const cv=cc.length?calcVal(S,r,base):null;
+    return `<tr><td class="num">${i+1}</td>${S.fields.map(f=>`<td>${cellHtml(`${dk}|rows|${i}|${f[0]}`,f,r[f[0]])}</td>`).join('')}${cv?`<td class="num calc ${cv.bad?'bad':''}" data-calc="${dk}|${i}">${esc(cv.t)}</td>`:''}<td><button type="button" class="rm" data-delrow="${dk}|rows" data-i="${i}" aria-label="${i+1}번 삭제">×</button></td></tr>`;}).join('')}</tbody></table></div>
+    <button type="button" class="add" data-addrow="${dk}|rows">+ ${esc(S.label)} 추가</button>`;
+}
+function tableViewHtml(uid,S,rows,base,grp){
+  const cc=calcCols(S);if(!(rows||[]).length)return '<p class="note" style="margin:0">작성 내용 없음</p>';
+  return `<div class="tbl"><table><thead><tr><th>#</th>${S.fields.map(f=>`<th>${esc(f[2])}</th>`).join('')}${cc.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${rows.map((r,i)=>{const cv=cc.length?calcVal(S,r,base):null;
+    return `<tr class="${cv?.bad?'warnrow':''}"><td class="num">${i+1}</td>${S.fields.map(f=>`<td>${f[1]==='imgs'?`<div class="gthumbs">${(r[f[0]]||[]).map(im=>galThumb(uid,im,f[2],grp)).join('')}</div>`:esc(valText(f,r[f[0]]))}</td>`).join('')}${cv?`<td class="num">${esc(cv.t)}</td>`:''}</tr>`;}).join('')}</tbody></table></div>`;
+}
+function importBtn(dk,S){
+  if(!S.importer)return '';
+  const lab={best:'후보 리뷰 엑셀 가져오기',health:'보건증 엑셀 가져오기',material:'원재료 엑셀 가져오기'}[S.importer];
+  return `<div class="btnrow" style="margin-bottom:10px"><label class="attach"><input type="file" accept=".xlsx,.xls" data-import="${dk}">${esc(lab)}</label>${S.importer==='material'?`<button type="button" class="secondary" data-prevmat>지난달 목록 불러오기</button>`:''}<span class="note">같은 항목은 새 내용으로 바뀌어요</span></div>`;
+}
+
+/* 당근알바 */
+function paySumHtml(c){return `<span>근무일수 <b>${c.days}일</b></span><span>근무시간 <b>${fmtH(c.hours)}</b></span><span>주휴수당 <b>${won(c.weeks.reduce((s,x)=>s+x.hol,0))}</b></span><span>급여합계 <b>${won(c.total)}</b></span><span>공제 3.3% <b>${won(c.ded)}</b></span><span class="net">실지급액 <b>${won(c.net)}</b></span>`;}
+function carrotWorkerHtml(dk,i,w){
+  const b=`${dk}|workers|${i}`;const c=PAY.calc(w);
+  return `<div class="row worker" id="wk-${i}"><div class="row-h"><b data-wname="${i}">${esc(w.name||`알바 ${i+1}`)}</b><button type="button" class="rm" data-delworker="${i}">알바 삭제</button></div>
+    <div class="grid2">${fieldHtml(b+'|name',['name','text','이름'],w.name)}${fieldHtml(b+'|rrn',['rrn','text','주민등록번호','000000-0000000'],w.rrn)}</div>
+    <div class="grid2">${fieldHtml(b+'|phone',['phone','tel','연락처'],w.phone)}${fieldHtml(b+'|bank',['bank','text','계좌번호','은행 계좌번호'],w.bank)}</div>
+    <div class="grid2">${fieldHtml(b+'|wage',['wage','num','시급 (원)'],w.wage??'')}<div></div></div>
+    <div class="fx tl"><table><thead><tr><th>일자</th><th>요일</th><th>주차</th><th>출근</th><th>퇴근</th><th>휴게-점심<br><span class="note">시간</span></th><th>휴게-저녁<br><span class="note">시간</span></th><th>근무시간</th><th><span class="sr">삭제</span></th></tr></thead><tbody>${(w.days||[]).map((r,j)=>{const h=PAY.hours(r);const q=`${b}|days|${j}`;
+      return `<tr><td><input type="date" data-p="${q}|d" value="${esc(r.d||'')}" aria-label="일자"></td><td class="calc" data-wd="${i}|${j}">${r.d?PAY.WD[new Date(r.d+'T00:00').getDay()]:''}</td><td class="calc" data-wkn="${i}|${j}">${r.d?PAY.week(r.d)+'주':''}</td>
+        <td><input type="time" step="300" data-p="${q}|in" value="${esc(r.in||'')}" aria-label="출근"></td><td><input type="time" step="300" data-p="${q}|out" value="${esc(r.out||'')}" aria-label="퇴근"></td>
+        <td><input type="number" step="0.5" min="0" data-p="${q}|b1" value="${esc(r.b1??'')}" aria-label="점심 휴게"></td><td><input type="number" step="0.5" min="0" data-p="${q}|b2" value="${esc(r.b2??'')}" aria-label="저녁 휴게"></td>
+        <td class="calc num" data-hr="${i}|${j}">${h?fmtH(h):''}</td><td><button type="button" class="rm" data-delday="${i}|${j}" aria-label="근무일 삭제">×</button></td></tr>`;}).join('')}</tbody></table></div>
+    <button type="button" class="add" data-addday="${i}">+ 근무일 추가</button>
+    <div class="paysum" data-paysum="${i}">${paySumHtml(c)}</div></div>`;
+}
+function refreshWorker(i){
+  const w=R.data.cs_carrot?.workers?.[i];if(!w)return;const c=PAY.calc(w);
+  (w.days||[]).forEach((r,j)=>{const g=a=>$(`[data-${a}="${i}|${j}"]`);const h=PAY.hours(r);
+    if(g('wd'))g('wd').textContent=r.d?PAY.WD[new Date(r.d+'T00:00').getDay()]:'';if(g('wkn'))g('wkn').textContent=r.d?PAY.week(r.d)+'주':'';if(g('hr'))g('hr').textContent=h?fmtH(h):'';});
+  const s=$(`[data-paysum="${i}"]`);if(s)s.innerHTML=paySumHtml(c);const n=$(`[data-wname="${i}"]`);if(n)n.textContent=w.name||`알바 ${i+1}`;
+}
+const maskRrn=v=>{const s=String(v||'');return s.length>8?s.slice(0,8)+'******':s;};
+function carrotViewHtml(d){
+  const ws=d?.workers||[];if(!ws.length)return '<p class="note" style="margin:0">작성 내용 없음</p>';
+  return `<div class="tbl"><table><thead><tr><th>이름</th><th>주민등록번호</th><th>연락처</th><th>시급</th><th>근무일수</th><th>근무시간</th><th>급여합계</th><th>공제</th><th>실지급액</th></tr></thead><tbody>${ws.map(w=>{const c=PAY.calc(w);
+    return `<tr><td><b>${esc(w.name||'')}</b></td><td class="num">${esc(maskRrn(w.rrn))}</td><td class="num">${esc(w.phone||'')}</td><td class="num">${won(w.wage)}</td><td class="num">${c.days}일</td><td class="num">${fmtH(c.hours)}</td><td class="num">${won(c.total)}</td><td class="num">${won(c.ded)}</td><td class="num"><b>${won(c.net)}</b></td></tr>`;}).join('')}</tbody></table></div><p class="note">상세 근무일과 엑셀 내려받기는 알바급여 탭에서 볼 수 있어요.</p>`;
+}
+
+/* 계산서 */
+let myInv=[];
+function invDay(v,base){if(v.paid)return{t:v.kind==='매출'?'입금 확인':'지급 완료',c:'ok'};if(!v.due)return{t:'기한 없음',c:''};const n=DT.diff(v.due,base);return n<0?{t:`기한 ${-n}일 지남`,c:'bad'}:n===0?{t:'오늘 마감',c:'bad'}:{t:`D-${n}`,c:n<=3?'acc':''};}
+function invTable(list,base,{uid,editable,admin}={}){
+  if(!list.length)return '<p class="note" style="margin:6px 0 0">해당하는 계산서가 없어요.</p>';
+  return `<div class="tbl"><table><thead><tr><th>구분</th>${admin?'<th>담당</th>':''}<th>작성일자</th><th>거래처</th><th>품목</th><th>공급가액</th><th>세액</th><th>합계</th><th>기한</th><th>상태</th><th></th></tr></thead><tbody>${list.map(v=>{const st=invDay(v,base);
+    return `<tr class="${st.c==='bad'?'warnrow':''}"><td><span class="tag ${v.kind==='매출'?'cs':'acc'}">${esc(v.kind)}</span></td>${admin?`<td>${esc(users[v.uid]?.name||'')}</td>`:''}<td class="num">${esc(v.date)}</td><td>${esc(v.name)}</td><td>${esc(v.item)}</td><td class="num">${won(v.supply)}</td><td class="num">${won(v.tax)}</td><td class="num"><b>${won(v.total)}</b></td><td class="num">${esc(fmtD(v.due))}</td><td><span class="tag ${st.c}">${esc(st.t)}</span></td>
+      <td>${editable!==false?`<a href="#" role="button" class="paybtn ${v.paid?'undo':''}" data-pay="${esc(v.uid||uid)}|${esc(v.id)}|${v.paid?'0':'1'}">${v.paid?'되돌리기':(v.kind==='매출'?'입금 확인':'대금지급 완료')}</a>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-pay]');if(!b)return;e.preventDefault();
+  const[uid,id,on]=b.dataset.pay.split('|');
+  try{await updateDoc(doc(db,'users',uid,'invoices',id),on==='1'?{paid:true,paidAt:new Date().toISOString(),paidBy:isAdminUser?'관리자':(me?.name||'')}:{paid:false,paidAt:'',paidBy:''});toast(on==='1'?'처리 완료로 표시했어요':'되돌렸어요');}
+  catch(err){toast(authMsg(err));}
+});
+function invUnpaidSoon(list,base,days){return list.filter(v=>!v.paid&&v.due&&DT.diff(v.due,base)<=days).sort((a,b)=>a.due.localeCompare(b.due));}
+function renderDue(){
+  const box=$('#rDue');if(!box)return;
+  const show=mySections().some(k=>k==='cs.taxinv'||k==='cs.vendorpay');
+  const soon=show?invUnpaidSoon(myInv,R?.date||today(),5):[];
+  box.innerHTML=soon.length?`<section class="rsec flagbox"><div class="rh"><b>계산서 기한 알림</b><span class="note">기한(익월 10일)이 5일 안으로 남았거나 지난 미처리 계산서예요</span></div>${invTable(soon,R?.date||today(),{uid:meUid})}</section>`:'';
+}
+
 function sectionHtml(key){
   const S=SCHEMA[key],dk=DK(key),d=R.data[dk]||{};const rv=R.review?.[dk];
   const flag=rv&&rv.state==='revise';
   let h=`<section class="rsec ${flag?'flag':''}" id="sec-${dk}"><div class="rh"><b>${esc(ITEM[key].label)}</b>${rv&&rv.state==='ok'?'<span class="tag ok">확인됨</span>':''}${flag?'<span class="tag bad">보완 요청</span>':''}${S.hint?`<span class="note">${esc(S.hint)}</span>`:''}</div>`;
   if(flag&&rv.note)h+=`<div class="flagnote">대표님: ${esc(rv.note)}</div>`;
+  if(key==='cs.health')h+=healthWarn(d.rows,R.date);
+  if(key==='cs.bestreview'&&(d.rows||[]).some(r=>r.picked))h+=`<div class="banner ok" style="margin-bottom:10px"><b>선정됨</b><span>${(d.rows||[]).filter(r=>r.picked).map(r=>esc(r.who||'아이디 없음')).join(', ')} · 다음날 회신 업무로 등록됐어요</span></div>`;
   if(S.type==='ship'){
     const p=`${dk}|files`;
     h+=`<div class="field"><span class="lb">엑셀·CSV 파일 (한진 송장 + 네이버 주문내역, 여러 개 가능)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div>
       <span class="hint">올리면 바로 비교해요. 700KB가 넘는 파일은 비교만 하고 원본은 보관하지 않아요.</span></div>
-      <div id="shipResult">${shipResultHtml(d.result)}</div>
-      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reship>다시 비교하기</button>`:''}
+      <div id="shipResult-${dk}">${shipResultHtml(d.result,{dk,org:showOrg(dk,R.date,R.kind),ok:d.orgok,edit:true})}</div>
+      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="${dk}">다시 비교하기</button>`:''}
       ${fieldHtml(dk+'|memo',['memo','textarea','메모 (배송일 변경·미발송 사유 등)'],d.memo)}`;
+  }else if(S.type==='fixedrows'){
+    h+=`<div class="fx"><table><thead><tr><th>종류</th>${S.cols.map(c=>`<th>${esc(c[2])}</th>`).join('')}</tr></thead><tbody>${S.rows.map(([rk,rl])=>`<tr><td class="k">${esc(rl)}</td>${S.cols.map(([ck,ct,cl])=>`<td><input ${ct==='num'?'type="number" min="0" inputmode="numeric"':'type="text"'} data-p="${dk}|${rk}|${ck}" value="${esc(d[rk]?.[ck]??'')}" aria-label="${esc(rl)} ${esc(cl)}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }else if(S.type==='friinv'){
+    const p=`${dk}|files`;
+    h+=`<div class="field"><span class="lb">금요일 한진 송장 파일</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div><span class="hint">올리면 바로 확인해요</span></div>
+      ${friResultHtml(d.result,d.ok,true)}
+      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="cs_friinv">다시 확인하기</button>`:''}
+      ${fieldHtml(dk+'|memo',['memo','textarea','메모 (연락한 고객·변경 내용)'],d.memo)}`;
+  }else if(S.type==='ordercount'){
+    const p=`${dk}|files`;
+    h+=`<div class="field"><span class="lb">이번 달 네이버 주문내역 엑셀</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div><span class="hint">700KB가 넘는 파일은 집계만 하고 원본은 보관하지 않아요</span></div>
+      ${countResultHtml(d.result)}
+      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="cs_ordercount">다시 집계하기</button>`:''}
+      <div class="field" style="margin-top:10px"><span class="lb">다른 채널 판매수량 (직접 입력)</span></div>${rowsHtml(dk,{label:'기타 채널',fields:[['ch','text','채널'],['prod','text','상품명'],['qty','num','수량']]},d.rows)}`;
   }else if(S.type==='channels'){
     h+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>chCardHtml(dk,c,l,b,cls,d[c]||{})).join('')}</div>`;
     if(S.extra)h+=fieldsHtml(dk,S.extra,d);
@@ -859,7 +1273,23 @@ function sectionHtml(key){
     h+=fieldsHtml(dk,S.fields,d);
     if(S.list){const si=S.list.showIf;h+=`<div ${si?`data-showif="${dk}|${si[0]}" data-showval="${si[1]}"`:''}><div class="field"><span class="lb">${esc(S.list.label)}</span></div>${rowsHtml(dk,S.list,d.rows)}</div>`;}
   }else if(S.type==='list'){
-    h+=rowsHtml(dk,{label:S.label,fields:S.fields},d.rows);
+    h+=importBtn(dk,S);
+    h+=S.table?tableListHtml(dk,S,d.rows,R.date):rowsHtml(dk,{label:S.label,fields:S.fields},d.rows);
+  }else if(S.type==='carrot'){
+    h+=(d.workers||[]).map((w,i)=>carrotWorkerHtml(dk,i,w)).join('')+`<button type="button" class="add" data-addworker>+ 알바 추가</button>`
+      +fieldsHtml(dk,[['files','files','출퇴근 기록부 원본 (선택)','',{accept:'.xlsx,.xls,.csv,.pdf'}]],d);
+  }else if(S.type==='taxinv'){
+    const p=`${dk}|files`;const res=d.result;
+    h+=`${fieldHtml(dk+'|kindSel',['kindSel','radio','파일 구분','',{opts:[['auto','자동 구분'],['매출','매출'],['매입','매입']]}],d.kindSel||'auto')}
+      <div class="field"><span class="lb">국세청 전자세금계산서 목록 엑셀 (매출·매입 각각 올려도 돼요)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div></div>
+      ${res?`${probHtml(res)}<div class="shipsum"><span class="tag cs">매출 ${res.sales||0}건</span><span class="tag acc">매입 ${res.buys||0}건</span><span class="note">${esc(fmtT(res.at))} 정리</span></div>`:''}
+      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="cs_taxinv">다시 정리하기</button>`:''}
+      <h4 class="subh">미처리 계산서 <span class="note">기한 순 · 처리하면 목록에서 빠져요</span></h4>${invTable(myInv.filter(v=>!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||'')),R.date,{uid:meUid})}
+      ${fieldHtml(dk+'|memo',['memo','textarea','누락·확인 필요 건'],d.memo)}`;
+  }else if(S.type==='vendorpay'){
+    const unpaid=myInv.filter(v=>v.kind==='매입'&&!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+    h+=`<h4 class="subh" style="margin-top:0">미지급 매입 계산서 <span class="note">${unpaid.length}건 · 합계 ${won(unpaid.reduce((s,v)=>s+(+v.total||0),0))}</span></h4>${invTable(unpaid,R.date,{uid:meUid})}
+      <h4 class="subh">계산서 없는 거래처 대금</h4>${tableListHtml(dk,S,d.rows,R.date)}`;
   }
   return h+'</section>';
 }
@@ -872,22 +1302,32 @@ function onField(e){
   let v;
   if(el.dataset.dh){const box=el.closest('.dh');const d=box.querySelector('[data-dh=d]').value,h=box.querySelector('[data-dh=h]').value;v=d?`${d}T${h||'09'}:00`:'';}
   else if(el.type==='checkbox')v=el.checked;else v=el.value;
-  setP(R.data,p.split('|'),v);
+  const ps=p.split('|');setP(R.data,ps,v);
   if(el.type==='radio'||el.type==='checkbox')applyShowIf();
+  if(ps[0]==='cs_carrot'&&ps[1]==='workers')refreshWorker(+ps[2]);
+  const S=SCHEMA[KD(ps[0])];
+  if(S?.calc&&ps[1]==='rows'){const c=$(`[data-calc="${ps[0]}|${ps[2]}"]`);if(c){const cv=calcVal(S,R.data[ps[0]].rows[+ps[2]]||{},R.date);c.textContent=cv.t;c.classList.toggle('bad',!!cv.bad);}}
+  clearTimeout(agT);agT=setTimeout(renderAgendaPreview,900);
   scheduleSave();
 }
 $('#rForm').addEventListener('input',onField);
-$('#rForm').addEventListener('change',e=>{if(e.target.dataset.up||e.target.dataset.upfile)return;onField(e);});
+$('#rForm').addEventListener('change',e=>{if(e.target.dataset.up||e.target.dataset.upfile||e.target.dataset.import)return;onField(e);});
+$('#rForm').addEventListener('change',async e=>{
+  const im=e.target.closest('[data-import]');if(!im||!editable())return;const f=im.files[0];im.value='';if(!f)return;
+  const lab=im.closest('.attach');lab.classList.add('busy');
+  try{await importList(im.dataset.import,f);}catch(err){toast('가져오지 못했어요: '+f.name);}finally{lab.classList.remove('busy');}
+});
 function readDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
 const fileBuf={};   // 이번 세션에 읽은 파일 내용 (비교용)
 $('#rForm').addEventListener('change',async e=>{
   const up=e.target.closest('[data-upfile]');if(!up||!editable())return;
   const path=up.dataset.upfile;const ps=path.split('|');const lab=up.closest('.attach');lab.classList.add('busy');
-  const isShip=ps[0]==='cs_ship';
+  const isShip=!!PARSE[ps[0]]&&ps.length===2;   // 엑셀 자동 분석 칸
   const arr=Array.isArray(getP(R.data,ps))?getP(R.data,ps).slice():[];
-  const okExt=/\.(xlsx|xls|csv)$/i;
+  const exts=(up.getAttribute('accept')||'.xlsx,.xls,.csv').split(',').map(x=>x.trim().replace('.','').toLowerCase()).filter(Boolean);
   for(const f of [...up.files]){
-    if(!okExt.test(f.name)){toast(`${f.name}: 엑셀(xlsx, xls) 또는 CSV 파일만 올릴 수 있어요`);continue;}
+    const ext=(f.name.split('.').pop()||'').toLowerCase();
+    if(!exts.includes(ext)){toast(`${f.name}: ${exts.join(', ')} 파일만 올릴 수 있어요`);continue;}
     try{
       const buf=await f.arrayBuffer();
       if(f.size>FILE_MAX){
@@ -903,7 +1343,7 @@ $('#rForm').addEventListener('change',async e=>{
   setP(R.data,ps,arr);up.value='';lab.classList.remove('busy');
   const box=$(`[data-files="${CSS.escape(path)}"]`);if(box)box.innerHTML=filesInner(path,arr,box.dataset.accept);
   R.dirty=true;
-  if(isShip){await analyzeShip();rerenderSection('cs_ship');}else saveDraft();
+  if(isShip){await PARSE[ps[0]]();rerenderSection(ps[0]);}else saveDraft();
 });
 
 /* ---------- 주문접수 완료: 캡쳐 시각 확인 ---------- */
@@ -971,6 +1411,128 @@ function chCardHtml(dk,c,l,b,cls,cd){
 }
 function paintCh(c){const el=$('#ch-'+c);if(!el)return;const ch=CHS.find(x=>x[0]===c);el.outerHTML=chCardHtml('cs_order',ch[0],ch[1],ch[2],ch[3],R.data.cs_order?.[c]||{});}
 
+/* ---------- 엑셀 자동 분석 (공통) ---------- */
+async function readSheets(files){
+  const sets=[],problems=[];
+  try{await ensureXLSX();}catch(e){return{sets,problems:['엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요'],fatal:true};}
+  for(const f of files||[]){
+    const key=f.id||f.tmp;let buf=fileBuf[key];
+    if(!buf&&f.id){try{const s=await getDoc(doc(db,'users',meUid,'files',f.id));if(s.exists()){buf=await (await fetch(s.data().data)).arrayBuffer();fileBuf[key]=buf;}}catch(e){}}
+    if(!buf){problems.push(`${f.name}: 원본이 보관되지 않아 다시 읽을 수 없어요 (다시 올려주세요)`);continue;}
+    try{const rows=SHIP.rows(XLSX,buf,f.name);sets.push({name:f.name,rows,kind:SHIP.detect(rows)});}
+    catch(e){problems.push(/password|encrypt|protected/i.test(e.message||'')?`${f.name}: 비밀번호가 걸린 파일이에요. 비밀번호를 풀고 다시 저장해서 올려주세요`:`${f.name}: 파일을 읽지 못했어요`);}
+  }
+  return{sets,problems};
+}
+async function analyzeFri(){
+  const d=R.data.cs_friinv||{};const files=d.files||[];
+  if(!files.length){setP(R.data,['cs_friinv','result'],null);R.dirty=true;saveDraft();return;}
+  const{sets,problems}=await readSheets(files);const hanjin=[];
+  sets.forEach(x=>{if(x.kind==='hanjin')hanjin.push(...SHIP.parseHanjin(x.rows,x.name));else problems.push(`${x.name}: 한진 송장 파일(운송장번호 열)이 아니에요`);});
+  setP(R.data,['cs_friinv','result'],{count:hanjin.length,hits:SHIP.orgHits(hanjin).slice(0,200),problems,at:new Date().toISOString()});
+  R.dirty=true;saveDraft();
+}
+async function analyzeCount(){
+  const d=R.data.cs_ordercount||{};const files=d.files||[];
+  if(!files.length){setP(R.data,['cs_ordercount','result'],null);R.dirty=true;saveDraft();return;}
+  const{sets,problems}=await readSheets(files);const naver=[];
+  sets.forEach(x=>{if(x.kind==='naver')naver.push(...SHIP.parseNaver(x.rows,x.name));else problems.push(`${x.name}: 네이버 주문내역(상품주문번호 열)이 아니에요`);});
+  const c=SHIP.countBy(naver);c.rows=c.rows.slice(0,200);
+  setP(R.data,['cs_ordercount','result'],{...c,problems,at:new Date().toISOString()});
+  R.dirty=true;saveDraft();
+}
+async function analyzeTax(){
+  const d=R.data.cs_taxinv||{};const files=d.files||[];
+  if(!files.length){setP(R.data,['cs_taxinv','result'],null);R.dirty=true;saveDraft();return;}
+  const{sets,problems}=await readSheetsRaw(files);let sales=0,buys=0;const now=new Date().toISOString();const force=d.kindSel&&d.kindSel!=='auto'?d.kindSel:'';
+  for(const x of sets){
+    const r=IMP.invoices(x.rows,force);
+    if(!r.list.length){problems.push(`${x.name}: 승인번호 열이 있는 국세청 계산서 목록이 아니에요`);continue;}
+    if(!r.kind){problems.push(`${x.name}: 매출인지 매입인지 알 수 없어요. 위에서 "매출" 또는 "매입"을 고른 뒤 다시 정리해주세요`);continue;}
+    for(const v of r.list){const id=v.no.replace(/[^A-Za-z0-9_-]/g,'');if(!id)continue;
+      await setDoc(doc(db,'users',meUid,'invoices',id),{...v,file:x.name,report:R.date,updatedAt:now},{merge:true});
+      if(v.kind==='매출')sales++;else buys++;}
+  }
+  setP(R.data,['cs_taxinv','result'],{sales,buys,problems,at:now});R.dirty=true;saveDraft();
+}
+// 날짜를 원래 값(엑셀 일련번호)으로 읽는 버전 — 시간대 때문에 하루 밀리는 문제 방지
+async function readSheetsRaw(files,allSheets){
+  const sets=[],problems=[];
+  try{await ensureXLSX();}catch(e){return{sets,problems:['엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요']};}
+  for(const f of files||[]){
+    const key=f.id||f.tmp;let buf=f.buf||fileBuf[key];
+    if(!buf&&f.id){try{const s=await getDoc(doc(db,'users',meUid,'files',f.id));if(s.exists()){buf=await (await fetch(s.data().data)).arrayBuffer();fileBuf[key]=buf;}}catch(e){}}
+    if(!buf){problems.push(`${f.name}: 원본이 보관되지 않아 다시 읽을 수 없어요 (다시 올려주세요)`);continue;}
+    try{
+      let wb;if(/\.csv$/i.test(f.name)){let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){t=new TextDecoder('euc-kr').decode(buf);}wb=XLSX.read(t.replace(/^﻿/,''),{type:'string'});}
+      else wb=XLSX.read(buf,{type:'array'});
+      const names=allSheets?wb.SheetNames:[wb.SheetNames[0]];
+      for(const n of names)sets.push({name:allSheets?n:f.name,file:f.name,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true})});
+    }catch(e){problems.push(/password|encrypt|protected/i.test(e.message||'')?`${f.name}: 비밀번호가 걸린 파일이에요. 비밀번호를 풀고 다시 저장해서 올려주세요`:`${f.name}: 파일을 읽지 못했어요`);}
+  }
+  return{sets,problems};
+}
+const PARSE={cs_ship:()=>analyzeShip('cs_ship'),cs_satinv:()=>analyzeShip('cs_satinv'),cs_ordercount:()=>analyzeCount(),cs_taxinv:()=>analyzeTax()};
+
+/* ---------- 엑셀에서 목록 가져오기 (베스트리뷰·보건증·원재료) ---------- */
+let zipReady=null;
+function ensureZip(){if(window.JSZip)return Promise.resolve();if(!zipReady)zipReady=loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js').catch(e=>{zipReady=null;throw e;});return zipReady;}
+// 엑셀에 붙여넣은 그림 → {행번호: Blob}
+async function xlsxImagesByRow(buf){
+  await ensureZip();const z=await JSZip.loadAsync(buf);const out={};
+  for(const f of Object.keys(z.files).filter(f=>/^xl\/drawings\/drawing\d+\.xml$/.test(f))){
+    const xml=await z.file(f).async('string');const relF=z.file(f.replace('drawings/','drawings/_rels/')+'.rels');if(!relF)continue;
+    const rels=await relF.async('string');const rmap={};for(const m of rels.matchAll(/Id="(rId\d+)"[^>]*Target="([^"]+)"/g))rmap[m[1]]=m[2];
+    for(const m of xml.matchAll(/<xdr:from>\s*<xdr:col>(\d+)<\/xdr:col>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>[\s\S]*?r:embed="(rId\d+)"/g)){
+      const tgt=rmap[m[3]];if(!tgt)continue;const path='xl/'+tgt.replace(/^\.\.\//,'');const zf=z.file(path);if(!zf)continue;
+      if(out[+m[2]])continue;const ext=(path.split('.').pop()||'png').toLowerCase();
+      out[+m[2]]=new File([await zf.async('blob')],`review-${m[2]}.${ext}`,{type:ext==='jpg'||ext==='jpeg'?'image/jpeg':'image/'+ext});
+    }
+  }
+  return out;
+}
+async function importList(dk,file){
+  const S=SCHEMA[KD(dk)];const buf=await file.arrayBuffer();
+  const{sets,problems}=await readSheetsRaw([{name:file.name,buf}],S.importer==='material');
+  if(problems.length){toast(problems[0]);return;}
+  let rows=[],keyF;
+  if(S.importer==='best'){
+    keyF='no';const t=IMP.table(sets[0].rows,{'리뷰글번호':'no','작성날짜':'date','아이디':'who','주문자명':'buyer','구매내역':'items'},['리뷰글번호','아이디']);
+    let imgs={};try{imgs=await xlsxImagesByRow(buf);}catch(e){toast('캡쳐 이미지는 읽지 못했어요. 글자 내용만 가져올게요');}
+    for(const r of t){const o={no:String(r.no??'').trim(),date:DT.norm(r.date),who:String(r.who??'').trim(),buyer:String(r.buyer??'').trim(),items:String(r.items??'').trim(),imgs:[]};
+      const f=imgs[r._row];if(f){try{o.imgs=[await uploadImg(meUid,f,{section:dk,report:R.date})];}catch(e){}}
+      rows.push(o);}
+  }else if(S.importer==='health'){
+    keyF='name';rows=IMP.table(sets[0].rows,{'성명':'name','직책':'title','직무':'duty','보건증':'issued','유효기간':'exp'},['성명','유효기간']).map(r=>({name:String(r.name??'').trim(),title:String(r.title??'').trim(),duty:String(r.duty??'').trim(),issued:DT.norm(r.issued),exp:DT.norm(r.exp)})).filter(r=>r.name);
+  }else if(S.importer==='material'){
+    keyF='item';const sh=sets.find(x=>IMP.headerRow(x.rows,['내용','가격'])>=0);
+    if(sh)rows=IMP.table(sh.rows,{'분류':'cat','내용':'item','사이트':'site','가격':'price','g':'g','변동가격':'change'},['내용','가격']).filter(r=>r.item).map(r=>({cat:String(r.cat??'').trim(),item:String(r.item).trim(),site:String(r.site??'').trim(),price:IMP.num(r.price),g:IMP.num(r.g),change:String(r.change??'').trim()}));
+  }
+  if(!rows.length){toast('가져올 내용을 찾지 못했어요. 머리글(첫 줄) 이름이 양식과 같은지 확인해주세요');return;}
+  const cur=(getP(R.data,[dk,'rows'])||[]).slice();
+  for(const r of rows){const i=cur.findIndex(x=>x[keyF]&&x[keyF]===r[keyF]);if(i>=0)cur[i]={...cur[i],...r};else cur.push(r);}
+  setP(R.data,[dk,'rows'],cur);rerenderSection(dk);R.dirty=true;saveDraft();
+  toast(`${rows.length}건을 가져왔어요`);
+}
+function probHtml(res){return (res?.problems||[]).length?`<div class="flagnote" style="margin-top:8px">${res.problems.map(esc).join('<br>')}</div>`:'';}
+function friResultHtml(res,okMap,editable){
+  if(!res)return '';
+  const hits=res.hits||[];
+  return `${probHtml(res)}<div class="shipsum"><span class="tag">송장 ${res.count}건</span><span class="tag ${hits.length?'bad':'ok'}">관공서·회사 의심 ${hits.length}건</span><span class="note">${esc(fmtT(res.at))} 확인</span></div>
+    ${hits.length?`<div class="tbl"><table><thead><tr><th>주말 수령 확인</th><th>송장번호</th><th>받는분</th><th>주소</th><th>걸린 단어</th></tr></thead><tbody>${hits.map(h=>{const ok=!!okMap?.[h.inv];
+      return `<tr><td>${editable?`<label class="opt" style="padding:5px 8px"><input type="checkbox" data-p="cs_friinv|ok|${esc(h.inv)}" ${ok?'checked':''}><span>확인</span></label>`:(ok?'<span class="tag ok">확인</span>':'<span class="tag bad">미확인</span>')}</td><td class="num">${esc(h.inv)}</td><td>${esc(h.rcv)}</td><td>${esc(h.addr)}</td><td><b>${esc(h.kw)}</b></td></tr>`;}).join('')}</tbody></table></div>`:'<p class="note">관공서·회사로 보이는 송장이 없어요.</p>'}`;
+}
+function countResultHtml(res){
+  if(!res)return '';
+  return `${probHtml(res)}<div class="shipsum"><span class="tag">주문 ${res.orders||0}건</span><span class="tag acc">총 판매수량 ${res.total||0}개</span><span class="tag">상품 ${(res.rows||[]).length}종</span><span class="note">${esc(fmtT(res.at))} 집계</span></div>
+    ${(res.rows||[]).length?`<div class="tbl"><table><thead><tr><th>순위</th><th>상품명</th><th>수량</th></tr></thead><tbody>${res.rows.map((r,i)=>`<tr><td class="num">${i+1}</td><td>${esc(r.p)}</td><td class="num"><b>${r.q}</b></td></tr>`).join('')}</tbody></table></div>`:''}`;
+}
+function healthWarn(rows,base){
+  const lim=new Date(base+'T00:00');lim.setDate(lim.getDate()+30);const L=CALC.ymd(lim);
+  const w=(rows||[]).filter(r=>r.exp&&r.exp<=L);
+  return w.length?`<div class="flagnote" style="margin-top:8px">보건증 만료 임박·지남: ${w.map(r=>`${esc(r.name||'이름 없음')} (${esc(fmtD(r.exp))}${r.exp<base?' 만료':''})`).join(', ')}</div>`:'';
+}
+
 /* ---------- 한진 × 네이버 대조 실행 ---------- */
 let xlsxReady=null;
 function ensureXLSX(){
@@ -978,10 +1540,12 @@ function ensureXLSX(){
   if(!xlsxReady)xlsxReady=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=()=>{xlsxReady=null;rej(new Error('load'));};document.head.appendChild(s);});
   return xlsxReady;
 }
-async function analyzeShip(){
-  const ps=['cs_ship'];const d=getP(R.data,ps)||{};const files=d.files||[];
-  const box=$('#shipResult');
-  if(!files.length){setP(R.data,['cs_ship','result'],null);if(box)box.innerHTML='';R.dirty=true;saveDraft();return;}
+// 금요일 출고분(또는 주간보고일)엔 관공서·회사 주소 확인을 함께 보여줌
+function showOrg(dk,date,kind){return dk==='cs_satinv'||new Date(date+'T00:00').getDay()===5||(kind&&kind!=='daily');}
+async function analyzeShip(dk='cs_ship'){
+  const ps=[dk];const d=getP(R.data,ps)||{};const files=d.files||[];
+  const box=$('#shipResult-'+dk);
+  if(!files.length){setP(R.data,[dk,'result'],null);if(box)box.innerHTML='';R.dirty=true;saveDraft();return;}
   if(box)box.innerHTML='<p class="note">파일을 읽고 비교하는 중…</p>';
   try{await ensureXLSX();}catch(e){if(box)box.innerHTML='<p class="note" style="color:var(--bad)">엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 "다시 비교하기"를 눌러주세요.</p>';return;}
   const naver=[],hanjin=[],problems=[];
@@ -1000,16 +1564,22 @@ async function analyzeShip(){
   let res;
   if(!naver.length||!hanjin.length){res={missing:!naver.length?'네이버 주문내역':'한진 송장',naverRows:naver.length,hanjinCount:hanjin.length};}
   else res=SHIP.compare(naver,hanjin);
+  res.org=SHIP.orgHits(hanjin).slice(0,200);
   res.problems=problems;res.at=new Date().toISOString();
-  setP(R.data,['cs_ship','result'],res);
-  if(box)box.innerHTML=shipResultHtml(res);
+  setP(R.data,[dk,'result'],res);
+  if(box)box.innerHTML=shipResultHtml(res,{dk,org:showOrg(dk,R.date,R.kind),ok:getP(R.data,[dk,'orgok']),edit:true});
   R.dirty=true;saveDraft();
 }
 function shipTable(rows,cols){
   if(!rows.length)return '<p class="note" style="margin:4px 0 0">없음</p>';
   return `<div class="tbl"><table><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c[0]]??'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
-function shipResultHtml(res){
+function orgHtml(res,o){
+  if(!o?.org||!res?.org)return '';const hits=res.org;
+  return `<details class="shipd" ${hits.length?'open':''}><summary><b>관공서·회사 주소 확인</b> <span class="note">주말에 받을 수 없는 곳일 수 있어요 · ${hits.length}건</span></summary>${hits.length?`<div class="tbl"><table><thead><tr><th>주말 수령 확인</th><th>송장번호</th><th>받는분</th><th>주소</th><th>걸린 단어</th></tr></thead><tbody>${hits.map(h=>{const ok=!!o.ok?.[h.inv];
+    return `<tr><td>${o.edit?`<label class="opt" style="padding:5px 8px"><input type="checkbox" data-p="${o.dk}|orgok|${esc(h.inv)}" ${ok?'checked':''}><span>확인</span></label>`:(ok?'<span class="tag ok">확인</span>':'<span class="tag bad">미확인</span>')}</td><td class="num">${esc(h.inv)}</td><td>${esc(h.rcv)}</td><td>${esc(h.addr)}</td><td><b>${esc(h.kw)}</b></td></tr>`;}).join('')}</tbody></table></div>`:'<p class="note">관공서·회사로 보이는 송장이 없어요.</p>'}</details>`;
+}
+function shipResultHtml(res,o){
   if(!res)return '';
   const pr=(res.problems||[]).length?`<div class="flagnote" style="margin-top:8px">${res.problems.map(esc).join('<br>')}</div>`:'';
   if(res.missing)return `${pr}<p class="note" style="margin:8px 0 0">${esc(res.missing)} 파일이 없어서 비교하지 못했어요. 한진 송장 엑셀과 네이버 주문내역 엑셀을 함께 올려주세요. (네이버 ${res.naverRows||0}행 · 한진 ${res.hanjinCount||0}건 읽음)</p>`;
@@ -1022,6 +1592,7 @@ function shipResultHtml(res){
     <details class="shipd" ${c.dup?'open':''}><summary><b>중복 · 이미 송장이 나간 주문</b> <span class="note">네이버에서 발송처리해야 할 주문이에요 · ${c.dup||0}행</span></summary>${shipTable(res.dup,[['ord','주문번호'],['po','상품주문번호'],['buyer','구매자명'],['rcv','수취인명'],['prod','상품명'],['inv','한진 송장'],['why','일치 항목']])}${more(c.dup,res.dup)}</details>
     <details class="shipd" ${c.partial?'open':''}><summary><b style="color:var(--bad)">확인필요 · 일부만 일치</b> <span class="note">직접 확인해주세요 · ${c.partial||0}행</span></summary>${shipTable(res.partial,[['ord','주문번호'],['buyer','구매자명'],['rcv','수취인명'],['prod','상품명'],['inv','후보 송장'],['hrcv','한진 받는분'],['why','일치 항목']])}${more(c.partial,res.partial)}</details>
     <details class="shipd" ${c.unshipped?'open':''}><summary><b>미발송 · 한진 송장 없음</b> <span class="note">${c.unshipped||0}행</span></summary>${shipTable(res.unshipped,[['ord','주문번호'],['po','상품주문번호'],['buyer','구매자명'],['rcv','수취인명'],['prod','상품명'],['qty','수량']])}${more(c.unshipped,res.unshipped)}</details>
+    ${orgHtml(res,o)}
     <details class="shipd"><summary><b>한진에만 있는 송장</b> <span class="note">자사몰·카카오·토스 주문 등 · ${c.hanjinOnly||0}건</span></summary>${shipTable(res.hanjinOnly,[['seq','순번'],['inv','송장번호'],['rcv','받는분'],['prod','품목명']])}${more(c.hanjinOnly,res.hanjinOnly)}</details>`;
 }
 document.addEventListener('click',async e=>{
@@ -1037,7 +1608,7 @@ async function saveDraft(){
   if(!R||!editable())return;
   try{
     const ts=new Date().toISOString();R.lastSaved=ts;
-    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:R.status,data:R.data,updatedAt:ts},{merge:true});
+    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:R.status,kind:R.kind||'daily',data:R.data,updatedAt:ts},{merge:true});
     R.dirty=false;const t=new Date();$('#saveMeta').textContent=`자동 저장됨 ${pad(t.getHours())}:${pad(t.getMinutes())}`;
   }catch(e){$('#saveMeta').textContent='저장 실패 · 인터넷 연결을 확인해주세요';}
 }
@@ -1065,13 +1636,35 @@ $('#rForm').addEventListener('click',async e=>{
   if(rf){e.stopPropagation();const path=rf.dataset.rmfile;const ps=path.split('|');const arr=(getP(R.data,ps)||[]).slice();const[f]=arr.splice(+rf.dataset.i,1);setP(R.data,ps,arr);
     const box=$(`[data-files="${CSS.escape(path)}"]`);if(box)box.innerHTML=filesInner(path,arr,box.dataset.accept);
     if(f&&f.id)deleteDoc(doc(db,'users',meUid,'files',f.id)).catch(()=>{});R.dirty=true;
-    if(ps[0]==='cs_ship'){await analyzeShip();rerenderSection('cs_ship');}else saveDraft();return;}
-  if(e.target.closest('[data-reship]')){await analyzeShip();return;}
+    if(PARSE[ps[0]]&&ps.length===2){await PARSE[ps[0]]();rerenderSection(ps[0]);}else saveDraft();return;}
+  const rp=e.target.closest('[data-reparse]');if(rp){await PARSE[rp.dataset.reparse]();rerenderSection(rp.dataset.reparse);return;}
   const add=e.target.closest('[data-addrow]');
   if(add){const ps=add.dataset.addrow.split('|');const rows=(getP(R.data,ps)||[]).slice();rows.push({});setP(R.data,ps,rows);rerenderSection(ps[0]);scheduleSave();return;}
   const del=e.target.closest('[data-delrow]');
   if(del){if(!(await ask('이 항목을 삭제할까요?','삭제')))return;const ps=del.dataset.delrow.split('|');const rows=(getP(R.data,ps)||[]).slice();const[r]=rows.splice(+del.dataset.i,1);
-    (r?.imgs||[]).forEach(im=>removeImg(meUid,im.id));setP(R.data,ps,rows);rerenderSection(ps[0]);scheduleSave();}
+    (r?.imgs||[]).forEach(im=>removeImg(meUid,im.id));setP(R.data,ps,rows);rerenderSection(ps[0]);scheduleSave();return;}
+  const ags=e.target.closest('[data-agskip]');
+  if(ags){const sk={...(R.data.agendaSkip||{})};if(ags.checked)delete sk[ags.dataset.agskip];else sk[ags.dataset.agskip]=true;R.data.agendaSkip=sk;ags.closest('tr')?.classList.toggle('off',!ags.checked);scheduleSave();return;}
+  // 당근알바
+  const ws=()=>{const d=R.data.cs_carrot=R.data.cs_carrot||{};d.workers=d.workers||[];return d.workers;};
+  if(e.target.closest('[data-addworker]')){const w=ws();const prev=w[w.length-1];w.push({name:'',rrn:'',phone:'',bank:'',wage:prev?.wage??'',days:[]});rerenderSection('cs_carrot');scheduleSave();$(`#wk-${w.length-1}`)?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const ad=e.target.closest('[data-addday]');
+  if(ad){const w=ws()[+ad.dataset.addday];if(!w)return;w.days=w.days||[];const last=w.days[w.days.length-1];
+    const d=last?.d?DT.addDays(last.d,1):R.date.slice(0,8)+'01';
+    w.days.push({d,in:last?.in||'',out:last?.out||'',b1:last?.b1??'',b2:last?.b2??''});rerenderSection('cs_carrot');scheduleSave();return;}
+  const dd=e.target.closest('[data-delday]');
+  if(dd){const[i,j]=dd.dataset.delday.split('|').map(Number);const w=ws()[i];if(!w)return;w.days.splice(j,1);rerenderSection('cs_carrot');scheduleSave();return;}
+  const dw=e.target.closest('[data-delworker]');
+  if(dw){const i=+dw.dataset.delworker;const w=ws()[i];if(!w)return;if(!(await ask(`${w.name||`알바 ${i+1}`}의 근무기록을 모두 삭제할까요?`,'삭제')))return;ws().splice(i,1);rerenderSection('cs_carrot');scheduleSave();return;}
+  // 원재료: 지난달 목록
+  if(e.target.closest('[data-prevmat]')){
+    const cur=R.data.cs_material?.rows||[];
+    if(cur.length&&!(await ask('지금 적힌 목록을 지난달 목록으로 바꿀까요?','바꾸기')))return;
+    let rows=null,src='';
+    try{const ym=R.date.slice(0,7);const pm=DT.addDays(ym+'-01',-1).slice(0,7);const s=await getDoc(doc(db,'prices',pm));if(s.exists()&&(s.data().rows||[]).length){rows=s.data().rows;src=`${+pm.slice(5)}월 승인 목록`;}}catch(err){}
+    if(!rows){try{const q=await getDocs(query(collection(db,'users',meUid,'reports'),orderBy('date','desc'),limit(62)));const hit=q.docs.map(x=>x.data()).find(x=>x.date<R.date&&(x.data?.cs_material?.rows||[]).length);if(hit){rows=hit.data.cs_material.rows;src=`${fmtD(hit.date)} 보고서`;}}catch(err){}}
+    if(!rows){toast('지난달 원재료 목록이 없어요. 엑셀로 가져오거나 직접 입력해주세요');return;}
+    setP(R.data,['cs_material','rows'],rows.map(r=>({cat:r.cat||'',item:r.item||'',site:r.site||'',price:r.price??'',g:r.g??'',change:''})));rerenderSection('cs_material');scheduleSave();toast(`${src}을 불러왔어요. 바뀐 가격만 고쳐주세요`);return;}
 },true);
 
 /* ---------- 진행중 업무 (보고서 안) ---------- */
@@ -1083,7 +1676,7 @@ function isLate(t){if(t.status==='done')return false;if(t.dueAt)return Date.now(
 function sortTasks(a,b){return((ORDER[a.status]??9)-(ORDER[b.status]??9))||((a.dueAt||'9999').localeCompare(b.dueAt||'9999'));}
 function taskHead(t,who){
   const late=isLate(t);
-  return `<div class="th1">${who||''}<b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${t.today?'<span class="tag bad">금일 마무리</span>':''}</div>
+  return `<div class="th1">${who||''}<b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${t.today?'<span class="tag bad">금일 마무리</span>':''}${t.status!=='done'&&t.dueAt&&t.dueAt.slice(0,10)===(R?.date||today())?'<span class="tag acc">오늘 마감</span>':''}</div>
    <div class="when ${late?'late':''}">${t.startAt?esc(fmtDH(t.startAt))+' 시작 · ':''}${t.dueAt?esc(fmtDH(t.dueAt))+' 완료 예정':'완료일시 없음'}${late?' · 기한 지남':''}</div>
    ${t.desc?`<p class="desc">${esc(t.desc)}</p>`:''}`;
 }
@@ -1093,31 +1686,47 @@ function taskLog(t,group){
 }
 function renderTasksBlock(){
   if(!R)return;
-  const open=myTasks.filter(t=>t.status!=='done').sort(sortTasks);
-  if(!open.length&&!mySections().includes('cs.tasks')){$('#rTasks').innerHTML='';return;}
+  const started=t=>!t.startAt||t.startAt.slice(0,10)<=R.date;
+  const open=myTasks.filter(t=>t.status!=='done'&&started(t)).sort(sortTasks);
+  const upcoming=myTasks.filter(t=>t.status!=='done'&&!started(t)).length;
+  if(!open.length&&!upcoming&&!mySections().includes('cs.tasks')){$('#rTasks').innerHTML='';return;}
   const keep={};$$('#rTasks [data-p]').forEach(el=>{if(el.tagName==='TEXTAREA')keep[el.dataset.p]=el.value;});
   $('#rTasks').innerHTML=`<section class="rsec" id="sec-tasks"><div class="rh"><b>진행중 업무</b><span class="note">대표님이 지시한 업무 · 진행상황과 캡쳐를 적고 보고서와 함께 전송돼요</span></div>${
     open.length?open.map(t=>{const p=`tasks|${t.id}`;const d=R.data.tasks?.[t.id]||{};
       return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}">${taskHead(t)}${taskLog(t)}${
         t.status==='submitted'?'<p class="note" style="margin:10px 0 0">대표님 확인을 기다리는 중이에요.</p>'
         :`<div class="inbox">${fieldHtml(p+'|text',['text','textarea',t.status==='revise'?'보완한 내용':'진행상황',''],d.text)}${fieldHtml(p+'|imgs',['imgs','imgs','진행 캡쳐'],d.imgs)}</div>`}</div>`;}).join('')
-    :'<div class="empty">지시받은 업무가 없어요.</div>'}</section>`;
+    :'<div class="empty">오늘 할 지시 업무가 없어요.</div>'}${upcoming?`<p class="note" style="margin:8px 0 0">시작일이 아직 안 된 업무 ${upcoming}건은 그날 보고서에 나타나요.</p>`:''}</section>`;
   $$('#rTasks textarea[data-p]').forEach(el=>{if(keep[el.dataset.p]!=null&&R.dirty)el.value=keep[el.dataset.p];});
 }
+const qtyNum=v=>{const m=String(v??'').replace(/,/g,'').match(/\d+(\.\d+)?/);return m?+m[0]:null;};
+function inCompare(ordQty,inQty){const a=qtyNum(ordQty),b=qtyNum(inQty);if(a==null||b==null||inQty==='')return{t:'',c:''};return a===b?{t:'수량 일치',c:'ok'}:b<a?{t:`${a-b} 부족`,c:'bad'}:{t:`${b-a} 초과`,c:'acc'};}
+const IN_ST=[['ok','정상'],['short','수량 부족'],['bad','파손·불량'],['late','미입고 (지연)']];
 function renderIncoming(){
-  if(!R)return;const due=myPurch.filter(p=>!p.received&&p.eta&&p.eta<=R.date);
+  if(!R)return;const rp=R.data.incoming||{};
+  const due=myPurch.filter(p=>p.eta&&p.eta<=R.date&&(!p.received||p.receivedDate===R.date||rp[p.id])).sort((a,b)=>(a.eta||'').localeCompare(b.eta||''));
   if(!due.length){$('#rIncoming').innerHTML='';return;}
-  $('#rIncoming').innerHTML=`<section class="rsec" id="sec-incoming"><div class="rh"><b>오늘 입고 확인</b><span class="note">발주내역의 예상입고일이 된 품목이에요. 입고되면 체크하세요</span></div>${
-    due.map(p=>`<div class="row"><div class="row-h"><b>${esc(p.item)} · ${esc(p.qty)}</b><span class="note">예상입고 ${esc(fmtD(p.eta))}</span></div>
-      ${fieldHtml(`incoming|${p.id}|ok`,['ok','check','입고 완료'],R.data.incoming?.[p.id]?.ok)}${fieldHtml(`incoming|${p.id}|note`,['note','text','비고 (지연 사유 등)'],R.data.incoming?.[p.id]?.note)}</div>`).join('')}</section>`;
+  $('#rIncoming').innerHTML=`<section class="rsec" id="sec-incoming"><div class="rh"><b>입고 내역</b><span class="note">발주내역의 예상입고일이 된 품목이에요. 입고 수량과 정리 사진을 올리면 발주 수량과 비교해요</span></div>${
+    due.map(p=>{const v=rp[p.id]||{};const cmp=inCompare(p.qty,v.inQty);const b=`incoming|${p.id}`;
+      return `<div class="row"><div class="row-h"><b>${esc(p.item)}</b><span class="note">발주 ${esc(p.qty||'-')} · 예상입고 ${esc(fmtD(p.eta))}${p.eta<R.date?' · 날짜 지남':''}</span>${cmp.t?`<span class="tag ${cmp.c}" data-incmp="${esc(p.id)}">${esc(cmp.t)}</span>`:`<span data-incmp="${esc(p.id)}"></span>`}</div>
+      <div class="grid2">${fieldHtml(b+'|inQty',['inQty','text','입고 수량','발주와 같은 단위로'],v.inQty)}${fieldHtml(b+'|state',['state','select','입고 상태','',{opts:IN_ST}],v.state)}</div>
+      ${fieldHtml(b+'|imgs',['imgs','imgs','입고 후 정리 사진'],v.imgs)}
+      ${fieldHtml(b+'|note',['note','text','비고 (부족·파손·지연 사유)'],v.note)}
+      ${fieldHtml(b+'|ok',['ok','check','입고 확인 완료'],v.ok)}</div>`;}).join('')}</section>`;
 }
+$('#rForm').addEventListener('input',e=>{const p=e.target.dataset?.p||'';const m=p.match(/^incoming\|([^|]+)\|inQty$/);if(!m)return;const pu=myPurch.find(x=>x.id===m[1]);const el=$(`[data-incmp="${CSS.escape(m[1])}"]`);if(!pu||!el)return;const c=inCompare(pu.qty,e.target.value);el.className=c.t?'tag '+c.c:'';el.textContent=c.t;});
 
 /* ---------- 전송 ---------- */
 $('#sendBtn').onclick=async()=>{
   if(!R||!editable())return;
-  const secs=mySections();const miss=[];
-  if(secs.includes('cs.claim'))(R.data.cs_claim?.rows||[]).forEach((r,i)=>{if(!(r.imgs||[]).length)miss.push(`클레임 ${i+1} 캡쳐`);});
-  if(miss.length){toast(`필수 항목이 비어 있어요: ${miss.join(', ')}`);$('#sec-cs_claim')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const secs=secsFor(mySections(),R.kind||'daily');const miss=[];let firstMiss=null;
+  for(const k of secs){const S=SCHEMA[k],d=R.data[DK(k)]||{},lab=ITEM[k].label;
+    const chk=(fields,obj,pre)=>fields.forEach(f=>{if(f[4]?.required&&f[1]==='imgs'&&!(obj?.[f[0]]||[]).length){miss.push(`${pre} ${f[2]}`);firstMiss=firstMiss||DK(k);}});
+    if(S.type==='group')chk(S.fields,d,lab);
+    if(S.type==='list')(d.rows||[]).forEach((r,i)=>chk(S.fields,r,`${lab} ${i+1}`));
+    if(S.list)(d.rows||[]).forEach((r,i)=>chk(S.list.fields,r,`${lab} ${i+1}`));}
+  for(const[pid,v] of Object.entries(R.data.incoming||{})){if(v?.ok&&!(v.imgs||[]).length){const pu=myPurch.find(x=>x.id===pid);miss.push(`입고 내역 ${pu?.item||''} 정리 사진`);firstMiss=firstMiss||'incoming';}}
+  if(miss.length){toast(`필수 항목이 비어 있어요: ${miss.join(', ')}`);$('#sec-'+firstMiss)?.scrollIntoView({behavior:'smooth',block:'center'});return;}
   if(secs.includes('cs.order')){
     const notDone=CHS.filter(([c])=>!R.data.cs_order?.[c]?.done).map(x=>x[1]);
     if(notDone.length&&!(await ask(`주문접수 완료가 체크되지 않은 채널이 있어요:\n${notDone.join(', ')}\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_order')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
@@ -1137,11 +1746,21 @@ $('#sendBtn').onclick=async()=>{
     }
     // 발주 → 입고확인 목록 등록
     for(const r of (R.data.cs_purchase?.rows||[])){if(r.pid||!r.item)continue;const pid=rid();r.pid=pid;
-      await setDoc(doc(db,'users',meUid,'purchases',pid),{item:r.item,qty:r.qty||'',eta:r.eta||'',received:false,reportDate:R.date,createdAt:now});}
-    // 입고 확인 반영
-    for(const[pid,v] of Object.entries(R.data.incoming||{})){if(v?.ok)await updateDoc(doc(db,'users',meUid,'purchases',pid),{received:true,receivedDate:R.date,note:v.note||''}).catch(()=>{});}
+      await setDoc(doc(db,'users',meUid,'purchases',pid),{item:r.item,qty:r.qty||'',eta:r.eta||'',imgs:r.imgs||[],received:false,reportDate:R.date,createdAt:now});}
+    // 입고 내역: 발주 정보를 함께 남기고, 확인 완료한 건은 발주 문서에 반영
+    for(const[pid,v] of Object.entries(R.data.incoming||{})){const pu=myPurch.find(x=>x.id===pid);if(pu){v.item=pu.item||'';v.ordQty=pu.qty||'';v.eta=pu.eta||'';v.ordImgs=pu.imgs||[];}
+      if(v?.ok)await updateDoc(doc(db,'users',meUid,'purchases',pid),{received:true,receivedDate:R.date,inQty:v.inQty||'',state:v.state||'',note:v.note||'',imgs:v.imgs||[]}).catch(()=>{});}
+    // 자동 일정 등록 (글 속 날짜)
+    const known=new Set(myAgenda.map(a=>a.id));const skip=R.data.agendaSkip||{};const added=[];
+    for(const a of agendaFromData(R.data,R.date)){if(known.has(a.id)||skip[a.id])continue;
+      await setDoc(doc(db,'users',meUid,'agenda',a.id),{date:a.date,title:a.title,src:a.src,from:R.date,done:false,createdAt:now}).catch(()=>{});added.push(a);}
+    R.data.agendaAdded=added;
+    // 오늘 일정 처리 결과
+    const tl=todayAgenda();const ag=R.data.agenda||{};
+    for(const a of tl){const d=ag[a.id]?.done;if(d!=null&&d!==!!a.done)await updateDoc(doc(db,'users',meUid,'agenda',a.id),d?{done:true,doneDate:R.date}:{done:false,doneDate:''}).catch(()=>{});}
+    R.data.todayList=tl.map(a=>({id:a.id,date:a.date,title:a.title,src:a.src||'',done:ag[a.id]?.done??!!a.done}));
     R.lastSaved=now;
-    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:'submitted',data:R.data,submittedAt:now,updatedAt:now,revised,revisedTasks,resubmit:wasHold},{merge:true});
+    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:'submitted',kind:R.kind||'daily',data:R.data,submittedAt:now,updatedAt:now,revised,revisedTasks,resubmit:wasHold},{merge:true});
     R.dirty=false;toast('전송했어요. 대표님 확인을 기다려요.');window.scrollTo(0,0);
   }catch(e){toast(authMsg(e));}
   finally{b.disabled=!editable();b.textContent=R&&R.status==='hold'?'다시 전송':'전송';}
@@ -1151,19 +1770,23 @@ $('#sendBtn').onclick=async()=>{
 let taskFilter='submitted',arSel=null;
 function startAdmin(){
   $('#adminTabs').hidden=false;$('#barSub').textContent='업무보고 · 관리자';
-  show('vAdmin');setTab('home');setTaskDefaults();$('#arDate').value=today();
+  show('vAdmin');setTab('home');setTaskDefaults();$('#arDate').value=today();$('#hDate').value=today();$('#lDate').value=today();
+  unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};queueRender();},e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
+  unsubs.push(onSnapshot(collection(db,'prices'),q=>{prices={};q.docs.forEach(x=>prices[x.id]=x.data());queueRender();},()=>{}));
+  $('#payMonth').value=today().slice(0,7);
   unsubs.push(onSnapshot(collection(db,'users'),q=>{
     users={};q.docs.forEach(x=>users[x.id]={...x.data(),uid:x.id});
     Object.values(users).filter(u=>u.status==='approved'||u.status==='disabled').forEach(u=>{
       if(!taskSubs[u.uid])taskSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'tasks'),orderBy('createdAt','desc'),limit(200)),s=>{tasksBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
       if(!repSubs[u.uid])repSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'reports'),orderBy('date','desc'),limit(62)),s=>{repsBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
+      if(!invSubs[u.uid])invSubs[u.uid]=onSnapshot(collection(db,'users',u.uid,'invoices'),s=>{invBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
       if(!thumbSubs[u.uid])thumbSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'thumbs'),orderBy('createdAt','desc'),limit(24)),s=>{thumbs[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
     });
     queueRender();
   },e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
 }
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','task','req','staff'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','task','req','staff','cal','pay','mat','inv'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -1189,16 +1812,207 @@ function renderAdmin(){
   $('#homeStatus').innerHTML=act.length?act.map(u=>statusCard(u,td)).join(''):'<div class="empty">승인된 직원이 아직 없어요.</div>';
   const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,24);
   $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
-  renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);
+  renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);renderCal(act);
+  renderInvTab();renderMatTab();
 }
 function statusCard(u,date,sel){
   const r=repOf(u.uid,date);const st=r?r.status:'none';
   const nRev=r?Object.values(r.review||{}).filter(v=>v?.state==='revise').length:0;
-  return `<button type="button" class="scard ${u.part==='디자인'?'ds':''} ${sel?'sel':''}" data-openrep="${esc(u.uid)}|${esc(date)}"><div class="nm"><b>${esc(u.name)}</b>${partTag(u.part)}<span class="tag ${RS_C[st]}">${RS_L[st]}</span></div>
+  return `<button type="button" class="scard ${u.part==='디자인'?'ds':''} ${sel?'sel':''}" data-openrep="${esc(u.uid)}|${esc(date)}"><div class="nm"><b>${esc(u.name)}</b>${partTag(u.part)}<span class="tag ${RS_C[st]}">${RS_L[st]}</span>${(()=>{const k=r?.kind||CALC.kind(date,CAL,u.uid);return k!=='daily'?`<span class="tag ${KIND_C[k]}">${KIND_L[k]}</span>`:'';})()}</div>
     <div class="meta">${r?.submittedAt?`${esc(fmtT(r.submittedAt))} 전송`:st==='draft'?'아직 전송 전':'보고서 없음'}${nRev?` · 보완 ${nRev}건`:''}</div></button>`;
 }
 document.addEventListener('click',e=>{const o=e.target.closest('[data-openrep]');if(!o)return;const[u,d]=o.dataset.openrep.split('|');arSel={uid:u,date:d};$('#arDate').value=d;setTab('rep');renderAdmin();$('#arDetail').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#arDate').addEventListener('change',()=>{if(arSel)arSel.date=$('#arDate').value;renderAdmin();});
+
+
+/* ---------- 계산서 탭 ---------- */
+let invF='open',invK='';
+const allInv=()=>Object.values(invBy).flat();
+function renderInvTab(){
+  const all=allInv();const td=today();
+  const open=all.filter(v=>!v.paid);const soon=invUnpaidSoon(all,td,5);
+  const over=open.filter(v=>v.due&&v.due<td);const sumBuy=open.filter(v=>v.kind==='매입').reduce((s,v)=>s+(+v.total||0),0);
+  $('#invDot').hidden=!soon.length;$('#invDot').textContent=soon.length;
+  $('#invKpis').innerHTML=`<div class="kpi ${over.length?'alert':''}"><div class="l">기한 지남</div><div class="v">${over.length}<small> 건</small></div></div>
+    <div class="kpi ${soon.length-over.length?'alert':''}"><div class="l">5일 안 마감</div><div class="v">${soon.length-over.length}<small> 건</small></div></div>
+    <div class="kpi"><div class="l">미지급 매입</div><div class="v" style="font-size:19px">${won(sumBuy)}</div></div>
+    <div class="kpi"><div class="l">미처리 전체</div><div class="v">${open.length}<small> / ${all.length}건</small></div></div>`;
+  const list=all.filter(v=>(invF==='all'||(invF==='open'?!v.paid:v.paid))&&(!invK||v.kind===invK))
+    .sort(invF==='done'?(a,b)=>(b.paidAt||'').localeCompare(a.paidAt||''):(a,b)=>(a.due||'9').localeCompare(b.due||'9')||(a.date||'').localeCompare(b.date||''));
+  $('#invList').innerHTML=all.length?invTable(list,td,{admin:true}):'<div class="empty">아직 정리된 계산서가 없어요. 직원이 월간보고의 "계산서 조회"에 국세청 엑셀을 올리면 여기에 모여요.</div>';
+  $('#homeDue').hidden=!soon.length;
+  $('#homeDue').innerHTML=soon.length?`<h2>계산서 기한 알림 <span class="s">기한(익월 10일)이 5일 안으로 남았거나 지난 미처리 계산서</span></h2>${invTable(soon,td,{admin:true})}`:'';
+}
+$('#tabInv').addEventListener('click',e=>{
+  const b=e.target.closest('.tfilter button');if(!b)return;
+  if(b.closest('#invFilter'))invF=b.dataset.f;else invK=b.dataset.f;
+  $$('#invFilter button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.f===invF)));
+  $$('#invKind button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.f===invK)));
+  renderInvTab();
+});
+
+/* ---------- 원재료 탭 ---------- */
+let matF='chg',matSel='';
+const matKey=s=>String(s||'').replace(/\s+/g,' ').trim();
+function matMonths(){
+  const months={};
+  Object.entries(prices).forEach(([m,v])=>{if((v.rows||[]).length)months[m]={rows:v.rows,src:v.from==='import'?'엑셀':'승인',at:v.updatedAt||''};});
+  // 아직 승인 전인 보고서도 바로 반영 (실시간)
+  Object.values(repsBy).flat().forEach(r=>{const rows=r.data?.cs_material?.rows||[];if(!rows.length||r.status==='draft')return;const m=r.date.slice(0,7);
+    const cur=months[m];if(!cur||(cur.live&&cur.date<r.date))months[m]={rows,src:r.status==='approved'?'승인':'확인 대기',live:true,date:r.date};});
+  return months;
+}
+function matSeries(){
+  const months=matMonths();const ms=Object.keys(months).sort();const items={};
+  ms.forEach(m=>months[m].rows.forEach(r=>{const k=matKey(r.item);if(!k)return;const price=+r.price||0,g=+r.g||0;
+    (items[k]=items[k]||{item:k,cat:r.cat||'',pts:[]}).pts.push({m,price,g,perg:price&&g?price/g:0,site:r.site||'',change:r.change||''});
+    if(r.cat)items[k].cat=r.cat;}));
+  return{ms,months,items:Object.values(items)};
+}
+function spark(pts){
+  const ys=pts.map(p=>p.price).filter(Boolean);if(ys.length<2)return '';
+  const mn=Math.min(...ys),mx=Math.max(...ys);const w=84,h=24;
+  const xy=pts.filter(p=>p.price).map((p,i,a)=>`${(i*(w-4)/(a.length-1)+2).toFixed(1)},${(mx===mn?h/2:(h-3)-(p.price-mn)*(h-6)/(mx-mn)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${xy}"/></svg>`;
+}
+function lineChart(pts,label){
+  const W=Math.max(340,Math.min(760,($('#matChart').clientWidth||640)-26)),H=W<500?200:230,L=58,Rr=36,T=22,B=34;const ys=pts.map(p=>p.y);let mn=Math.min(...ys),mx=Math.max(...ys);
+  if(mn===mx){mn=mn*0.9;mx=mx*1.1||1;}const pd=(mx-mn)*0.15;mn=Math.max(0,mn-pd);mx+=pd;
+  const X=i=>L+(pts.length===1?(W-L-Rr)/2:i*(W-L-Rr)/(pts.length-1));const Y=v=>T+(mx-v)*(H-T-B)/(mx-mn);
+  const ticks=[0,1,2,3].map(i=>mn+(mx-mn)*i/3);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)} 가격 추이">
+    ${ticks.map(t=>`<line class="gr" x1="${L}" x2="${W-Rr}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/><text class="ax" x="${L-8}" y="${(Y(t)+4).toFixed(1)}" text-anchor="end">${Math.round(t).toLocaleString('ko-KR')}</text>`).join('')}
+    <polyline class="ln" points="${pts.map((p,i)=>`${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')}"/>
+    ${pts.map((p,i)=>`<circle class="pt ${p.hl||''}" cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="4.5"/><text class="vl" x="${X(i).toFixed(1)}" y="${(Y(p.y)-10).toFixed(1)}" text-anchor="middle">${Math.round(p.y).toLocaleString('ko-KR')}</text><text class="ax" x="${X(i).toFixed(1)}" y="${H-12}" text-anchor="middle">${esc(p.x)}</text>`).join('')}
+  </svg>`;
+}
+function matDelta(it){const p=it.pts;const a=p[p.length-1],b=p.length>1?p[p.length-2]:null;if(!b||!a.price||!b.price)return{d:0,pct:0,has:false};const d=a.price-b.price;return{d,pct:d/b.price*100,has:true,prevM:b.m};}
+function renderMatTab(){
+  const{ms,months,items}=matSeries();const last=ms[ms.length-1];
+  const withD=items.map(it=>({...it,dl:matDelta(it),lastPt:it.pts[it.pts.length-1]}));
+  const cur=withD.filter(it=>it.lastPt.m===last);
+  const up=cur.filter(it=>it.dl.has&&it.dl.d>0).length,down=cur.filter(it=>it.dl.has&&it.dl.d<0).length;
+  $('#matKpis').innerHTML=`<div class="kpi"><div class="l">최근 마감 월</div><div class="v" style="font-size:19px">${last?`${+last.slice(5)}월`:'-'}${last?`<small> ${esc(months[last].src)}</small>`:''}</div></div>
+    <div class="kpi"><div class="l">관리 품목</div><div class="v">${cur.length}<small> 개</small></div></div>
+    <div class="kpi ${up?'alert':''}"><div class="l">가격 오른 품목</div><div class="v">${up}<small> 개</small></div></div>
+    <div class="kpi"><div class="l">가격 내린 품목</div><div class="v">${down}<small> 개</small></div></div>`;
+  const q=matKey($('#matQ').value).toLowerCase();
+  let list=(matF==='chg'?cur.filter(it=>it.dl.has&&it.dl.d!==0):withD).filter(it=>!q||(`${it.item} ${it.cat}`).toLowerCase().includes(q));
+  list.sort((a,b)=>matF==='chg'?Math.abs(b.dl.pct)-Math.abs(a.dl.pct):(a.cat||'').localeCompare(b.cat||'')||a.item.localeCompare(b.item));
+  if(!ms.length){$('#matTable').innerHTML='<div class="empty">아직 원재료 목록이 없어요. 위 "지난 월마감 엑셀 가져오기"로 지난 달들을 한 번에 넣거나, 직원 월간보고가 승인되면 쌓여요.</div>';$('#matChart').innerHTML='';return;}
+  $('#matTable').innerHTML=list.length?`<div class="tbl"><table><thead><tr><th>분류</th><th>품목</th><th>사이트</th><th>최근 가격</th><th>이전 가격</th><th>변동</th><th>g당가격</th><th>추이</th></tr></thead><tbody>${list.map(it=>{const a=it.lastPt;const b=it.dl.has?it.pts[it.pts.length-2]:null;const d=it.dl;
+    return `<tr class="matrow ${matSel===it.item?'sel':''}" data-mat="${esc(it.item)}" tabindex="0"><td>${esc(it.cat)}</td><td><b>${esc(it.item)}</b></td><td class="note">${esc(a.site)}</td><td class="num">${won(a.price)} <span class="note">${+a.m.slice(5)}월</span></td><td class="num">${b?`${won(b.price)} <span class="note">${+b.m.slice(5)}월</span>`:'-'}</td><td class="num">${d.has&&d.d?`<span class="tag ${d.d>0?'bad':'ok'}">${d.d>0?'▲':'▼'} ${won(Math.abs(d.d))} (${Math.abs(d.pct).toFixed(1)}%)</span>`:d.has?'<span class="note">변동 없음</span>':'<span class="note">첫 기록</span>'}</td><td class="num">${a.perg?(Math.round(a.perg*100)/100).toLocaleString('ko-KR'):''}</td><td>${spark(it.pts)}</td></tr>`;}).join('')}</tbody></table></div>`
+    :`<div class="empty">${matF==='chg'?`${+last.slice(5)}월에 가격이 바뀐 품목이 없어요. "전체"를 눌러 모든 품목을 볼 수 있어요.`:'검색 결과가 없어요.'}</div>`;
+  const it=items.find(x=>x.item===matSel)||(matF==='chg'&&list[0]?items.find(x=>x.item===list[0].item):null);
+  if(!it){$('#matChart').innerHTML='';return;}
+  const pts=it.pts.filter(p=>p.price).map(p=>({x:`${p.m.slice(2,4)}.${p.m.slice(5)}`,y:p.price}));
+  $('#matChart').innerHTML=`<div class="chartbox"><div class="btnrow" style="justify-content:space-between"><b>${esc(it.item)} <span class="note">${esc(it.cat)}</span></b><span class="note">월별 가격 추이 · ${pts.length}개월</span></div>
+    ${pts.length?lineChart(pts,it.item):'<p class="note">가격 기록이 없어요</p>'}
+    <div class="tbl"><table><thead><tr><th>월</th><th>사이트</th><th>가격</th><th>g</th><th>g당가격</th><th>변동 메모</th></tr></thead><tbody>${it.pts.slice().reverse().map(p=>`<tr><td class="num">${esc(p.m)}</td><td>${esc(p.site)}</td><td class="num">${won(p.price)}</td><td class="num">${p.g||''}</td><td class="num">${p.perg?(Math.round(p.perg*100)/100):''}</td><td>${esc(p.change)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+$('#tabMat').addEventListener('click',e=>{
+  const b=e.target.closest('#matFilter button');if(b){matF=b.dataset.f;$$('#matFilter button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.f===matF)));renderMatTab();return;}
+  const r=e.target.closest('[data-mat]');if(r){matSel=matSel===r.dataset.mat?'':r.dataset.mat;renderMatTab();if(matSel)$('#matChart').scrollIntoView({behavior:'smooth',block:'nearest'});}
+});
+$('#tabMat').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest('[data-mat]'))e.target.click();});
+$('#matQ').addEventListener('input',()=>renderMatTab());
+$('#matFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;const lab=e.target.closest('.attach');lab.classList.add('busy');
+  try{
+    const buf=await f.arrayBuffer();const{sets,problems}=await readSheetsRaw([{name:f.name,buf}],true);
+    if(problems.length){toast(problems[0]);return;}
+    const now=new Date();const Y=now.getFullYear();const curYm=today().slice(0,7);
+    const got=IMP.materials(sets.map(x=>({name:x.name,rows:x.rows})),Y);const fixed={};
+    Object.entries(got).forEach(([k,v])=>{fixed[k>curYm?`${Y-1}-${k.slice(5)}`:k]=v;});
+    const keys=Object.keys(fixed).sort();
+    if(!keys.length){toast('"09월마감"처럼 월 이름이 붙은 시트에서 분류·내용·가격 머리글을 찾지 못했어요');return;}
+    const exist=keys.filter(k=>prices[k]);
+    if(!(await ask(`${keys.map(k=>`${k.slice(0,4)}년 ${+k.slice(5)}월 (${fixed[k].length}개)`).join('\n')}\n\n위 목록을 저장할까요?${exist.length?`\n이미 있는 ${exist.map(k=>+k.slice(5)+'월').join(', ')}은 엑셀 내용으로 바뀌어요.`:''}`,'저장')))return;
+    for(const k of keys)await setDoc(doc(db,'prices',k),{rows:fixed[k],updatedAt:new Date().toISOString(),from:'import',file:f.name});
+    toast(`${keys.length}개월 목록을 저장했어요`);
+  }catch(err){toast(authMsg(err));}finally{lab.classList.remove('busy');}
+});
+
+/* ---------- 알바급여 탭 ---------- */
+let payCache={},payList=[];
+async function loadPay(month,force){
+  if(payCache[month]&&!force)return payCache[month];
+  const start=month+'-01',end=DT.nextMonth10(start).slice(0,8)+'15';const map={};
+  for(const u of Object.values(users).filter(u=>u.status==='approved'||u.status==='disabled')){
+    let docs=[];try{docs=(await getDocs(query(collection(db,'users',u.uid,'reports'),where('date','>=',start),where('date','<=',end)))).docs.map(x=>x.data());}catch(e){continue;}
+    docs.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>(r.data?.cs_carrot?.workers||[]).forEach(w=>{
+      const days=(w.days||[]).filter(d=>d.d&&d.d.startsWith(month));if(!days.length)return;
+      const key=`${(w.name||'').trim()}|${String(w.rrn||'').replace(/\D/g,'')}`;
+      map[key]={...w,days,by:u.name,uid:u.uid,rep:r.date,status:r.status};}));
+  }
+  return payCache[month]=Object.values(map).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+let payShowRrn=false;
+async function renderPayTab(force){
+  const m=$('#payMonth').value||today().slice(0,7);$('#payBody').innerHTML='<p class="note">불러오는 중…</p>';
+  try{payList=await loadPay(m,force);}catch(e){$('#payBody').innerHTML=`<p class="note">${esc(authMsg(e))}</p>`;return;}
+  if(($('#payMonth').value||today().slice(0,7))!==m)return;
+  if(!payList.length){$('#payBody').innerHTML=`<div class="empty">${+m.slice(5)}월 근무 기록이 없어요. 직원이 월간보고의 "당근알바 출퇴근 기록부"에 입력하면 여기에 모여요.</div>`;return;}
+  const cs=payList.map(w=>PAY.calc(w));const T=k=>cs.reduce((s,c)=>s+c[k],0);
+  $('#payBody').innerHTML=`<div class="shipsum" style="margin-top:0"><span class="tag">${payList.length}명</span><span class="tag">급여합계 ${won(T('total'))}</span><span class="tag">공제 ${won(T('ded'))}</span><span class="tag acc">실지급 ${won(T('net'))}</span><label class="opt" style="padding:4px 8px;margin-left:auto"><input type="checkbox" id="payRrn" ${payShowRrn?'checked':''}><span>주민번호 전체 보기</span></label></div>
+    <div class="tbl"><table><thead><tr><th>이름</th><th>주민등록번호</th><th>연락처</th><th>계좌번호</th><th>시급</th><th>근무일수</th><th>근무시간</th><th>주휴수당</th><th>급여합계</th><th>공제 3.3%</th><th>실지급액</th><th>작성</th></tr></thead><tbody>${payList.map((w,i)=>{const c=cs[i];
+      return `<tr class="matrow" data-payi="${i}" tabindex="0"><td><b>${esc(w.name||'(이름 없음)')}</b></td><td class="num">${esc(payShowRrn?w.rrn||'':maskRrn(w.rrn))}</td><td class="num">${esc(w.phone||'')}</td><td class="num">${esc(w.bank||'')}</td><td class="num">${won(w.wage)}</td><td class="num">${c.days}일</td><td class="num">${fmtH(c.hours)}</td><td class="num">${won(c.weeks.reduce((s,x)=>s+x.hol,0))}</td><td class="num">${won(c.total)}</td><td class="num">${won(c.ded)}</td><td class="num"><b>${won(c.net)}</b></td><td class="note">${esc(w.by)} · ${esc(fmtD(w.rep))}${w.status==='draft'?' <span class="tag">작성 중</span>':''}</td></tr>
+        <tr class="paydet" data-paydet="${i}" hidden><td colspan="12">${payDetailHtml(w,c)}</td></tr>`;}).join('')}
+      <tr class="sumrow"><td colspan="5"><b>합계</b></td><td class="num">${T('days')}일</td><td class="num">${fmtH(T('hours'))}</td><td class="num">${won(cs.reduce((s,c)=>s+c.weeks.reduce((a,x)=>a+x.hol,0),0))}</td><td class="num">${won(T('total'))}</td><td class="num">${won(T('ded'))}</td><td class="num"><b>${won(T('net'))}</b></td><td></td></tr></tbody></table></div>
+    <p class="note">이름을 누르면 근무일별 상세가 펼쳐져요. 공제액은 원 단위 반올림 전 금액 기준이라 실제 신고액과 몇 원 차이가 날 수 있어요.</p>`;
+}
+function payDetailHtml(w,c){
+  return `<div class="paygrid"><div class="fx"><table><thead><tr><th>일자</th><th>요일</th><th>주차</th><th>출근</th><th>퇴근</th><th>휴게</th><th>근무시간</th></tr></thead><tbody>${c.rows.filter(r=>r.h>0).map(r=>`<tr><td class="num">${esc(r.d)}</td><td>${r.wd}</td><td>${r.wk}주</td><td class="num">${esc(r.in||'')}</td><td class="num">${esc(r.out||'')}</td><td class="num">${(+r.b1||0)+(+r.b2||0)}h</td><td class="num">${fmtH(r.h)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="fx"><table><thead><tr><th>주차</th><th>근무시간</th><th>급여</th><th>주휴수당</th><th>합계</th></tr></thead><tbody>${c.weeks.filter(x=>x.h>0).map(x=>`<tr><td>${x.wk}주</td><td class="num">${fmtH(x.h)}</td><td class="num">${won(x.pay)}</td><td class="num">${won(x.hol)}</td><td class="num">${won(x.sum)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+$('#payMonth').addEventListener('change',()=>renderPayTab());
+$('#payReload').addEventListener('click',()=>renderPayTab(true));
+$('#payBody').addEventListener('click',e=>{
+  if(e.target.id==='payRrn'){payShowRrn=e.target.checked;renderPayTab();return;}
+  const r=e.target.closest('[data-payi]');if(r){const d=$(`[data-paydet="${r.dataset.payi}"]`);if(d)d.hidden=!d.hidden;}
+});
+$('#payXlsx').addEventListener('click',async()=>{
+  const m=$('#payMonth').value||today().slice(0,7);
+  try{await ensureXLSX();}catch(e){toast('엑셀 도구를 불러오지 못했어요');return;}
+  const list=await loadPay(m);if(!list.length){toast('내려받을 근무 기록이 없어요');return;}
+  const R2=v=>Math.round(v);const H2=v=>Math.round(v*100)/100;
+  const wb=XLSX.utils.book_new();
+  const sum=[[`${m.slice(0,4)}년 ${+m.slice(5)}월 당근알바 급여`],[],['이름','주민등록번호','연락처','계좌번호','시급','근무일수','근무시간','주휴수당','급여합계','공제(3.3%)','실지급액','작성 직원','보고일']];
+  const cs=list.map(w=>PAY.calc(w));
+  list.forEach((w,i)=>{const c=cs[i];sum.push([w.name||'',w.rrn||'',w.phone||'',w.bank||'',+w.wage||0,c.days,H2(c.hours),R2(c.weeks.reduce((s,x)=>s+x.hol,0)),R2(c.total),R2(c.ded),R2(c.net),w.by||'',w.rep||'']);});
+  sum.push(['합계','','','','',cs.reduce((s,c)=>s+c.days,0),H2(cs.reduce((s,c)=>s+c.hours,0)),R2(cs.reduce((s,c)=>s+c.weeks.reduce((a,x)=>a+x.hol,0),0)),R2(cs.reduce((s,c)=>s+c.total,0)),R2(cs.reduce((s,c)=>s+c.ded,0)),R2(cs.reduce((s,c)=>s+c.net,0))]);
+  const ws0=XLSX.utils.aoa_to_sheet(sum);ws0['!cols']=[10,16,14,22,8,8,9,11,11,11,11,10,11].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws0,'요약');
+  const used=new Set(['요약']);
+  list.forEach((w,i)=>{const c=cs[i];
+    let nm=String(w.name||`알바${i+1}`).replace(/[\[\]:*?\/\\]/g,'').slice(0,28)||`알바${i+1}`;let n=nm,k=2;while(used.has(n))n=`${nm}${k++}`;used.add(n);
+    const a=[['이름',w.name||''],['주민등록번호',w.rrn||''],['연락처',w.phone||''],['계좌번호',w.bank||''],['시급',+w.wage||0],[],['일자','요일','주차','출근','퇴근','휴게-점심','휴게-저녁','근무시간']];
+    c.rows.filter(r=>r.h>0).forEach(r=>a.push([r.d,r.wd,`${r.wk}주`,r.in||'',r.out||'',+r.b1||0,+r.b2||0,H2(r.h)]));
+    a.push([],['주차','근무시간','급여','주휴수당','합계']);c.weeks.filter(x=>x.h>0).forEach(x=>a.push([`${x.wk}주`,H2(x.h),R2(x.pay),R2(x.hol),R2(x.sum)]));
+    a.push([],['근무일수',c.days],['근무시간',H2(c.hours)],['급여합계',R2(c.total)],['공제(3.3%)',R2(c.ded)],['실지급액',R2(c.net)]);
+    const ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=[12,8,8,8,8,10,10,10].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws,n);});
+  XLSX.writeFile(wb,`당근알바_급여_${m}.xlsx`);
+});
+
+/* ---------- 휴무일 탭 ---------- */
+let lWhoSig='';
+function renderCal(act){
+  const hs=(CAL.holidays||[]).slice().sort((a,b)=>a.d.localeCompare(b.d));const td=today();
+  $('#hList').innerHTML=hs.length?hs.map(h=>`<div class="calrow"><span class="num">${esc(h.d)}(${dayName(h.d)})</span><b>${esc(h.n||'휴무')}</b>${h.d<td?'<span class="note">지남</span>':''}<span style="flex:1"></span><button type="button" class="rm" data-hdel="${esc(h.d)}">삭제</button></div>`).join(''):'<div class="empty">등록된 휴무일이 없어요. 공휴일과 회사 휴무일을 넣어주세요.</div>';
+  const sig=act.map(u=>u.uid+u.name).join(',');if(sig!==lWhoSig){lWhoSig=sig;const cur=$('#lWho').value;$('#lWho').innerHTML=act.map(u=>`<option value="${esc(u.uid)}">${esc(u.name)}</option>`).join('');if(cur)$('#lWho').value=cur;}
+  const lv=[];Object.entries(CAL.leave||{}).forEach(([uid,ds])=>(ds||[]).forEach(d=>lv.push({uid,d})));lv.sort((a,b)=>a.d.localeCompare(b.d));
+  $('#lList').innerHTML=lv.length?lv.map(x=>`<div class="calrow"><span class="num">${esc(x.d)}(${dayName(x.d)})</span><b>${esc(users[x.uid]?.name||'(삭제된 직원)')}</b>${x.d<td?'<span class="note">지남</span>':''}<span style="flex:1"></span><button type="button" class="rm" data-ldel="${esc(x.uid)}|${esc(x.d)}">삭제</button></div>`).join(''):'<div class="empty">등록된 연차가 없어요.</div>';
+  $('#calKinds').innerHTML=act.length?act.map(u=>{const w=CALC.weekLast(td,CAL,u.uid),m=CALC.monthLast(td,CAL,u.uid);const f=x=>x?`${fmtD(x)}(${dayName(x)})`:'없음';
+    return `<div class="calrow"><b style="min-width:80px">${esc(u.name)}</b>${partTag(u.part)}<span>주간보고 <b>${f(w)}</b></span><span>월간보고 <b>${f(m)}</b></span></div>`;}).join(''):'<div class="empty">승인된 직원이 없어요.</div>';
+}
+async function saveCal(next){try{await setDoc(doc(db,'config','calendar'),next);toast('저장했어요');}catch(e){toast(authMsg(e));}}
+$('#hForm').addEventListener('submit',async e=>{e.preventDefault();const d=$('#hDate').value,n=$('#hName').value.trim();if(!d){toast('날짜를 선택해주세요');return;}
+  const hs=(CAL.holidays||[]).filter(h=>h.d!==d);hs.push({d,n:n||'휴무'});await saveCal({holidays:hs,leave:CAL.leave||{}});$('#hName').value='';});
+$('#lForm').addEventListener('submit',async e=>{e.preventDefault();const uid=$('#lWho').value,d=$('#lDate').value;if(!uid||!d){toast('직원과 날짜를 선택해주세요');return;}
+  const lv=JSON.parse(JSON.stringify(CAL.leave||{}));lv[uid]=[...new Set([...(lv[uid]||[]),d])].sort();await saveCal({holidays:CAL.holidays||[],leave:lv});});
+$('#tabCal').addEventListener('click',async e=>{
+  const h=e.target.closest('[data-hdel]');if(h){await saveCal({holidays:(CAL.holidays||[]).filter(x=>x.d!==h.dataset.hdel),leave:CAL.leave||{}});return;}
+  const l=e.target.closest('[data-ldel]');if(l){const[uid,d]=l.dataset.ldel.split('|');const lv=JSON.parse(JSON.stringify(CAL.leave||{}));lv[uid]=(lv[uid]||[]).filter(x=>x!==d);await saveCal({holidays:CAL.holidays||[],leave:lv});}
+});
 
 /* ---------- 업무보고 확인 탭 ---------- */
 function renderRepTab(subR){
@@ -1233,8 +2047,33 @@ function sectionView(u,key,d,rv,grp,canReview){
   const S=SCHEMA[key],dk=DK(key);let body='';
   if(S.type==='ship'){
     body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:10px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
-    body+=shipResultHtml(d?.result);
+    body+=shipResultHtml(d?.result,{dk,org:showOrg(dk,u._date||today(),u._kind),ok:d?.orgok,edit:false});
     if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
+  }else if(S.type==='carrot'){
+    body+=carrotViewHtml(d);
+    if((d?.files||[]).length)body+=`<div class="files" style="margin-top:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`;
+  }else if(S.type==='taxinv'){
+    body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
+    const res=d?.result;if(res)body+=`${probHtml(res)}<div class="shipsum"><span class="tag cs">매출 ${res.sales||0}건</span><span class="tag acc">매입 ${res.buys||0}건</span></div>`;
+    const inv=(invBy[u.uid]||[]).filter(v=>!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+    body+=`<h4 class="subh">미처리 계산서 ${inv.length}건</h4>${invTable(inv,today(),{uid:u.uid})}`;
+    if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
+  }else if(S.type==='vendorpay'){
+    const inv=(invBy[u.uid]||[]).filter(v=>v.kind==='매입'&&!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+    body+=`<h4 class="subh" style="margin-top:0">미지급 매입 계산서 ${inv.length}건</h4>${invTable(inv,today(),{uid:u.uid})}<h4 class="subh">계산서 없는 거래처 대금</h4>${tableViewHtml(u.uid,S,d?.rows,today(),grp)}`;
+  }else if(S.type==='list'&&S.table){
+    body+=tableViewHtml(u.uid,S,d?.rows,u._date||today(),grp);
+  }else if(S.type==='fixedrows'){
+    const rows=S.rows.filter(([rk])=>d?.[rk]&&(d[rk].qty||d[rk].why));
+    body+=rows.length?`<div class="tbl"><table><thead><tr><th>종류</th>${S.cols.map(c=>`<th>${esc(c[2])}</th>`).join('')}</tr></thead><tbody>${rows.map(([rk,rl])=>`<tr><td><b>${esc(rl)}</b></td>${S.cols.map(([ck])=>`<td>${esc(d[rk][ck]??'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<p class="note" style="margin:0">로스 없음</p>';
+  }else if(S.type==='friinv'){
+    body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
+    body+=friResultHtml(d?.result,d?.ok,false);
+    if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
+  }else if(S.type==='ordercount'){
+    body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
+    body+=countResultHtml(d?.result);
+    if((d?.rows||[]).length)body+=`<div class="tbl"><table><thead><tr><th>채널</th><th>상품명</th><th>수량</th></tr></thead><tbody>${d.rows.map(r=>`<tr><td>${esc(r.ch||'')}</td><td>${esc(r.prod||'')}</td><td class="num">${esc(r.qty||'')}</td></tr>`).join('')}</tbody></table></div>`;
   }else if(S.type==='channels'){
     body+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>{const cd=d?.[c]||{};return `<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}${cd.done?'<span class="tag ok">완료</span>':'<span class="tag">미체크</span>'}</div>${cd.ocr?ocrLine(cd.ocr,true):''}${(cd.imgs||[]).length?`<div class="gthumbs">${cd.imgs.map(im=>galThumb(u.uid,im,`${ITEM[key].label} · ${l}`,grp)).join('')}</div>`:'<span class="note">캡쳐 없음</span>'}</div>`;}).join('')}</div>`;
     if(S.extra)body+=kvHtml(u.uid,S.extra,d,grp);
@@ -1242,8 +2081,9 @@ function sectionView(u,key,d,rv,grp,canReview){
     body+=kvHtml(u.uid,S.fields,d,grp);
     if(S.list)body+=(d?.rows||[]).map((r,i)=>`<div class="vrow"><b style="font-size:12.5px">${esc(S.list.label)} ${i+1}</b>${kvHtml(u.uid,S.list.fields,r,grp)}</div>`).join('');
   }else{
-    const rows=d?.rows||[];
-    body+=rows.length?rows.map((r,i)=>`<div class="vrow" ${i===0?'style="border-top:0;padding-top:0;margin-top:0"':''}><b style="font-size:12.5px">${esc(S.label)} ${i+1}</b>${kvHtml(u.uid,S.fields,r,grp)}</div>`).join(''):'';
+    const rows=d?.rows||[];const best=key==='cs.bestreview';
+    body+=rows.length?rows.map((r,i)=>`<div class="vrow" ${i===0?'style="border-top:0;padding-top:0;margin-top:0"':''}><div class="btnrow"><b style="font-size:12.5px">${esc(S.label)} ${i+1}</b>${best&&r.picked?'<span class="tag ok">선정</span>':''}${best?`<button type="button" class="${r.picked?'secondary':'okbtn'}" data-best="${i}" style="padding:5px 10px;font-size:12px">${r.picked?'선정 취소':'선정'}</button>`:''}</div>${kvHtml(u.uid,S.fields,r,grp)}</div>`).join(''):'';
+    if(key==='cs.health')body+=healthWarn(rows,u._date||today());
   }
   if(!body.replace(/<[^>]+>/g,'').trim()&&!body.includes('gthumbs'))body='<p class="note" style="margin:0">작성 내용 없음</p>';
   const st=rv?.state;
@@ -1252,12 +2092,13 @@ function sectionView(u,key,d,rv,grp,canReview){
     ${canReview?`<div class="rvbar" data-rvsec="${dk}"><button type="button" class="okbtn" data-rv="ok">✓ 확인</button><input data-rvnote data-k="rv-${dk}" placeholder="보완할 내용" aria-label="${esc(ITEM[key].label)} 보완 내용"><button type="button" class="danger" data-rv="revise">보완 요청</button></div>`:''}</div>`;
 }
 function reportView(u,r,date){
-  const head=`<div class="panel"><div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px">${esc(u.name)}</b>${partTag(u.part)}<span class="note">${esc(fmtD(date))}(${dayName(date)}) 업무보고</span></div>${r?`<span class="tag ${RS_C[r.status]}">${RS_L[r.status]}</span>`:''}</div>
+  const head=`<div class="panel"><div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px">${esc(u.name)}</b>${partTag(u.part)}<span class="note">${esc(fmtD(date))}(${dayName(date)}) 업무보고</span><span class="tag ${KIND_C[r?.kind||CALC.kind(date,CAL,u.uid)]}">${KIND_L[r?.kind||CALC.kind(date,CAL,u.uid)]}</span></div>${r?`<span class="tag ${RS_C[r.status]}">${RS_L[r.status]}</span>`:''}</div>
     ${r?.submittedAt?`<p class="note" style="margin:6px 0 0">${esc(fmtT(r.submittedAt))} 전송${r.reviewedAt?` · ${esc(fmtT(r.reviewedAt))} 검토`:''}</p>`:''}</div>`;
   if(!r)return head+'<div class="panel empty">이 날짜에 작성된 보고서가 없어요.</div>';
   if(r.status==='draft')return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>';
   const grp=`rep-${u.uid}-${date}`;const canReview=r.status==='submitted'||r.status==='hold';
-  let secs=(u.sections||[]).filter(k=>SCHEMA[k]).sort(byLib);
+  const kind=r.kind||CALC.kind(date,CAL,u.uid);u._date=date;u._kind=kind;
+  let secs=secsFor(u.sections,kind);
   let h=head;
   // 이 보고서와 함께 전송된 업무
   let tks=(tasksBy[u.uid]||[]).filter(t=>(t.log||[]).some(e=>e.report===date)||(t.status!=='done'&&t.status!=='todo'));
@@ -1269,8 +2110,14 @@ function reportView(u,r,date){
     if(!showAll){secs=secs.filter(k=>(r.revised||[]).includes(DK(k)));tks=tks.filter(t=>(r.revisedTasks||[]).includes(t.id));}
   }
   if(tks.length)h+=`<div class="panel"><h2>진행중 업무 <span class="s">업무별로 완료·보완·다음업무를 지시하세요</span></h2>${tks.sort(sortTasks).map(t=>`<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}" data-task="${esc(t.uid)}|${esc(t.id)}">${taskHead(t)}${taskLog(t,grp)}${t.status!=='done'?taskFbBar(t):''}</div>`).join('')}</div>`;
-  const inc=reMode&&!reShowAll[`${u.uid}|${date}`]?[]:Object.entries(r.data?.incoming||{});
-  if(inc.length)h+=`<div class="panel"><h2>입고 확인</h2>${inc.map(([pid,v])=>`<p style="margin:0 0 4px">${v.ok?'<span class="tag ok">입고</span>':'<span class="tag bad">미입고</span>'} ${esc(v.note||'')}</p>`).join('')}</div>`;
+  const full=!(reMode&&!reShowAll[`${u.uid}|${date}`]);
+  const tl=full?(r.data?.todayList||[]):[];
+  if(tl.length)h+=`<div class="panel"><h2>오늘 일정 <span class="s">지난 보고서의 날짜에서 자동으로 만들어진 일정</span></h2>${tl.map(a=>`<div class="agrow"><span class="tag ${a.done?'ok':'bad'}">${a.done?'처리':'미처리'}</span> ${esc(a.title)} <span class="note">${esc(fmtD(a.date))} · ${esc(a.src||'')}</span></div>`).join('')}</div>`;
+  const aa=full?(r.data?.agendaAdded||[]):[];
+  if(aa.length)h+=`<div class="panel"><h2>새로 잡힌 일정 <span class="s">이 보고서 내용에서 날짜를 찾아 자동 등록했어요</span></h2>${aa.map(a=>`<div class="agrow"><b class="num">${esc(fmtD(a.date))}(${dayName(a.date)})</b> ${esc(a.title)} <span class="note">${esc(a.src||'')}</span></div>`).join('')}</div>`;
+  const inc=full?Object.entries(r.data?.incoming||{}):[];
+  if(inc.length)h+=`<div class="panel"><h2>입고 내역 <span class="s">발주 수량과 입고 수량 비교</span></h2><div class="tbl" style="margin-top:0"><table><thead><tr><th>품목</th><th>발주</th><th>입고</th><th>비교</th><th>상태</th><th>정리 사진</th><th>비고</th></tr></thead><tbody>${inc.map(([pid,v])=>{const c=inCompare(v.ordQty,v.inQty);const stl=(IN_ST.find(x=>x[0]===v.state)||[])[1]||'';
+    return `<tr class="${c.c==='bad'||v.state==='bad'||v.state==='short'?'warnrow':''}"><td><b>${esc(v.item||'')}</b>${v.eta?`<br><span class="note">예상 ${esc(fmtD(v.eta))}</span>`:''}</td><td class="num">${esc(v.ordQty||'')}</td><td class="num">${esc(v.inQty||'')}</td><td>${c.t?`<span class="tag ${c.c}">${esc(c.t)}</span>`:''}</td><td>${v.ok?'<span class="tag ok">확인</span>':'<span class="tag bad">미확인</span>'} ${esc(stl)}</td><td><div class="gthumbs">${(v.imgs||[]).map(im=>galThumb(u.uid,im,`입고 · ${v.item||''}`,grp)).join('')}${(v.ordImgs||[]).map(im=>galThumb(u.uid,im,`발주 캡쳐 · ${v.item||''}`,grp)).join('')}</div></td><td>${esc(v.note||'')}</td></tr>`;}).join('')}</tbody></table></div></div>`;
   h+=`<div>${secs.map(k=>sectionView(u,k,r.data?.[DK(k)],r.review?.[DK(k)],grp,canReview)).join('')}</div>`;
   if(canReview)h+=`<div class="panel" id="rvFinal"><h2>최종 처리 <span class="s">보완 요청 항목이 있으면 보류, 없으면 승인</span></h2>
     <div class="field"><label for="rvAll">전체 의견 (선택)</label><input id="rvAll" data-k="rvAll" placeholder="예: 클레임 처리 결과 단톡방 공유 부탁해요"></div>
@@ -1285,6 +2132,21 @@ const reShowAll={};
 $('#arDetail').addEventListener('click',async e=>{
   if(!arSel)return;const ref=doc(db,'users',arSel.uid,'reports',arSel.date);
   const ra=e.target.closest('[data-reall]');if(ra){const k=ra.dataset.reall;reShowAll[k]=!reShowAll[k];renderAdmin();return;}
+  const bp=e.target.closest('[data-best]');
+  if(bp){const r=repOf(arSel.uid,arSel.date);const rows=JSON.parse(JSON.stringify(r?.data?.cs_bestreview?.rows||[]));const i=+bp.dataset.best;const row=rows[i];if(!row)return;
+    bp.disabled=true;
+    try{
+      if(!row.picked){
+        const nx=new Date(arSel.date+'T00:00');nx.setDate(nx.getDate()+1);const nd=CALC.ymd(nx);const tid=rid();const now=new Date().toISOString();
+        await setDoc(doc(db,'users',arSel.uid,'tasks',tid),{title:`베스트리뷰 회신 · ${row.who||'리뷰'}`,desc:`베스트리뷰로 선정된 리뷰에 감사 회신을 남겨주세요.\n\n${row.content||''}`,startAt:`${nd}T09:00`,dueAt:`${nd}T18:00`,today:false,status:'todo',createdAt:now,updatedAt:now,log:[],from:'bestreview'});
+        row.picked=true;row.taskId=tid;toast(`선정했어요. ${fmtD(nd)} 회신 업무가 등록됐어요`);
+      }else{
+        if(row.taskId){const t=(tasksBy[arSel.uid]||[]).find(x=>x.id===row.taskId);if(!t||t.status==='todo')await deleteDoc(doc(db,'users',arSel.uid,'tasks',row.taskId)).catch(()=>{});}
+        row.picked=false;row.taskId='';toast('선정을 취소했어요');
+      }
+      await updateDoc(ref,{'data.cs_bestreview.rows':rows});
+    }catch(err){toast(authMsg(err));bp.disabled=false;}
+    return;}
   const rv=e.target.closest('[data-rv]');
   if(rv){const bar=rv.closest('[data-rvsec]');const dk=bar.dataset.rvsec;const note=bar.querySelector('[data-rvnote]').value.trim();
     if(rv.dataset.rv==='revise'&&!note){toast('보완할 내용을 적어주세요');bar.querySelector('[data-rvnote]').focus();return;}
@@ -1298,7 +2160,9 @@ $('#arDetail').addEventListener('click',async e=>{
     try{const now=new Date().toISOString();const patch={status:st,reviewedAt:now,reviewNote:note};
       // 승인하면 모든 항목을 '확인'으로 정리 (보완 후 재전송된 항목 포함)
       if(st==='approved'){(users[arSel.uid].sections||[]).filter(k=>SCHEMA[k]).forEach(k=>{if(r.review?.[DK(k)]?.state!=='ok')patch[`review.${DK(k)}`]={state:'ok',note:'',at:now};});}
-      await updateDoc(ref,patch);toast(st==='approved'?'승인했어요':'보류하고 보완을 요청했어요');}catch(err){toast(authMsg(err));}
+      await updateDoc(ref,patch);
+      if(st==='approved'&&(r.data?.cs_material?.rows||[]).length){await setDoc(doc(db,'prices',arSel.date.slice(0,7)),{rows:r.data.cs_material.rows.map(x=>({cat:x.cat||'',item:x.item||'',site:x.site||'',price:IMP.num(x.price),g:IMP.num(x.g),change:x.change||''})),updatedAt:now,from:users[arSel.uid]?.name||'',report:arSel.date}).catch(()=>toast('원재료 가격 저장 실패 · 보안 규칙(prices)을 확인해주세요'));}
+      toast(st==='approved'?'승인했어요':'보류하고 보완을 요청했어요');}catch(err){toast(authMsg(err));}
     return;}
   await taskFeedback(e);
 });
