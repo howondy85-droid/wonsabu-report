@@ -305,6 +305,19 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .chart .ax{fill:var(--muted)}
 .chart .vl{fill:var(--ink);font-weight:600}
 .seg{row-gap:2px}
+.thw{position:relative;display:block}
+.thw .th{width:100%}
+.thw .x,.dmimg input{position:absolute;top:4px;right:4px}
+.thw .x{width:24px;height:24px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:14px;line-height:24px;padding:0;opacity:.9}
+.dmimg{position:relative;display:block;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sunk);cursor:pointer}
+.dmimg img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.dmimg input{width:20px;height:20px;accent-color:var(--bad)}
+.dmimg:has(input:checked){outline:3px solid var(--bad)}
+.dmimg span{display:block;font-size:10.5px;padding:3px 5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmbar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 0 2px;margin-top:10px}
+.dzone{border-color:var(--bad)}
+.inp{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+#galDel{border-color:var(--bad)!important;color:#ffb4a6!important}
 .tbl td.num{white-space:nowrap}
 .paidrow td{opacity:.55}
 .paidrow td:last-child,.paidrow td:nth-last-child(2){opacity:1}
@@ -327,6 +340,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <button data-tab="pay" aria-pressed="false">알바급여</button>
     <button data-tab="mat" aria-pressed="false">원재료</button>
     <button data-tab="inv" aria-pressed="false">계산서<span class="dot" id="invDot" hidden></span></button>
+    <button data-tab="data" aria-pressed="false">데이터 관리</button>
   </div>
   <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
 </header>
@@ -498,6 +512,37 @@ tr.off td{opacity:.45;text-decoration:line-through}
     </div>
   </section>
 
+  <section id="tabData" hidden>
+    <div class="panel">
+      <h2>데이터 관리 <span class="s">지시·완료 업무, 업무보고, 업로드 이미지·파일 등을 골라서 삭제해요 · 삭제하면 되돌릴 수 없어요</span></h2>
+      <div class="btnrow" style="margin-bottom:10px">
+        <select id="dmWho" aria-label="직원" class="inp"></select>
+        <div class="tfilter" id="dmCat" style="margin:0">
+          <button data-c="rep" aria-pressed="true">업무보고</button><button data-c="task" aria-pressed="false">업무 지시</button><button data-c="img" aria-pressed="false">이미지</button><button data-c="file" aria-pressed="false">첨부파일</button><button data-c="agenda" aria-pressed="false">자동일정</button><button data-c="purch" aria-pressed="false">발주·입고</button><button data-c="inv" aria-pressed="false">계산서</button>
+        </div>
+      </div>
+      <div class="btnrow" style="margin-bottom:10px">
+        <span class="note">기간</span><input type="date" id="dmFrom" class="inp" aria-label="시작일"><span class="note">~</span><input type="date" id="dmTo" class="inp" aria-label="종료일">
+        <select id="dmSt" class="inp" aria-label="상태"></select>
+        <button class="secondary" id="dmLoad" type="button">불러오기</button>
+      </div>
+      <div id="dmList"><p class="note">직원과 항목을 고르고 "불러오기"를 눌러주세요.</p></div>
+      <div class="btnrow dmbar" id="dmBar" hidden>
+        <label class="opt" style="padding:6px 10px"><input type="checkbox" id="dmMedia" checked><span>첨부된 이미지·파일도 함께 삭제</span></label>
+        <span style="flex:1"></span><span class="note" id="dmSel">0개 선택</span><button class="danger" id="dmDel" type="button">선택 삭제</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>원재료 가격 기록 <span class="s">원재료 탭 그래프에 쓰이는 월별 목록 (공용)</span></h2>
+      <div id="dmPrices"></div>
+    </div>
+    <div class="panel dzone">
+      <h2>직원 데이터 전체 삭제 <span class="s">위에서 고른 직원의 보고서·업무·이미지·파일·일정·발주·계산서와 직원 정보를 모두 지워요</span></h2>
+      <p class="note" style="margin:0 0 10px">로그인 계정(아이디·비밀번호)은 Firebase 콘솔 → Authentication에서 따로 삭제해야 해요. 계정만 남아 있으면 로그인해도 "가입 정보가 없어요"로 나와요.</p>
+      <button class="danger" id="dmWipe" type="button">이 직원 데이터 전체 삭제</button>
+    </div>
+  </section>
+
   <section id="tabInv" hidden>
     <div class="kpis" id="invKpis"></div>
     <div class="panel">
@@ -536,7 +581,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   <div class="stage"><button class="nav prev" id="galPrev" aria-label="이전">‹</button><img id="galImg" alt=""><button class="nav next" id="galNext" aria-label="다음">›</button></div>
   <div class="cap" id="galCap"></div>
   <div class="strip" id="galStrip"></div>
-  <div class="bar"><button id="galClose">닫기</button></div>
+  <div class="bar"><button id="galDel" hidden>이 이미지 삭제</button><button id="galClose">닫기</button></div>
 </div>
 <div class="overlay" id="cf" hidden><div class="dialog"><p id="cfMsg"></p><div class="btnrow"><button class="primary" id="cfYes" style="padding:9px 16px;font-size:14px">확인</button><button class="secondary" id="cfNo">취소</button></div></div></div>
 <div class="overlay" id="pop" hidden><div class="dialog big"><b id="popTitle"></b><p id="popMsg" class="note"></p><button class="primary" id="popOk">확인</button></div></div>
@@ -977,7 +1022,7 @@ async function galShow(i){
   [1,-1].forEach(async d=>{const nx=gal.items[(gal.i+d+n)%n];const k=nx.uid+'/'+nx.id;if(!fullCache[k]){try{const s=await getDoc(doc(db,'users',nx.uid,'images',nx.id));if(s.exists())fullCache[k]=s.data().full;}catch(e){}}});
 }
 function openGallery(items,i){
-  gal={items,i:0};
+  gal={items,i:0};$('#galDel').hidden=!isAdminUser;
   $('#galStrip').innerHTML=items.length>1?items.map((it,k)=>`<img src="${esc(it.thumb)}" data-k="${k}" alt="">`).join(''):'';
   const one=items.length<2;$('#galPrev').hidden=one;$('#galNext').hidden=one;
   $('#gal').hidden=false;galShow(i);
@@ -990,6 +1035,13 @@ document.addEventListener('click',e=>{
 });
 $('#galPrev').onclick=()=>galShow(gal.i-1);$('#galNext').onclick=()=>galShow(gal.i+1);
 $('#galClose').onclick=()=>{$('#gal').hidden=true;};
+$('#galDel').onclick=async()=>{
+  const it=gal.items[gal.i];if(!it||!isAdminUser)return;
+  if(!(await ask('이 이미지를 삭제할까요?\n원본·썸네일이 지워지고, 보고서·업무에 붙어 있던 자리에서도 빠져요. 되돌릴 수 없어요.','삭제')))return;
+  try{await purgeImages(it.uid,[it.id]);gal.items.splice(gal.i,1);toast('삭제했어요');
+    if(!gal.items.length){$('#gal').hidden=true;return;}openGallery(gal.items,Math.min(gal.i,gal.items.length-1));}
+  catch(err){toast(authMsg(err));}
+};
 $('#galStrip').addEventListener('click',e=>{const im=e.target.closest('[data-k]');if(im)galShow(+im.dataset.k);});
 document.addEventListener('keydown',e=>{if($('#gal').hidden){if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('span.th[data-full]')){e.preventDefault();e.target.click();}return;}if(e.key==='ArrowLeft')galShow(gal.i-1);else if(e.key==='ArrowRight')galShow(gal.i+1);else if(e.key==='Escape')$('#gal').hidden=true;});
 let tx=null;$('#gal').addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
@@ -1897,7 +1949,7 @@ function startAdmin(){
   },e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
 }
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','task','req','staff','cal','pay','mat','inv'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','task','req','staff','cal','pay','mat','inv','data'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();if(t==='data')dmInit();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -1922,9 +1974,9 @@ function renderAdmin(){
   $('#homeDate').textContent=`${fmtD(td)}(${dayName(td)})`;
   $('#homeStatus').innerHTML=act.length?act.map(u=>statusCard(u,td)).join(''):'<div class="empty">승인된 직원이 아직 없어요.</div>';
   const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,24);
-  $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
+  $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<span class="thw"><button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button><button type="button" class="x" data-delimg="${esc(t.uid)}|${esc(t.id)}" aria-label="이미지 삭제">×</button></span>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
   renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);renderCal(act);
-  renderInvTab();renderMatTab();
+  renderInvTab();renderMatTab();if(!$('#tabData').hidden)dmInit();
 }
 function statusCard(u,date,sel){
   const r=repOf(u.uid,date);const st=r?r.status:'none';
@@ -1935,6 +1987,156 @@ function statusCard(u,date,sel){
 document.addEventListener('click',e=>{const o=e.target.closest('[data-openrep]');if(!o)return;const[u,d]=o.dataset.openrep.split('|');arSel={uid:u,date:d};$('#arDate').value=d;setTab('rep');renderAdmin();$('#arDetail').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#arDate').addEventListener('change',()=>{if(arSel)arSel.date=$('#arDate').value;renderAdmin();});
 
+
+
+/* ---------- 삭제 (관리자) ---------- */
+// 객체 안의 첨부 이미지({id,thumb})·파일({id,name,size}) 찾기
+function collectMedia(o,out={imgs:new Set(),files:new Set()}){
+  if(Array.isArray(o))o.forEach(v=>collectMedia(v,out));
+  else if(o&&typeof o==='object'){
+    if(typeof o.id==='string'&&o.id&&typeof o.thumb==='string')out.imgs.add(o.id);
+    else if(typeof o.id==='string'&&o.id&&typeof o.name==='string'&&'size' in o)out.files.add(o.id);
+    for(const k in o)if(o[k]&&typeof o[k]==='object')collectMedia(o[k],out);}
+  return out;
+}
+// 배열에서 지운 이미지·파일 항목 빼기
+function stripMedia(o,imgIds,fileIds){
+  let ch=false;
+  if(Array.isArray(o)){for(let i=o.length-1;i>=0;i--){const v=o[i];
+      if(v&&typeof v==='object'&&typeof v.id==='string'&&((typeof v.thumb==='string'&&imgIds.has(v.id))||(typeof v.name==='string'&&'size' in v&&fileIds.has(v.id)))){o.splice(i,1);ch=true;}
+      else if(v&&typeof v==='object')ch=stripMedia(v,imgIds,fileIds)||ch;}}
+  else if(o&&typeof o==='object')for(const k in o){if(o[k]&&typeof o[k]==='object')ch=stripMedia(o[k],imgIds,fileIds)||ch;}
+  return ch;
+}
+async function delRefs(refs){for(let i=0;i<refs.length;i+=400){const b=writeBatch(db);refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit();}}
+// 이미지·파일 문서를 지우고, 그 이미지를 붙여둔 보고서·업무·발주에서도 빼기
+async function purgeMedia(uid,imgIds,fileIds){
+  imgIds=new Set(imgIds||[]);fileIds=new Set(fileIds||[]);if(!imgIds.size&&!fileIds.size)return;
+  await delRefs([...[...imgIds].flatMap(id=>[doc(db,'users',uid,'images',id),doc(db,'users',uid,'thumbs',id)]),...[...fileIds].map(id=>doc(db,'users',uid,'files',id))]);
+  for(const c of ['reports','tasks','purchases']){
+    let q;try{q=await getDocs(collection(db,'users',uid,c));}catch(e){continue;}
+    for(const d of q.docs){const v=d.data();const key=c==='reports'?'data':c==='tasks'?'log':'imgs';const part=v[key];
+      if(part&&stripMedia(part,imgIds,fileIds))await updateDoc(doc(db,'users',uid,c,d.id),{[key]:part}).catch(()=>{});}
+  }
+}
+const purgeImages=(uid,ids)=>purgeMedia(uid,ids,[]);
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-delimg]');if(!b||!isAdminUser)return;e.preventDefault();e.stopPropagation();
+  const[uid,id]=b.dataset.delimg.split('|');
+  if(!(await ask('이 이미지를 삭제할까요?\n보고서·업무에 붙어 있던 자리에서도 빠지고, 되돌릴 수 없어요.','삭제')))return;
+  try{await purgeImages(uid,[id]);toast('삭제했어요');}catch(err){toast(authMsg(err));}
+},true);
+async function deleteReports(uid,dates,withMedia){
+  const media={imgs:new Set(),files:new Set()};
+  if(withMedia)for(const d of dates){try{const s=await getDoc(doc(db,'users',uid,'reports',d));if(s.exists())collectMedia(s.data().data,media);}catch(e){}}
+  await delRefs(dates.map(d=>doc(db,'users',uid,'reports',d)));
+  if(withMedia)await purgeMedia(uid,media.imgs,media.files);
+}
+async function deleteTasks(uid,ids,withMedia){
+  const media={imgs:new Set(),files:new Set()};
+  if(withMedia)for(const id of ids){try{const s=await getDoc(doc(db,'users',uid,'tasks',id));if(s.exists())collectMedia(s.data().log,media);}catch(e){}}
+  await delRefs(ids.map(id=>doc(db,'users',uid,'tasks',id)));
+  if(withMedia)await purgeMedia(uid,media.imgs,media.files);
+}
+$('#arDetail').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-repdel]');if(!b)return;e.stopPropagation();
+  const[uid,date]=b.dataset.repdel.split('|');
+  if(!(await ask(`${users[uid]?.name||''} ${fmtD(date)} 업무보고를 삭제할까요?\n첨부 이미지·파일도 함께 지워지고 되돌릴 수 없어요.`,'삭제')))return;
+  b.disabled=true;try{await deleteReports(uid,[date],true);toast('보고서를 삭제했어요');arSel=null;renderAdmin();}catch(err){toast(authMsg(err));b.disabled=false;}
+},true);
+
+/* ---------- 데이터 관리 탭 ---------- */
+const DM_C={
+  rep:{col:'reports',l:'업무보고',when:v=>v.date,st:[['','전체 상태'],['draft','작성 중'],['submitted','확인 대기'],['hold','보류'],['approved','승인']],stOf:v=>v.status},
+  task:{col:'tasks',l:'업무 지시',when:v=>(v.createdAt||'').slice(0,10),st:[['','전체 상태'],['done','완료'],['open','진행중'],['submitted','확인요청']],stOf:v=>v.status==='done'?'done':v.status==='submitted'?'submitted':'open'},
+  img:{col:'thumbs',l:'이미지',when:v=>(v.createdAt||'').slice(0,10),st:[['','전체']],stOf:()=>''},
+  file:{col:'files',l:'첨부파일',when:v=>(v.createdAt||'').slice(0,10),st:[['','전체']],stOf:()=>''},
+  agenda:{col:'agenda',l:'자동일정',when:v=>v.date,st:[['','전체'],['done','처리'],['open','미처리']],stOf:v=>v.done?'done':'open'},
+  purch:{col:'purchases',l:'발주·입고',when:v=>v.eta||(v.createdAt||'').slice(0,10),st:[['','전체'],['done','입고 완료'],['open','미입고']],stOf:v=>v.received?'done':'open'},
+  inv:{col:'invoices',l:'계산서',when:v=>v.date,st:[['','전체'],['done','처리 완료'],['open','미처리']],stOf:v=>v.paid?'done':'open'}
+};
+let dmC='rep',dmRows=[],dmInited=false;
+function dmInit(){
+  const all=Object.values(users).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const cur=$('#dmWho').value;
+  $('#dmWho').innerHTML=all.map(u=>`<option value="${esc(u.uid)}">${esc(u.name||u.loginId||'(이름 없음)')}${u.status!=='approved'?` (${({pending:'승인대기',rejected:'반려',disabled:'중지'})[u.status]||u.status})`:''}</option>`).join('')||'<option value="">직원 없음</option>';
+  if(cur&&users[cur])$('#dmWho').value=cur;
+  if(!dmInited){dmInited=true;dmSyncSt();}
+  dmPrices();
+}
+function dmSyncSt(){$('#dmSt').innerHTML=DM_C[dmC].st.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');$$('#dmCat button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===dmC)));}
+$('#dmCat').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;dmC=b.dataset.c;dmSyncSt();dmLoad();});
+$('#dmLoad').addEventListener('click',()=>dmLoad());
+['#dmWho','#dmFrom','#dmTo','#dmSt'].forEach(s=>$(s).addEventListener('change',()=>dmLoad()));
+async function dmLoad(){
+  const uid=$('#dmWho').value;if(!uid){$('#dmList').innerHTML='<p class="note">직원을 골라주세요.</p>';return;}
+  const C=DM_C[dmC];$('#dmList').innerHTML='<p class="note">불러오는 중…</p>';$('#dmBar').hidden=true;
+  let docs=[];try{docs=(await getDocs(collection(db,'users',uid,C.col))).docs.map(x=>({...x.data(),id:x.id,uid}));}catch(err){$('#dmList').innerHTML=`<p class="note">${esc(authMsg(err))}</p>`;return;}
+  if($('#dmWho').value!==uid||DM_C[dmC]!==C)return;
+  const f=$('#dmFrom').value,t=$('#dmTo').value,st=$('#dmSt').value;
+  dmRows=docs.filter(v=>{const w=C.when(v)||'';return(!f||w>=f)&&(!t||w<=t)&&(!st||C.stOf(v)===st);}).sort((a,b)=>(C.when(b)||'').localeCompare(C.when(a)||''));
+  dmRender();
+}
+function dmRender(){
+  const C=DM_C[dmC];const uid=$('#dmWho').value;
+  if(!dmRows.length){$('#dmList').innerHTML=`<div class="empty">조건에 맞는 ${C.l}이(가) 없어요.</div>`;$('#dmBar').hidden=true;return;}
+  const cb=v=>`<input type="checkbox" data-dmid="${esc(v.id)}" aria-label="선택">`;
+  const H={
+    rep:[['날짜','보고','상태','첨부','전송'],v=>{const m=collectMedia(v.data);return[`<b class="num">${esc(v.date)}</b>(${dayName(v.date)})`,KIND_L[v.kind||'daily']||'',`<span class="tag ${RS_C[v.status]||''}">${RS_L[v.status]||v.status||''}</span>`,`사진 ${m.imgs.size} · 파일 ${m.files.size}`,esc(fmtT(v.submittedAt))];}],
+    task:[['업무명','상태','등록','완료 예정','기록'],v=>[`<b>${esc(v.title)}</b>`,`<span class="tag ${ST_C[v.status]||''}">${esc(ST_L[v.status]||v.status)}</span>`,esc(fmtT(v.createdAt)),esc(fmtDH(v.dueAt)),`${(v.log||[]).length}건`]],
+    file:[['파일명','크기','항목','보고일','올린 날'],v=>[`<a href="#" data-dl="${esc(uid)}|${esc(v.id)}">${esc(v.name)}</a>`,kb(v.size||0),esc(ITEM[KD(v.section||'')]?.label||v.section||''),esc(v.report||''),esc(fmtT(v.createdAt))]],
+    agenda:[['날짜','일정','찾은 곳','상태'],v=>[`<b class="num">${esc(v.date)}</b>`,esc(v.title),esc(v.src||''),v.done?'<span class="tag ok">처리</span>':'<span class="tag">미처리</span>']],
+    purch:[['품목','수량','예상입고','상태'],v=>[`<b>${esc(v.item)}</b>`,esc(v.qty||''),esc(v.eta||''),v.received?`<span class="tag ok">입고 ${esc(v.receivedDate||'')}</span>`:'<span class="tag">미입고</span>']],
+    inv:[['구분','작성일','거래처','합계','상태'],v=>[esc(v.kind),esc(v.date),esc(v.name),won(v.total),v.paid?'<span class="tag ok">처리</span>':'<span class="tag">미처리</span>']]
+  };
+  if(dmC==='img'){
+    const sz=dmRows.reduce((a,v)=>a+(v.size||0),0);
+    $('#dmList').innerHTML=`<div class="btnrow" style="margin-bottom:8px"><label class="opt" style="padding:6px 10px"><input type="checkbox" id="dmAll"><span>전체 선택 (${dmRows.length}장 · 약 ${kb(sz)})</span></label></div>
+      <div class="thumbs">${dmRows.map(v=>`<label class="dmimg"><img src="${esc(v.thumb)}" alt="" loading="lazy">${cb(v)}<span>${esc(fmtT(v.createdAt))}${v.section?` · ${esc(ITEM[KD(v.section)]?.label||'')}`:''}</span></label>`).join('')}</div>`;
+  }else{
+    const[hd,fn]=H[dmC];
+    $('#dmList').innerHTML=`<div class="tbl" style="margin-top:0"><table><thead><tr><th><input type="checkbox" id="dmAll" aria-label="전체 선택"></th>${hd.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${dmRows.map(v=>`<tr><td>${cb(v)}</td>${fn(v).map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  $('#dmBar').hidden=false;$('#dmMedia').closest('label').hidden=!(dmC==='rep'||dmC==='task');dmCount();
+}
+function dmPicked(){return $$('#dmList [data-dmid]').filter(x=>x.checked).map(x=>x.dataset.dmid);}
+function dmCount(){const n=dmPicked().length;$('#dmSel').textContent=`${n}개 선택`;$('#dmDel').disabled=!n;}
+$('#dmList').addEventListener('change',e=>{if(e.target.id==='dmAll')$$('#dmList [data-dmid]').forEach(x=>x.checked=e.target.checked);dmCount();});
+$('#dmDel').addEventListener('click',async()=>{
+  const uid=$('#dmWho').value;const ids=dmPicked();if(!uid||!ids.length)return;const C=DM_C[dmC];const media=$('#dmMedia').checked;
+  const extra=dmC==='rep'||dmC==='task'?(media?'\n첨부된 이미지·파일도 함께 지워져요.':'\n첨부 이미지·파일은 남겨둬요.'):dmC==='img'||dmC==='file'?'\n보고서·업무에 붙어 있던 자리에서도 빠져요.':'';
+  if(!(await ask(`${users[uid]?.name||''}의 ${C.l} ${ids.length}개를 삭제할까요?${extra}\n되돌릴 수 없어요.`,`${ids.length}개 삭제`)))return;
+  const b=$('#dmDel');b.disabled=true;b.textContent='삭제 중…';
+  try{
+    if(dmC==='rep')await deleteReports(uid,ids,media);
+    else if(dmC==='task')await deleteTasks(uid,ids,media);
+    else if(dmC==='img')await purgeMedia(uid,ids,[]);
+    else if(dmC==='file')await purgeMedia(uid,[],ids);
+    else await delRefs(ids.map(id=>doc(db,'users',uid,C.col,id)));
+    toast(`${ids.length}개 삭제했어요`);await dmLoad();
+  }catch(err){toast(authMsg(err));}finally{b.textContent='선택 삭제';dmCount();}
+});
+function dmPrices(){
+  const ms=Object.keys(prices).sort().reverse();
+  $('#dmPrices').innerHTML=ms.length?`<div class="tbl" style="margin-top:0"><table><thead><tr><th>월</th><th>품목 수</th><th>출처</th><th>저장</th><th></th></tr></thead><tbody>${ms.map(m=>`<tr><td class="num"><b>${esc(m)}</b></td><td class="num">${(prices[m].rows||[]).length}</td><td>${prices[m].from==='import'?'엑셀 가져오기':esc(prices[m].from||'승인')}</td><td>${esc(fmtT(prices[m].updatedAt))}</td><td><button type="button" class="rm" data-pdel="${esc(m)}">삭제</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="note" style="margin:0">저장된 원재료 가격 기록이 없어요.</p>';
+}
+$('#dmPrices').addEventListener('click',async e=>{const b=e.target.closest('[data-pdel]');if(!b)return;const m=b.dataset.pdel;
+  if(!(await ask(`${m} 원재료 가격 기록을 삭제할까요?`,'삭제')))return;
+  try{await deleteDoc(doc(db,'prices',m));toast('삭제했어요');}catch(err){toast(authMsg(err));}});
+$('#dmWipe').addEventListener('click',async()=>{
+  const uid=$('#dmWho').value;const u=users[uid];if(!u)return;
+  if(!(await ask(`${u.name}(${u.loginId}) 직원의 모든 데이터를 삭제할까요?\n업무보고·업무 지시·이미지·파일·일정·발주·계산서와 직원 정보가 모두 지워져요.`,'계속')))return;
+  if(!(await ask(`정말 삭제할까요? 되돌릴 수 없어요.\n\n${u.name} 전체 삭제`,'전체 삭제')))return;
+  const b=$('#dmWipe');b.disabled=true;b.textContent='삭제 중…';
+  try{
+    [taskSubs,repSubs,thumbSubs,invSubs].forEach(m=>{if(m[uid]){try{m[uid]();}catch(e){}delete m[uid];}});
+    for(const c of ['reports','tasks','images','thumbs','files','purchases','agenda','invoices']){
+      const q=await getDocs(collection(db,'users',uid,c));await delRefs(q.docs.map(d=>doc(db,'users',uid,c,d.id)));}
+    await deleteDoc(doc(db,'users',uid));
+    delete tasksBy[uid];delete repsBy[uid];delete thumbs[uid];delete invBy[uid];
+    toast(`${u.name} 데이터를 모두 삭제했어요`);$('#dmList').innerHTML='';$('#dmBar').hidden=true;
+  }catch(err){toast(authMsg(err));}finally{b.disabled=false;b.textContent='이 직원 데이터 전체 삭제';}
+});
 
 /* ---------- 계산서 탭 ---------- */
 let invF='open',invK='';
@@ -2208,7 +2410,7 @@ function reportView(u,r,date){
   const head=`<div class="panel"><div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px">${esc(u.name)}</b>${partTag(u.part)}<span class="note">${esc(fmtD(date))}(${dayName(date)}) 업무보고</span><span class="tag ${KIND_C[r?.kind||CALC.kind(date,CAL,u.uid)]}">${KIND_L[r?.kind||CALC.kind(date,CAL,u.uid)]}</span></div>${r?`<span class="tag ${RS_C[r.status]}">${RS_L[r.status]}</span>`:''}</div>
     ${r?.submittedAt?`<p class="note" style="margin:6px 0 0">${esc(fmtT(r.submittedAt))} 전송${r.reviewedAt?` · ${esc(fmtT(r.reviewedAt))} 검토`:''}</p>`:''}</div>`;
   if(!r)return head+'<div class="panel empty">이 날짜에 작성된 보고서가 없어요.</div>';
-  if(r.status==='draft')return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>';
+  if(r.status==='draft')return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>'+`<div class="btnrow" style="justify-content:flex-end;margin:4px 0 16px"><button type="button" class="danger" data-repdel="${esc(u.uid)}|${esc(date)}">작성 중인 보고서 삭제</button></div>`;
   const grp=`rep-${u.uid}-${date}`;const canReview=r.status==='submitted'||r.status==='hold';
   const kind=r.kind||CALC.kind(date,CAL,u.uid);u._date=date;u._kind=kind;
   let secs=secsFor(u.sections,kind);
@@ -2236,6 +2438,7 @@ function reportView(u,r,date){
     <div class="field"><label for="rvAll">전체 의견 (선택)</label><input id="rvAll" data-k="rvAll" placeholder="예: 클레임 처리 결과 단톡방 공유 부탁해요"></div>
     <div class="btnrow"><button type="button" class="okbtn" data-final="approved" style="padding:11px 22px;font-size:15px">승인</button><button type="button" class="danger" data-final="hold" style="padding:11px 22px;font-size:15px">보류 (보완 요청)</button></div></div>`;
   else if(r.reviewNote)h+=`<div class="panel"><p class="note" style="margin:0">전체 의견: ${esc(r.reviewNote)}</p></div>`;
+  h+=`<div class="btnrow" style="justify-content:flex-end;margin:4px 0 16px"><button type="button" class="danger" data-repdel="${esc(u.uid)}|${esc(date)}">이 보고서 삭제</button></div>`;
   return h;
 }
 function taskFbBar(t){return `<div class="rvbar"><textarea data-k="fb-${esc(t.id)}" data-r="fb" rows="2" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)" placeholder="보완사항 또는 다음 업무 지시 (완료는 비워도 돼요)" aria-label="${esc(t.title)} 피드백"></textarea>
