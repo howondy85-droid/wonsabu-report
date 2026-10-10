@@ -127,7 +127,22 @@ button:disabled{opacity:.5;cursor:default}
 .attach{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--muted);border-radius:8px;padding:8px 11px;font-size:12.5px;color:var(--muted);background:var(--surface);min-height:40px}
 .attach input{display:none}
 .attach.busy{opacity:.5;pointer-events:none}
-fieldset:disabled .attach,fieldset:disabled .add,fieldset:disabled .rm,fieldset:disabled .x{display:none}
+fieldset:disabled .attach,fieldset:disabled .add,fieldset:disabled .rm,fieldset:disabled .x,fieldset:disabled .x2{display:none}
+.files{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.fchip{display:inline-flex;align-items:center;gap:8px;max-width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--surface)}
+.fchip .fic{font-family:var(--f-num);font-size:10px;font-weight:600;background:var(--ok);color:#fff;border-radius:4px;padding:2px 5px;flex:none}
+.fchip .fname{border:0;background:none;padding:0;color:var(--cs);text-decoration:underline;font-size:13px;text-align:left;min-width:0;overflow-wrap:anywhere}
+.fchip .x2{border:0;background:var(--bad);color:#fff;width:20px;height:20px;border-radius:50%;font-size:12px;line-height:20px;padding:0;flex:none}
+fieldset:disabled .fchip .fname{pointer-events:auto}
+.shipsum{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 6px}
+.shipd{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--surface)}
+.shipd summary{cursor:pointer;font-size:13.5px}
+.tbl{overflow-x:auto;margin-top:8px}
+.tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:12.5px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.tbl th{color:var(--muted);font-weight:500;white-space:nowrap}
+.tbl td{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.refilter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--accent-soft);color:var(--accent-ink);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px}
 .imgs .th{cursor:zoom-in;display:block}
 
 .banner{border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px}
@@ -419,7 +434,7 @@ const idToEmail=id=>`${id}@${ID_DOMAIN}`;
 /* ===================== 양식 정의 ===================== */
 const LIB=[
  {g:'cs-daily',label:'CS · 일일업무',items:[
-  ['cs.order','주문접수 완료','스스·자사몰·카카오·토스 캡쳐'],['cs.ship','발송처리 내역','캡쳐 + 미발송분 파악'],
+  ['cs.order','주문접수 완료','스스·자사몰·카카오·토스 캡쳐'],['cs.ship','발송처리 내역','한진 송장 × 네이버 주문 엑셀 대조'],
   ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
   ['cs.bulk','대량주문 문의','일시·내용·견적서'],['cs.claim','클레임 발생내역','캡쳐 필수'],
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
@@ -443,8 +458,7 @@ const CONSULT_DONE='완료 기준: 담당자 마지막 메시지가 "네네! 또
 // field: [key, type, label, options]
 const SCHEMA={
  'cs.order':{type:'channels',hint:'채널별 주문 접수 후 대시보드 캡쳐 (날짜·시간이 보이게)',fields:[['done','check','접수 완료'],['imgs','imgs','대시보드 캡쳐']]},
- 'cs.ship':{type:'channels',hint:'발송처리 후 0건 팝업 캡쳐 (날짜·시간이 보이게)',fields:[['done','check','발송처리 완료'],['imgs','imgs','0건 팝업 캡쳐']],
-   extra:[['unshipped','textarea','미발송분','네이버 배송준비중 엑셀로 확인한 미발송 주문 (주문자·주문번호)'],['dateChanged','check','배송일 변경 건 있음'],['dateNote','text','배송일 변경 내용','',{showIf:['dateChanged',true]}]]},
+ 'cs.ship':{type:'ship',hint:'한진 송장 엑셀(재출력_세부내역)과 네이버 주문내역 엑셀(전체주문발주발송관리)을 함께 올리면, 이미 송장이 나간 주문(중복)과 미발송 주문을 찾아줘요'},
  'cs.prevday':{type:'group',hint:'한진택배 세부내역 캡쳐로 전체 배송완료 확인',fields:[['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
    list:{label:'미완료 건',showIf:['allDone','no'],fields:[['name','text','주문자명'],['invoice','text','송장번호'],['note','text','배송완료시각 또는 통화내역']]}},
  'cs.quick':{type:'group',hint:'포장완료 후 매장·픽업대에 올라간 사진. 없으면 비워두세요',fields:[['imgs','imgs','출고완료 사진']],
@@ -456,6 +470,93 @@ const SCHEMA={
  'cs.notes':{type:'group',fields:[['text','textarea','공유할 내용']]},
  'cs.adcharge':{type:'group',hint:'충전한 날만 입력하세요',fields:[['amount','text','충전금액'],['imgs','imgs','충전화면 캡쳐']]},
 };
+/*SHIP-LOGIC-START*/
+// 한진 송장 × 네이버 주문내역 대조 (순수 함수 — 화면과 분리)
+const SHIP={
+  cell:v=>String(v??'').trim(),
+  nm:v=>String(v??'').replace(/\s+/g,''),
+  dg:v=>String(v??'').replace(/\D/g,''),
+  // 파일 → 행 배열. CSV는 UTF-8 → EUC-KR 순으로 글자를 풀어서 읽음 (한국 엑셀 CSV는 EUC-KR이 많음)
+  rows(XL,buf,name){
+    let wb;
+    if(/\.csv$/i.test(name)){
+      let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){text=new TextDecoder('euc-kr').decode(buf);}
+      wb=XL.read(text.replace(/^\uFEFF/,''),{type:'string'});
+    }else wb=XL.read(buf,{type:'array'});
+    return XL.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:false});
+  },
+  zp(v){const d=String(v??'').replace(/\D/g,'');return d?d.padStart(5,'0'):'';},
+  ad:v=>String(v??'').replace(/[\s,()\-]/g,''),
+  detect(rows){
+    for(const r of rows.slice(0,15)){const c=(r||[]).map(x=>String(x??'').trim());
+      if(c.includes('상품주문번호'))return 'naver';
+      if(c.some(x=>x==='운송장번호'||x==='송장번호'))return 'hanjin';}
+    return null;
+  },
+  pick(names,cands){
+    for(const c of cands){const i=names.findIndex(n=>n===c);if(i>=0)return i;}
+    for(const c of cands){const parts=c.split('_');const i=names.findIndex(n=>parts.every(p=>n.includes(p)));if(i>=0)return i;}
+    return -1;
+  },
+  parseNaver(rows,file){
+    const hi=rows.findIndex((r,i)=>i<15&&(r||[]).some(x=>String(x??'').trim()==='상품주문번호'));if(hi<0)return[];
+    const H=rows[hi].map(x=>String(x??'').trim());const ix=n=>H.indexOf(n);
+    const c={po:ix('상품주문번호'),ord:ix('주문번호'),buyer:ix('구매자명'),rcv:ix('수취인명'),tel:ix('수취인연락처1'),zip:ix('우편번호'),prod:ix('상품명'),opt:ix('옵션정보'),kind:ix('상품종류'),qty:ix('수량')};
+    let a=ix('통합배송지');if(a<0)a=ix('기본배송지');if(a<0)a=H.findIndex(h=>h.includes('배송지')||h.includes('주소'));const a2=ix('상세배송지');
+    const g=(r,i)=>i>=0?SHIP.cell(r[i]):'';
+    return rows.slice(hi+1).filter(r=>r&&g(r,c.po)).map(r=>({file,po:g(r,c.po),ord:g(r,c.ord),buyer:g(r,c.buyer),rcv:g(r,c.rcv),tel:SHIP.dg(g(r,c.tel)),zip:SHIP.zp(g(r,c.zip)),
+      addr:g(r,a)+(a2>=0&&a2!==a?' '+g(r,a2):''),prod:g(r,c.prod)+(g(r,c.opt)?` (${g(r,c.opt)})`:''),kind:g(r,c.kind),qty:g(r,c.qty)}));
+  },
+  parseHanjin(rows,file){
+    const hi=rows.findIndex((r,i)=>i<15&&(r||[]).some(x=>{x=String(x??'').trim();return x==='운송장번호'||x==='송장번호';}));if(hi<0)return[];
+    const top=rows[hi].map(x=>String(x??'').trim());const sub=(rows[hi+1]||[]).map(x=>String(x??'').trim());
+    const two=sub.some(x=>x==='이름'||x==='연락처'||x==='우편번호');
+    const names=[];let last='';
+    for(let i=0;i<Math.max(top.length,sub.length);i++){if(top[i])last=top[i];names.push(two&&sub[i]?`${last}_${sub[i]}`:(top[i]||''));}
+    const c={inv:SHIP.pick(names,['운송장번호','송장번호']),seq:SHIP.pick(names,['순번']),
+      rcv:SHIP.pick(names,['받는분_이름','받는분_성명','받는분','수하인명','받는분이름','수취인명','수취인']),
+      tel:SHIP.pick(names,['받는분_연락처','받는분_전화번호','받는분_휴대폰','받는분연락처','수하인전화번호','수취인연락처','연락처','전화번호','휴대폰번호']),
+      zip:SHIP.pick(names,['받는분_우편번호','받는분우편번호','수하인우편번호','우편번호']),
+      addr:SHIP.pick(names,['받는분_주소','받는분주소','수하인주소','주소']),
+      prod:SHIP.pick(names,['품목명','상품명'])};
+    const g=(r,i)=>i>=0?SHIP.cell(r[i]):'';
+    return rows.slice(hi+(two?2:1)).filter(r=>r&&SHIP.dg(g(r,c.inv))).map(r=>{
+      const rawTel=g(r,c.tel);const telPre=SHIP.dg(rawTel.split('*')[0]);
+      const rawAddr=g(r,c.addr);const addrPre=SHIP.ad(rawAddr.split('*')[0]).slice(0,14);
+      return{file,inv:SHIP.dg(g(r,c.inv)),seq:g(r,c.seq),rcv:g(r,c.rcv),tel:telPre,telFull:!rawTel.includes('*'),zip:SHIP.zp(g(r,c.zip)),addrPre,
+        prod:g(r,c.prod).replace(/★+\[식품\]★+\[파손주의\]★+/g,'').trim()};
+    });
+  },
+  score(n,h){
+    const name=SHIP.nm(n.rcv)!==''&&SHIP.nm(n.rcv)===SHIP.nm(h.rcv);
+    const tel=h.tel.length>=7&&(h.telFull?n.tel===h.tel:(n.tel.startsWith(h.tel)&&n.tel.length-h.tel.length<=4));
+    const zip=!!h.zip&&n.zip===h.zip;
+    const addr=h.addrPre.length>=6&&SHIP.ad(n.addr).startsWith(h.addrPre);
+    const a=SHIP.nm(n.prod).slice(0,8),b=SHIP.nm(h.prod);const prod=!!a&&!!b&&(b.includes(a)||SHIP.nm(n.prod).includes(b.slice(0,8)));
+    const strict=name&&tel&&(zip||addr||(!h.zip&&!h.addrPre));
+    const partial=!strict&&((name&&(tel||zip||addr))||(tel&&(zip||addr)));
+    const why=[name&&'수취인명',tel&&'연락처',zip&&'우편번호',addr&&'주소',prod&&'상품명'].filter(Boolean).join('·');
+    return{strict,partial,why,pts:(name?4:0)+(tel?3:0)+(zip?2:0)+(addr?2:0)+(prod?1:0)};
+  },
+  compare(naver,hanjin,max=250){
+    const dup=[],partial=[],unshipped=[];const used=new Set();
+    const pick=n=>({po:n.po,ord:n.ord,buyer:n.buyer,rcv:n.rcv,prod:n.prod,qty:n.qty});
+    for(const n of naver){
+      let best=null,bestP=null;
+      for(let j=0;j<hanjin.length;j++){const s=SHIP.score(n,hanjin[j]);
+        if(s.strict&&(!best||s.pts>best.s.pts))best={j,s};else if(s.partial&&(!bestP||s.pts>bestP.s.pts))bestP={j,s};}
+      if(best){used.add(best.j);dup.push({...pick(n),inv:hanjin[best.j].inv,why:best.s.why});}
+      else if(bestP){partial.push({...pick(n),inv:hanjin[bestP.j].inv,hrcv:hanjin[bestP.j].rcv,why:bestP.s.why});}
+      else unshipped.push(pick(n));
+    }
+    const hanjinOnly=hanjin.filter((h,j)=>!used.has(j)&&!partial.some(p=>p.inv===h.inv)).map(h=>({inv:h.inv,seq:h.seq,rcv:h.rcv,prod:h.prod}));
+    const cut=a=>a.slice(0,max);
+    return{naverRows:naver.length,naverOrders:new Set(naver.map(n=>n.ord||n.po)).size,hanjinCount:hanjin.length,
+      dup:cut(dup),partial:cut(partial),unshipped:cut(unshipped),hanjinOnly:cut(hanjinOnly),
+      counts:{dup:dup.length,partial:partial.length,unshipped:unshipped.length,hanjinOnly:hanjinOnly.length}};
+  }
+};
+/*SHIP-LOGIC-END*/
 const DK=k=>k.replace('.','_');
 const KD=d=>d.replace('_','.');
 
@@ -669,6 +770,7 @@ function fieldHtml(path,f,val){
     case 'hour':return `<div class="field"${wrapIf}><label for="${id}">${lab}</label><select id="${id}" data-p="${p}">${hourOpts(val||'')}</select></div>`;
     case 'datehour':{const[d,t]=(val||'').split('T');return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="dh"><input type="date" data-p="${p}" data-dh="d" value="${esc(d||'')}" aria-label="${esc(label)} 날짜"><select data-p="${p}" data-dh="h" aria-label="${esc(label)} 시각">${hourOpts(t?t.slice(0,2):'')}</select></div></div>`;}
     case 'imgs':return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="imgs" data-imgs="${p}">${imgsInner(path,val)}</div></div>`;
+    case 'files':return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="files" data-files="${p}" data-accept="${esc(o.accept||'')}">${filesInner(path,val,o.accept)}</div><span class="hint">파일당 700KB까지 · xlsx, xls, csv</span></div>`;
     default:return `<div class="field"${wrapIf}><label for="${id}">${lab}</label><input id="${id}" type="${type==='tel'?'tel':type==='date'?'date':'text'}" data-p="${p}" value="${esc(val)}" placeholder="${esc(ph||'')}"${type==='tel'?' inputmode="tel"':''}></div>`;
   }
 }
@@ -676,6 +778,12 @@ function imgsInner(path,val){
   const arr=Array.isArray(val)?val:[];const grp='r-'+R.date;
   return arr.map((im,i)=>`<span class="ti"><span class="th" role="button" tabindex="0" data-gal="${esc(grp)}" data-full="${esc(meUid)}|${esc(im.id)}" data-cap="첨부 사진"><img src="${esc(im.thumb)}" alt="첨부 사진"></span><button type="button" class="x" data-rmimg="${esc(path)}" data-i="${i}" aria-label="사진 삭제">×</button></span>`).join('')
     +`<label class="attach"><input type="file" accept="image/*" multiple data-up="${esc(path)}">＋ 사진</label>`;
+}
+const FILE_MAX=700*1024;
+function fileChip(uid,f,rmPath,i){return `<span class="fchip"><span class="fic">${esc((f.name.split('.').pop()||'').toUpperCase().slice(0,4))}</span>${f.id?`<a href="#" class="fname" data-dl="${esc(uid)}|${esc(f.id)}" title="내려받기">${esc(f.name)}</a>`:`<span>${esc(f.name)} <span class="note">(원본 미보관)</span></span>`}<span class="note num">${esc(kb(f.size||0))}</span>${rmPath!=null?`<button type="button" class="x2" data-rmfile="${esc(rmPath)}" data-i="${i}" aria-label="파일 삭제">×</button>`:''}</span>`;}
+function filesInner(path,val,accept){
+  const arr=Array.isArray(val)?val:[];
+  return arr.map((f,i)=>fileChip(meUid,f,path,i)).join('')+`<label class="attach"><input type="file" multiple accept="${esc(accept||'')}" data-upfile="${esc(path)}">＋ 파일</label>`;
 }
 function fieldsHtml(base,fields,obj){return fields.map(f=>fieldHtml(base+'|'+f[0],f,obj?.[f[0]])).join('');}
 function rowsHtml(dk,list,rows){
@@ -687,7 +795,14 @@ function sectionHtml(key){
   const flag=rv&&rv.state==='revise';
   let h=`<section class="rsec ${flag?'flag':''}" id="sec-${dk}"><div class="rh"><b>${esc(ITEM[key].label)}</b>${rv&&rv.state==='ok'?'<span class="tag ok">확인됨</span>':''}${flag?'<span class="tag bad">보완 요청</span>':''}${S.hint?`<span class="note">${esc(S.hint)}</span>`:''}</div>`;
   if(flag&&rv.note)h+=`<div class="flagnote">대표님: ${esc(rv.note)}</div>`;
-  if(S.type==='channels'){
+  if(S.type==='ship'){
+    const p=`${dk}|files`;
+    h+=`<div class="field"><span class="lb">엑셀·CSV 파일 (한진 송장 + 네이버 주문내역, 여러 개 가능)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div>
+      <span class="hint">올리면 바로 비교해요. 700KB가 넘는 파일은 비교만 하고 원본은 보관하지 않아요.</span></div>
+      <div id="shipResult">${shipResultHtml(d.result)}</div>
+      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reship>다시 비교하기</button>`:''}
+      ${fieldHtml(dk+'|memo',['memo','textarea','메모 (배송일 변경·미발송 사유 등)'],d.memo)}`;
+  }else if(S.type==='channels'){
     h+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>`<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}</div>${fieldsHtml(dk+'|'+c,S.fields,d[c])}</div>`).join('')}</div>`;
     if(S.extra)h+=fieldsHtml(dk,S.extra,d);
   }else if(S.type==='group'){
@@ -712,7 +827,96 @@ function onField(e){
   scheduleSave();
 }
 $('#rForm').addEventListener('input',onField);
-$('#rForm').addEventListener('change',e=>{if(e.target.dataset.up)return;onField(e);});
+$('#rForm').addEventListener('change',e=>{if(e.target.dataset.up||e.target.dataset.upfile)return;onField(e);});
+function readDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
+const fileBuf={};   // 이번 세션에 읽은 파일 내용 (비교용)
+$('#rForm').addEventListener('change',async e=>{
+  const up=e.target.closest('[data-upfile]');if(!up||!editable())return;
+  const path=up.dataset.upfile;const ps=path.split('|');const lab=up.closest('.attach');lab.classList.add('busy');
+  const isShip=ps[0]==='cs_ship';
+  const arr=Array.isArray(getP(R.data,ps))?getP(R.data,ps).slice():[];
+  const okExt=/\.(xlsx|xls|csv)$/i;
+  for(const f of [...up.files]){
+    if(!okExt.test(f.name)){toast(`${f.name}: 엑셀(xlsx, xls) 또는 CSV 파일만 올릴 수 있어요`);continue;}
+    try{
+      const buf=await f.arrayBuffer();
+      if(f.size>FILE_MAX){
+        if(!isShip){toast(`${f.name}: 파일이 너무 커요 (${kb(f.size)}). 700KB 이하로 줄여서 올려주세요`);continue;}
+        const tmp='tmp-'+rid();fileBuf[tmp]=buf;arr.push({id:'',tmp,name:f.name,size:f.size});
+        toast(`${f.name}: 700KB가 넘어 원본은 보관하지 않고 비교만 해요`);continue;
+      }
+      const data=await readDataURL(f);const fid=rid();
+      await setDoc(doc(db,'users',meUid,'files',fid),{name:f.name,type:f.type||'',size:f.size,data,createdAt:new Date().toISOString(),section:ps[0],report:R.date});
+      fileBuf[fid]=buf;arr.push({id:fid,name:f.name,size:f.size});
+    }catch(err){toast(`${f.name}: 올리지 못했어요`);}
+  }
+  setP(R.data,ps,arr);up.value='';lab.classList.remove('busy');
+  const box=$(`[data-files="${CSS.escape(path)}"]`);if(box)box.innerHTML=filesInner(path,arr,box.dataset.accept);
+  R.dirty=true;
+  if(isShip){await analyzeShip();rerenderSection('cs_ship');}else saveDraft();
+});
+
+/* ---------- 한진 × 네이버 대조 실행 ---------- */
+let xlsxReady=null;
+function ensureXLSX(){
+  if(window.XLSX)return Promise.resolve();
+  if(!xlsxReady)xlsxReady=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=()=>{xlsxReady=null;rej(new Error('load'));};document.head.appendChild(s);});
+  return xlsxReady;
+}
+async function analyzeShip(){
+  const ps=['cs_ship'];const d=getP(R.data,ps)||{};const files=d.files||[];
+  const box=$('#shipResult');
+  if(!files.length){setP(R.data,['cs_ship','result'],null);if(box)box.innerHTML='';R.dirty=true;saveDraft();return;}
+  if(box)box.innerHTML='<p class="note">파일을 읽고 비교하는 중…</p>';
+  try{await ensureXLSX();}catch(e){if(box)box.innerHTML='<p class="note" style="color:var(--bad)">엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 "다시 비교하기"를 눌러주세요.</p>';return;}
+  const naver=[],hanjin=[],problems=[];
+  for(const f of files){
+    const key=f.id||f.tmp;let buf=fileBuf[key];
+    if(!buf&&f.id){try{const s=await getDoc(doc(db,'users',meUid,'files',f.id));if(s.exists()){buf=await (await fetch(s.data().data)).arrayBuffer();fileBuf[key]=buf;}}catch(e){}}
+    if(!buf){problems.push(`${f.name}: 원본이 보관되지 않아 다시 비교할 수 없어요 (다시 올려주세요)`);continue;}
+    let rows;
+    try{rows=SHIP.rows(XLSX,buf,f.name);}
+    catch(e){problems.push(/password|encrypt|protected/i.test(e.message||'')?`${f.name}: 비밀번호가 걸린 파일이에요. 비밀번호를 풀고 다시 저장해서 올려주세요`:`${f.name}: 파일을 읽지 못했어요`);continue;}
+    const kind=SHIP.detect(rows);
+    if(kind==='naver')naver.push(...SHIP.parseNaver(rows,f.name));
+    else if(kind==='hanjin')hanjin.push(...SHIP.parseHanjin(rows,f.name));
+    else problems.push(`${f.name}: 한진 송장(운송장번호 열)이나 네이버 주문내역(상품주문번호 열) 형식이 아니에요`);
+  }
+  let res;
+  if(!naver.length||!hanjin.length){res={missing:!naver.length?'네이버 주문내역':'한진 송장',naverRows:naver.length,hanjinCount:hanjin.length};}
+  else res=SHIP.compare(naver,hanjin);
+  res.problems=problems;res.at=new Date().toISOString();
+  setP(R.data,['cs_ship','result'],res);
+  if(box)box.innerHTML=shipResultHtml(res);
+  R.dirty=true;saveDraft();
+}
+function shipTable(rows,cols){
+  if(!rows.length)return '<p class="note" style="margin:4px 0 0">없음</p>';
+  return `<div class="tbl"><table><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c[0]]??'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function shipResultHtml(res){
+  if(!res)return '';
+  const pr=(res.problems||[]).length?`<div class="flagnote" style="margin-top:8px">${res.problems.map(esc).join('<br>')}</div>`:'';
+  if(res.missing)return `${pr}<p class="note" style="margin:8px 0 0">${esc(res.missing)} 파일이 없어서 비교하지 못했어요. 한진 송장 엑셀과 네이버 주문내역 엑셀을 함께 올려주세요. (네이버 ${res.naverRows||0}행 · 한진 ${res.hanjinCount||0}건 읽음)</p>`;
+  const c=res.counts||{};const more=(n,a)=>n>a.length?`<p class="note">외 ${n-a.length}건은 생략했어요.</p>`:'';
+  return `${pr}<div class="shipsum">
+    <span class="tag">한진 송장 ${res.hanjinCount}건</span><span class="tag">네이버 주문 ${res.naverOrders}건 (${res.naverRows}행)</span>
+    <span class="tag ${c.dup?'acc':''}">중복 ${c.dup||0}</span><span class="tag ${c.partial?'bad':''}">확인필요 ${c.partial||0}</span>
+    <span class="tag ${c.unshipped?'cs':''}">미발송 ${c.unshipped||0}</span><span class="tag">한진에만 ${c.hanjinOnly||0}</span>
+    <span class="note">${esc(fmtT(res.at))} 비교</span></div>
+    <details class="shipd" ${c.dup?'open':''}><summary><b>중복 · 이미 송장이 나간 주문</b> <span class="note">네이버에서 발송처리해야 할 주문이에요 · ${c.dup||0}행</span></summary>${shipTable(res.dup,[['ord','주문번호'],['po','상품주문번호'],['buyer','구매자명'],['rcv','수취인명'],['prod','상품명'],['inv','한진 송장'],['why','일치 항목']])}${more(c.dup,res.dup)}</details>
+    <details class="shipd" ${c.partial?'open':''}><summary><b style="color:var(--bad)">확인필요 · 일부만 일치</b> <span class="note">직접 확인해주세요 · ${c.partial||0}행</span></summary>${shipTable(res.partial,[['ord','주문번호'],['buyer','구매자명'],['rcv','수취인명'],['prod','상품명'],['inv','후보 송장'],['hrcv','한진 받는분'],['why','일치 항목']])}${more(c.partial,res.partial)}</details>
+    <details class="shipd" ${c.unshipped?'open':''}><summary><b>미발송 · 한진 송장 없음</b> <span class="note">${c.unshipped||0}행</span></summary>${shipTable(res.unshipped,[['ord','주문번호'],['po','상품주문번호'],['buyer','구매자명'],['rcv','수취인명'],['prod','상품명'],['qty','수량']])}${more(c.unshipped,res.unshipped)}</details>
+    <details class="shipd"><summary><b>한진에만 있는 송장</b> <span class="note">자사몰·카카오·토스 주문 등 · ${c.hanjinOnly||0}건</span></summary>${shipTable(res.hanjinOnly,[['seq','순번'],['inv','송장번호'],['rcv','받는분'],['prod','품목명']])}${more(c.hanjinOnly,res.hanjinOnly)}</details>`;
+}
+document.addEventListener('click',async e=>{
+  const dl=e.target.closest('[data-dl]');if(!dl)return;e.preventDefault();
+  const[uid,fid]=dl.dataset.dl.split('|');
+  try{const s=await getDoc(doc(db,'users',uid,'files',fid));if(!s.exists()){toast('파일을 찾을 수 없어요');return;}
+    const f=s.data();const blob=await (await fetch(f.data)).blob();const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}
+  catch(err){toast('파일을 내려받지 못했어요');}
+});
 function scheduleSave(){R.dirty=true;$('#saveMeta').textContent='저장 중…';clearTimeout(saveT);saveT=setTimeout(saveDraft,1200);}
 async function saveDraft(){
   if(!R||!editable())return;
@@ -736,6 +940,12 @@ $('#rForm').addEventListener('click',async e=>{
   const rm=e.target.closest('[data-rmimg]');
   if(rm){e.stopPropagation();const path=rm.dataset.rmimg;const ps=path.split('|');const arr=(getP(R.data,ps)||[]).slice();const[im]=arr.splice(+rm.dataset.i,1);setP(R.data,ps,arr);
     const box=$(`[data-imgs="${CSS.escape(path)}"]`);if(box)box.innerHTML=imgsInner(path,arr);if(im)removeImg(meUid,im.id);R.dirty=true;saveDraft();return;}
+  const rf=e.target.closest('[data-rmfile]');
+  if(rf){e.stopPropagation();const path=rf.dataset.rmfile;const ps=path.split('|');const arr=(getP(R.data,ps)||[]).slice();const[f]=arr.splice(+rf.dataset.i,1);setP(R.data,ps,arr);
+    const box=$(`[data-files="${CSS.escape(path)}"]`);if(box)box.innerHTML=filesInner(path,arr,box.dataset.accept);
+    if(f&&f.id)deleteDoc(doc(db,'users',meUid,'files',f.id)).catch(()=>{});R.dirty=true;
+    if(ps[0]==='cs_ship'){await analyzeShip();rerenderSection('cs_ship');}else saveDraft();return;}
+  if(e.target.closest('[data-reship]')){await analyzeShip();return;}
   const add=e.target.closest('[data-addrow]');
   if(add){const ps=add.dataset.addrow.split('|');const rows=(getP(R.data,ps)||[]).slice();rows.push({});setP(R.data,ps,rows);rerenderSection(ps[0]);scheduleSave();return;}
   const del=e.target.closest('[data-delrow]');
@@ -791,6 +1001,10 @@ $('#sendBtn').onclick=async()=>{
   const b=$('#sendBtn');b.disabled=true;b.textContent='전송 중…';clearTimeout(saveT);
   try{
     const now=new Date().toISOString();
+    // 보완 후 재전송이면, 보완 요청받았던 항목만 따로 표시 (관리자 화면에서 그 항목만 보이도록)
+    const wasHold=R.status==='hold';
+    const revised=wasHold?Object.entries(R.review||{}).filter(([k,v])=>v&&v.state==='revise').map(([k])=>k):[];
+    const revisedTasks=wasHold?myTasks.filter(t=>t.status==='revise').map(t=>t.id):[];
     // 진행중 업무 → 업무 카드에 기록
     for(const t of myTasks.filter(t=>t.status!=='done'&&t.status!=='submitted')){
       const d=R.data.tasks?.[t.id];if(!d||(!d.text&&!(d.imgs||[]).length))continue;
@@ -802,7 +1016,7 @@ $('#sendBtn').onclick=async()=>{
     // 입고 확인 반영
     for(const[pid,v] of Object.entries(R.data.incoming||{})){if(v?.ok)await updateDoc(doc(db,'users',meUid,'purchases',pid),{received:true,receivedDate:R.date,note:v.note||''}).catch(()=>{});}
     R.lastSaved=now;
-    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:'submitted',data:R.data,submittedAt:now,updatedAt:now},{merge:true});
+    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:'submitted',data:R.data,submittedAt:now,updatedAt:now,revised,revisedTasks,resubmit:wasHold},{merge:true});
     R.dirty=false;toast('전송했어요. 대표님 확인을 기다려요.');window.scrollTo(0,0);
   }catch(e){toast(authMsg(e));}
   finally{b.disabled=!editable();b.textContent=R&&R.status==='hold'?'다시 전송':'전송';}
@@ -885,13 +1099,18 @@ function valText(f,v){
 }
 function kvHtml(uid,fields,obj,grp){
   const rows=fields.map(f=>{const v=obj?.[f[0]];
+    if(f[1]==='files')return (v||[]).length?`<dt>${esc(f[2])}</dt><dd><div class="files">${v.map(x=>fileChip(uid,x,null)).join('')}</div></dd>`:'';
     if(f[1]==='imgs')return (v||[]).length?`<dt>${esc(f[2])}</dt><dd><div class="gthumbs">${v.map(im=>galThumb(uid,im,f[2],grp)).join('')}</div></dd>`:(f[4]?.required?`<dt>${esc(f[2])}</dt><dd style="color:var(--bad)">없음</dd>`:'');
     const t=valText(f,v);return t!==''?`<dt>${esc(f[2])}</dt><dd>${esc(t)}</dd>`:'';}).join('');
   return rows?`<dl class="kv" style="margin:0">${rows}</dl>`:'';
 }
 function sectionView(u,key,d,rv,grp,canReview){
   const S=SCHEMA[key],dk=DK(key);let body='';
-  if(S.type==='channels'){
+  if(S.type==='ship'){
+    body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:10px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
+    body+=shipResultHtml(d?.result);
+    if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
+  }else if(S.type==='channels'){
     body+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>{const cd=d?.[c]||{};return `<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}${cd.done?'<span class="tag ok">완료</span>':'<span class="tag">미체크</span>'}</div>${(cd.imgs||[]).length?`<div class="gthumbs">${cd.imgs.map(im=>galThumb(u.uid,im,`${ITEM[key].label} · ${l}`,grp)).join('')}</div>`:'<span class="note">캡쳐 없음</span>'}</div>`;}).join('')}</div>`;
     if(S.extra)body+=kvHtml(u.uid,S.extra,d,grp);
   }else if(S.type==='group'){
@@ -913,12 +1132,19 @@ function reportView(u,r,date){
   if(!r)return head+'<div class="panel empty">이 날짜에 작성된 보고서가 없어요.</div>';
   if(r.status==='draft')return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>';
   const grp=`rep-${u.uid}-${date}`;const canReview=r.status==='submitted'||r.status==='hold';
-  const secs=(u.sections||[]).filter(k=>SCHEMA[k]);
+  let secs=(u.sections||[]).filter(k=>SCHEMA[k]);
   let h=head;
   // 이 보고서와 함께 전송된 업무
-  const tks=(tasksBy[u.uid]||[]).filter(t=>(t.log||[]).some(e=>e.report===date)||(t.status!=='done'&&t.status!=='todo'));
+  let tks=(tasksBy[u.uid]||[]).filter(t=>(t.log||[]).some(e=>e.report===date)||(t.status!=='done'&&t.status!=='todo'));
+  // 보완 후 재전송된 보고서: 보완 요청했던 항목만 보기
+  const reMode=r.status==='submitted'&&r.resubmit&&((r.revised||[]).length||(r.revisedTasks||[]).length);
+  if(reMode){
+    const showAll=!!reShowAll[`${u.uid}|${date}`];
+    h+=`<div class="refilter"><b>보완 후 재전송</b><span>${showAll?'전체 항목을 보는 중이에요.':`보완 요청했던 ${(r.revised||[]).length+(r.revisedTasks||[]).length}건만 보여드려요.`}</span><button type="button" class="linkbtn" data-reall="${esc(u.uid)}|${esc(date)}">${showAll?'보완 항목만 보기':'전체 보기'}</button></div>`;
+    if(!showAll){secs=secs.filter(k=>(r.revised||[]).includes(DK(k)));tks=tks.filter(t=>(r.revisedTasks||[]).includes(t.id));}
+  }
   if(tks.length)h+=`<div class="panel"><h2>진행중 업무 <span class="s">업무별로 완료·보완·다음업무를 지시하세요</span></h2>${tks.sort(sortTasks).map(t=>`<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}" data-task="${esc(t.uid)}|${esc(t.id)}">${taskHead(t)}${taskLog(t,grp)}${t.status!=='done'?taskFbBar(t):''}</div>`).join('')}</div>`;
-  const inc=Object.entries(r.data?.incoming||{});
+  const inc=reMode&&!reShowAll[`${u.uid}|${date}`]?[]:Object.entries(r.data?.incoming||{});
   if(inc.length)h+=`<div class="panel"><h2>입고 확인</h2>${inc.map(([pid,v])=>`<p style="margin:0 0 4px">${v.ok?'<span class="tag ok">입고</span>':'<span class="tag bad">미입고</span>'} ${esc(v.note||'')}</p>`).join('')}</div>`;
   h+=`<div>${secs.map(k=>sectionView(u,k,r.data?.[DK(k)],r.review?.[DK(k)],grp,canReview)).join('')}</div>`;
   if(canReview)h+=`<div class="panel" id="rvFinal"><h2>최종 처리 <span class="s">보완 요청 항목이 있으면 보류, 없으면 승인</span></h2>
@@ -930,8 +1156,10 @@ function reportView(u,r,date){
 function taskFbBar(t){return `<div class="rvbar"><textarea data-k="fb-${esc(t.id)}" data-r="fb" rows="2" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)" placeholder="보완사항 또는 다음 업무 지시 (완료는 비워도 돼요)" aria-label="${esc(t.title)} 피드백"></textarea>
   <div class="btnrow"><button type="button" class="okbtn" data-fb="done">완료</button><button type="button" class="danger" data-fb="revise">보완</button><button type="button" class="secondary" data-fb="next">다음업무</button></div></div>`;}
 
+const reShowAll={};
 $('#arDetail').addEventListener('click',async e=>{
   if(!arSel)return;const ref=doc(db,'users',arSel.uid,'reports',arSel.date);
+  const ra=e.target.closest('[data-reall]');if(ra){const k=ra.dataset.reall;reShowAll[k]=!reShowAll[k];renderAdmin();return;}
   const rv=e.target.closest('[data-rv]');
   if(rv){const bar=rv.closest('[data-rvsec]');const dk=bar.dataset.rvsec;const note=bar.querySelector('[data-rvnote]').value.trim();
     if(rv.dataset.rv==='revise'&&!note){toast('보완할 내용을 적어주세요');bar.querySelector('[data-rvnote]').focus();return;}
@@ -941,9 +1169,10 @@ $('#arDetail').addEventListener('click',async e=>{
   if(fin){const r=repOf(arSel.uid,arSel.date);const st=fin.dataset.final;const note=$('#rvAll')?.value.trim()||'';
     const nRev=Object.values(r?.review||{}).filter(v=>v?.state==='revise').length;
     if(st==='hold'&&!nRev&&!note){toast('보완 요청할 항목을 표시하거나 전체 의견을 적어주세요');return;}
-    if(st==='approved'&&nRev&&!(await ask(`보완 요청 표시가 ${nRev}건 있어요. 그래도 승인할까요?`,'승인')))return;
+    if(st==='approved'&&nRev&&!r.resubmit&&!(await ask(`보완 요청 표시가 ${nRev}건 있어요. 그래도 승인할까요?`,'승인')))return;
     try{const now=new Date().toISOString();const patch={status:st,reviewedAt:now,reviewNote:note};
-      if(st==='approved'){(users[arSel.uid].sections||[]).filter(k=>SCHEMA[k]).forEach(k=>{if(!r.review?.[DK(k)])patch[`review.${DK(k)}`]={state:'ok',note:'',at:now};});}
+      // 승인하면 모든 항목을 '확인'으로 정리 (보완 후 재전송된 항목 포함)
+      if(st==='approved'){(users[arSel.uid].sections||[]).filter(k=>SCHEMA[k]).forEach(k=>{if(r.review?.[DK(k)]?.state!=='ok')patch[`review.${DK(k)}`]={state:'ok',note:'',at:now};});}
       await updateDoc(ref,patch);toast(st==='approved'?'승인했어요':'보류하고 보완을 요청했어요');}catch(err){toast(authMsg(err));}
     return;}
   await taskFeedback(e);
