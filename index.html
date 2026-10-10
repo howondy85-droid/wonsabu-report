@@ -305,6 +305,11 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .chart .ax{fill:var(--muted)}
 .chart .vl{fill:var(--ink);font-weight:600}
 .seg{row-gap:2px}
+.tbl td.num{white-space:nowrap}
+.paidrow td{opacity:.55}
+.paidrow td:last-child,.paidrow td:nth-last-child(2){opacity:1}
+.octext{margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--sunk)}
+.octext pre{margin:6px 0 0;white-space:pre-wrap;font-family:var(--f-body);font-size:13.5px;line-height:1.7}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -496,8 +501,12 @@ tr.off td{opacity:.45;text-decoration:line-through}
   <section id="tabInv" hidden>
     <div class="kpis" id="invKpis"></div>
     <div class="panel">
+      <h2>매입 대금지급 <span class="s">거래처별 · 지급 완료하면 아래로 내려가요 · 기한은 익월 10일</span></h2>
+      <div id="invVendor"></div>
+    </div>
+    <div class="panel">
       <div class="btnrow" style="justify-content:space-between;margin-bottom:10px">
-        <h2 style="margin:0">계산서 (매출/매입) <span class="s">기한: 작성일 기준 익월 10일</span></h2>
+        <h2 style="margin:0">계산서 전체 목록 <span class="s">건별 보기</span></h2>
         <div class="btnrow">
           <div class="tfilter" id="invFilter" style="margin:0"><button data-f="open" aria-pressed="true">미처리</button><button data-f="done" aria-pressed="false">처리 완료</button><button data-f="all" aria-pressed="false">전체</button></div>
           <div class="tfilter" id="invKind" style="margin:0"><button data-f="" aria-pressed="true">매출+매입</button><button data-f="매입" aria-pressed="false">매입</button><button data-f="매출" aria-pressed="false">매출</button></div>
@@ -600,10 +609,11 @@ const SCHEMA={
  'cs.carrot':{type:'carrot',hint:'알바별로 근무일을 입력하면 근무시간·주휴수당·급여합계·실지급액(3.3% 공제)이 자동 계산돼요'},
  'cs.payslip':{type:'group',fields:[['sent','check','급여명세서 전달 완료'],['files','files','급여명세서','',{accept:'.pdf,.xlsx,.xls'}],['memo','text','전달 대상·방법']]},
  'cs.bestreview':{type:'list',label:'후보 리뷰',importer:'best',hint:'후보 리뷰 엑셀(리뷰글번호·작성날짜·아이디·리뷰내용 캡쳐·주문자명·구매내역)을 그대로 가져올 수 있어요. 대표님이 선정하면 다음날 회신 업무가 자동 등록돼요',fields:[['no','text','리뷰글번호'],['date','date','작성날짜'],['who','text','아이디'],['imgs','imgs','리뷰내용 (캡쳐)'],['buyer','text','주문자명'],['items','text','구매내역']]},
- 'cs.ordercount':{type:'ordercount',hint:'이번 달 네이버 주문내역 엑셀을 올리면 상품별 판매수량을 자동으로 세어줘요. 다른 채널은 아래에 직접 적어주세요'},
+ 'cs.ordercount':{type:'ordercount',hint:'이번 달 네이버 주문내역 엑셀을 올리면 답례품·호텔8종·틴·선물세트·커스텀·낱개쿠키로 나눠 세어줘요. 다른 채널은 아래에 분류를 골라 더하고, 숫자가 다르면 "보고 수량"을 고쳐주세요'},
  'cs.material':{type:'list',table:true,label:'원재료',importer:'material',calc:'perg',hint:'g당가격은 자동 계산돼요. "지난달 목록 불러오기"로 시작하면 편해요',fields:[['cat','text','분류'],['item','text','내용'],['site','text','사이트'],['price','num','가격'],['g','num','g'],['change','text','변동가격']]},
  'cs.health':{type:'list',table:true,label:'직원',importer:'health',calc:'dday',hint:'도래일은 자동 계산되고, 30일 안으로 남으면 빨갛게 표시돼요',fields:[['name','text','성명'],['title','text','직책'],['duty','text','직무'],['issued','date','보건증 발급일'],['exp','date','유효기간']]},
- 'cs.taxinv':{type:'taxinv',hint:'홈택스에서 받은 매출·매입 전자세금계산서 목록 엑셀을 올리면 목록으로 정리돼요. 기한은 작성일 기준 익월 10일이에요'},
+ 'cs.taxinv':{type:'taxinv',label:'포스매출',calc:'possum',hint:'홈택스에서 받은 매출·매입 목록 엑셀(.xls 그대로)을 올리면 매입은 거래처별 대금지급 목록으로, 매출은 목록으로 정리돼요. 기한은 작성일 기준 익월 10일이에요',
+   fields:[['period','text','기간 (예: 9월)'],['card','num','카드'],['cash','num','현금'],['etc','num','간편결제·기타'],['imgs','imgs','포스 정산 캡쳐']]},
  'cs.vendorpay':{type:'vendorpay',label:'거래처',hint:'매입 계산서 중 대금 미지급 건이 자동으로 나와요. 계산서 없는 거래처는 아래에 직접 적어주세요',fields:[['vendor','text','거래처'],['amount','text','금액'],['date','date','지급일'],['paid','check','지급 확인']]},
 };
 /*SHIP-LOGIC-START*/
@@ -641,7 +651,7 @@ const SHIP={
     let a=ix('통합배송지');if(a<0)a=ix('기본배송지');if(a<0)a=H.findIndex(h=>h.includes('배송지')||h.includes('주소'));const a2=ix('상세배송지');
     const g=(r,i)=>i>=0?SHIP.cell(r[i]):'';
     return rows.slice(hi+1).filter(r=>r&&g(r,c.po)).map(r=>({file,po:g(r,c.po),ord:g(r,c.ord),buyer:g(r,c.buyer),rcv:g(r,c.rcv),tel:SHIP.dg(g(r,c.tel)),zip:SHIP.zp(g(r,c.zip)),
-      addr:g(r,a)+(a2>=0&&a2!==a?' '+g(r,a2):''),prod:g(r,c.prod)+(g(r,c.opt)?` (${g(r,c.opt)})`:''),pname:g(r,c.prod),kind:g(r,c.kind),qty:g(r,c.qty)}));
+      addr:g(r,a)+(a2>=0&&a2!==a?' '+g(r,a2):''),prod:g(r,c.prod)+(g(r,c.opt)?` (${g(r,c.opt)})`:''),pname:g(r,c.prod),opt:g(r,c.opt),kind:g(r,c.kind),qty:g(r,c.qty)}));
   },
   parseHanjin(rows,file){
     const hi=rows.findIndex((r,i)=>i<15&&(r||[]).some(x=>{x=String(x??'').trim();return x==='운송장번호'||x==='송장번호';}));if(hi<0)return[];
@@ -696,8 +706,27 @@ const SHIP={
 SHIP.ORG=/(주식회사|\(주\)|㈜|유한회사|회사|시청|구청|군청|도청|청사|주민센터|행정복지센터|공단|공사|관리사무소|사무소|사무실|연구원|연구소|학교|대학|병원|의원|은행|우체국|경찰|소방|법원|검찰|교육청|센터|빌딩|타워|오피스|지식산업|산업단지|공장|본사|지점|사옥|협회|재단|조합|부대)/;
 SHIP.orgHits=hanjin=>hanjin.map(h=>{const m=`${h.rcv} ${h.addr||''} ${h.prod||''}`.match(SHIP.ORG);return m?{inv:h.inv,seq:h.seq,rcv:h.rcv,addr:h.addr||'',prod:h.prod,kw:m[1]}:null;}).filter(Boolean);
 // 주문서 카운팅: 상품명별 수량 합계
-SHIP.countBy=naver=>{const m=new Map();let total=0;for(const n of naver){const q=parseInt(String(n.qty).replace(/\D/g,''),10)||1;const k=n.pname||n.prod||'(상품명 없음)';m.set(k,(m.get(k)||0)+q);total+=q;}
-  return{total,orders:new Set(naver.map(n=>n.ord||n.po)).size,lines:naver.length,rows:[...m.entries()].sort((a,b)=>b[1]-a[1]).map(([p,q])=>({p,q}))};};
+// 월말보고 분류 (위에서부터 먼저 맞는 분류로 들어감)
+SHIP.ORDCAT=[
+  ['custom','커스텀','(초2+말2+로2+바2+얼2+카2+땅2+코2/틴케이스 출고)',/커스텀/],
+  ['hotel','호텔8종','',/호텔|8\s*종/],
+  ['tin','틴','(바,카,코.땅,스)',/틴/],
+  ['gift','선물세트','(달콤,달달)',/선물\s*세트/],
+  ['single','낱개쿠키','',/낱개|단품/],
+  ['favor','답례품','(3,4,5,6종)',/답례|[3-6]\s*종/]
+];
+SHIP.ORDSHOW=['favor','hotel','tin','gift','custom','single'];   // 보고 순서
+SHIP.catOf=(name,opt)=>{for(const c of SHIP.ORDCAT)if(c[3].test(name||''))return c[0];for(const c of SHIP.ORDCAT)if(opt&&c[3].test(opt))return c[0];return '';};
+SHIP.countBy=naver=>{const m=new Map();let total=0;const cats={},unk=new Map();
+  // 추가구성상품은 이름으로 분류가 안 되면 같은 주문의 본상품 분류를 따라감 (답례품 추가 등)
+  const main={};for(const n of naver){if(n.kind!=='추가구성상품'){const c=SHIP.catOf(n.pname,n.opt);if(c&&!main[n.ord])main[n.ord]=c;}}
+  let addon=0;
+  for(const n of naver){const q=parseInt(String(n.qty).replace(/\D/g,''),10)||1;const k=n.pname||n.prod||'(상품명 없음)';m.set(k,(m.get(k)||0)+q);total+=q;
+    let c=SHIP.catOf(n.pname,n.opt);const isAdd=n.kind==='추가구성상품';
+    if(!c&&isAdd&&!/리본|쇼핑백|봉투|카드|스티커|포장|박스|택/.test(n.pname||''))c=main[n.ord]||'';
+    if(c){cats[c]=(cats[c]||0)+q;if(isAdd)addon+=q;}else unk.set(k+(isAdd?' (추가구성)':''),(unk.get(k+(isAdd?' (추가구성)':''))||0)+q);}
+  return{total,orders:new Set(naver.map(n=>n.ord||n.po)).size,lines:naver.length,cats,addon,
+    unk:[...unk.entries()].sort((a,b)=>b[1]-a[1]).map(([p,q])=>({p,q})),rows:[...m.entries()].sort((a,b)=>b[1]-a[1]).map(([p,q])=>({p,q}))};};
 /*SHIP-LOGIC-END*/
 /*EXTRA-LOGIC-START*/
 // ===== 공통: 날짜 =====
@@ -792,22 +821,42 @@ const IMP={
     }
     return months;
   },
-  // 국세청 전자(세금)계산서 목록 엑셀
+  // 국세청 전자(세금)계산서 목록 엑셀 — 한 시트에 "세금계산서" 표와 "계산서(면세)" 표가 같이 있어도 모두 읽음
   invoices(rows,forceKind){
-    const hi=rows.findIndex((r,i)=>i<20&&(r||[]).some(c=>String(c??'').replace(/\s/g,'')==='승인번호'));if(hi<0)return{kind:'',list:[]};
-    const head=rows.slice(0,hi).flat().map(c=>String(c??'')).join(' ');
-    const kind=forceKind||(/매입/.test(head)?'매입':/매출/.test(head)?'매출':'');
-    const H=rows[hi].map(c=>String(c??'').replace(/\s/g,''));
-    const all=n=>H.map((h,i)=>h===n?i:-1).filter(i=>i>=0);
-    const one=(...ns)=>{for(const n of ns){const i=H.indexOf(n);if(i>=0)return i;}return -1;};
-    const biz=H.map((h,i)=>/사업자등록번호/.test(h)?i:-1).filter(i=>i>=0);const names=all('상호');
-    const c={date:one('작성일자'),no:one('승인번호'),total:one('합계금액'),supply:one('공급가액'),tax:one('세액'),item:one('품목명'),type:one('전자세금계산서종류','종류')};
-    const list=[];
-    for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[];const no=String(r[c.no]??'').trim();if(!no||!/\d/.test(no))continue;
-      const date=DT.norm(r[c.date]);const sup={biz:String(r[biz[0]]??''),name:String(r[names[0]]??'')},buy={biz:String(r[biz[1]]??''),name:String(r[names[1]]??'')};
-      const other=kind==='매입'?sup:buy;
-      list.push({no,kind,date,name:other.name.trim(),biz:other.biz.trim(),supply:IMP.num(r[c.supply]),tax:IMP.num(r[c.tax]),total:IMP.num(r[c.total]),item:String(r[c.item]??'').trim(),due:date?DT.nextMonth10(date):''});}
-    return{kind,list};
+    const heads=[];rows.forEach((r,i)=>{if((r||[]).some(c=>String(c??'').replace(/\s/g,'')==='승인번호'))heads.push(i);});
+    const list=[];if(!heads.length)return{kind:'',list};
+    heads.forEach((hi,bi)=>{
+      const end=bi+1<heads.length?heads[bi+1]:rows.length;
+      let title='';for(let k=hi-1;k>=Math.max(0,hi-4);k--){const t=(rows[k]||[]).map(c=>String(c??'')).join(' ');if(/목록|매입|매출/.test(t)){title=t;break;}}
+      if(!title)title=rows.slice(0,hi).flat().map(c=>String(c??'')).join(' ');
+      const kind=forceKind||(/매입/.test(title)?'매입':/매출/.test(title)?'매출':'');
+      const tt0=/세금계산서/.test(title)?'세금계산서':/계산서/.test(title)?'계산서':'';
+      const H=rows[hi].map(c=>String(c??'').replace(/\s/g,''));
+      const all=n=>H.map((h,i)=>h===n?i:-1).filter(i=>i>=0);
+      const one=(...ns)=>{for(const n of ns){const i=H.indexOf(n);if(i>=0)return i;}return -1;};
+      const biz=H.map((h,i)=>/사업자등록번호/.test(h)?i:-1).filter(i=>i>=0);const names=all('상호'),reps=all('대표자명');
+      const c={date:one('작성일자'),no:one('승인번호'),total:one('합계금액'),supply:one('공급가액'),tax:one('세액'),item:one('품목명'),cls:one('전자세금계산서분류'),rc:one('영수/청구구분','영수/청구')};
+      const g=(r,i)=>i>=0?String(r[i]??'').trim():'';
+      for(let i=hi+1;i<end;i++){const r=rows[i]||[];const no=g(r,c.no);if(!no||!/\d{6}/.test(no))continue;
+        const date=DT.norm(r[c.date]);
+        const sup={biz:g(r,biz[0]),name:g(r,names[0])||g(r,reps[0])},buy={biz:g(r,biz[1]),name:g(r,names[1])||g(r,reps[1])};
+        const other=kind==='매입'?sup:buy;
+        list.push({no,kind,date,name:other.name,biz:other.biz,supply:IMP.num(r[c.supply]),tax:c.tax>=0?IMP.num(r[c.tax]):0,total:IMP.num(r[c.total]),
+          item:g(r,c.item),tt:g(r,c.cls)||tt0,receipt:g(r,c.rc),due:date?DT.nextMonth10(date):''});}
+    });
+    return{kind:list[0]?.kind||'',list};
+  },
+  // 매입 계산서 → 거래처(사업자번호)·기한별 묶음. 처리 안 된 묶음이 위, 처리된 묶음은 아래
+  vendorGroups(list){
+    const m=new Map();
+    for(const v of list){if(v.kind!=='매입')continue;const rc=v.receipt==='영수'?'영수':'청구';
+      const key=`${v.uid||''}|${(v.biz||'').replace(/\D/g,'')||v.name}|${v.due}|${rc}`;
+      if(!m.has(key))m.set(key,{key,uid:v.uid||'',name:v.name,biz:v.biz,due:v.due,rc,items:[]});
+      const gp=m.get(key);gp.items.push(v);if(v.name&&(!gp.name||gp.name.length<v.name.length))gp.name=v.name;}
+    const out=[...m.values()].map(gp=>{const total=gp.items.reduce((a,v)=>a+(+v.total||0),0);const paid=gp.items.every(v=>v.paid);
+      const last=gp.items.map(v=>v.paidAt||'').sort().pop()||'';const months=[...new Set(gp.items.map(v=>(v.date||'').slice(0,7)))].sort();
+      return{...gp,total,paid,paidAt:paid?last:'',months,count:gp.items.length};});
+    return out.sort((a,b)=>(a.paid-b.paid)||(a.paid?(b.paidAt||'').localeCompare(a.paidAt||''):(a.due||'9').localeCompare(b.due||'9')||b.total-a.total));
   }
 };
 /*EXTRA-LOGIC-END*/
@@ -1163,10 +1212,11 @@ function cellHtml(path,f,val){
   if(type==='num')return `<input type="number" min="0" step="any" inputmode="decimal" data-p="${p}" value="${esc(val??'')}" aria-label="${al}">`;
   return `<input type="text" data-p="${p}" value="${esc(val??'')}" aria-label="${al}">`;
 }
-const calcCols=S=>S.calc==='dday'?[['_dday','도래일']]:S.calc==='perg'?[['_perg','g당가격']]:[];
+const calcCols=S=>S.calc==='dday'?[['_dday','도래일']]:S.calc==='perg'?[['_perg','g당가격']]:S.calc==='possum'?[['_sum','합계']]:[];
 function calcVal(S,r,base){
   if(S.calc==='dday'){if(!r.exp)return{t:'미발급',bad:true};const n=DT.diff(r.exp,base);return{t:n>=0?`D-${n}`:`만료 ${-n}일 지남`,bad:n<=30};}
   if(S.calc==='perg'){const pr=+r.price,g=+r.g;return{t:pr&&g?String(Math.round(pr/g*1000)/1000):''};}
+  if(S.calc==='possum'){const t=(+r.card||0)+(+r.cash||0)+(+r.etc||0);return{t:t?won(t):''};}
   return{t:''};
 }
 function tableListHtml(dk,S,rows,base){
@@ -1230,7 +1280,38 @@ document.addEventListener('click',async e=>{
   try{await updateDoc(doc(db,'users',uid,'invoices',id),on==='1'?{paid:true,paidAt:new Date().toISOString(),paidBy:isAdminUser?'관리자':(me?.name||'')}:{paid:false,paidAt:'',paidBy:''});toast(on==='1'?'처리 완료로 표시했어요':'되돌렸어요');}
   catch(err){toast(authMsg(err));}
 });
-function invUnpaidSoon(list,base,days){return list.filter(v=>!v.paid&&v.due&&DT.diff(v.due,base)<=days).sort((a,b)=>a.due.localeCompare(b.due));}
+function invUnpaidSoon(list,base,days){return list.filter(v=>!v.paid&&v.receipt!=='영수'&&v.due&&DT.diff(v.due,base)<=days).sort((a,b)=>a.due.localeCompare(b.due));}
+function grpDay(gp,base){if(gp.paid)return{t:'지급 완료',c:'ok'};if(!gp.due)return{t:'기한 없음',c:''};const n=DT.diff(gp.due,base);return n<0?{t:`기한 ${-n}일 지남`,c:'bad'}:n===0?{t:'오늘 마감',c:'bad'}:{t:`D-${n}`,c:n<=3?'bad':n<=7?'acc':''};}
+function vendorPayHtml(list,base,{admin,edit=true}={}){
+  const gs=IMP.vendorGroups(list);const cl=gs.filter(g=>g.rc==='청구'),rc=gs.filter(g=>g.rc==='영수');
+  const unpaid=cl.filter(g=>!g.paid);const sum=unpaid.reduce((a,g)=>a+g.total,0);
+  const row=gp=>{const st=grpDay(gp,base);const items=gp.items.map(v=>v.item).filter(Boolean);
+    return `<tr class="${gp.paid?'paidrow':st.c==='bad'?'warnrow':''}"><td><b>${esc(gp.name||'(상호 없음)')}</b>${gp.biz?`<br><span class="note num">${esc(gp.biz)}</span>`:''}</td>${admin?`<td>${esc(users[gp.uid]?.name||'')}</td>`:''}
+      <td>${esc(items[0]||'')}${items.length>1?` <span class="note">외 ${items.length-1}건</span>`:''}</td><td class="num">${gp.count}건</td><td class="num"><b>${won(gp.total)}</b></td>
+      <td class="num">${esc(gp.months.map(m=>+m.slice(5)+'월').join(','))}분</td><td class="num">${esc(fmtD(gp.due))}</td><td><span class="tag ${st.c}">${esc(st.t)}</span>${gp.paid&&gp.paidAt?`<br><span class="note">${esc(fmtT(gp.paidAt))}</span>`:''}</td>
+      <td>${edit?`<a href="#" role="button" class="paybtn ${gp.paid?'undo':''}" data-paygrp="${esc(gp.uid)}|${esc(gp.items.filter(v=>!!v.paid===gp.paid).map(v=>v.id).join(','))}|${gp.paid?'0':'1'}">${gp.paid?'되돌리기':'대금지급 완료'}</a>`:''}</td></tr>`;};
+  const head=`<thead><tr><th>거래처</th>${admin?'<th>담당</th>':''}<th>품목</th><th>건수</th><th>합계</th><th>작성</th><th>기한</th><th>상태</th><th></th></tr></thead>`;
+  const over=unpaid.filter(g=>g.due&&g.due<base);const byUid={};over.forEach(g=>g.items.filter(v=>!v.paid).forEach(v=>(byUid[g.uid]=byUid[g.uid]||[]).push(v.id)));
+  const bulk=edit&&over.length?Object.entries(byUid).map(([u,ids])=>`<a href="#" role="button" class="paybtn undo" data-paygrp="${esc(u)}|${esc(ids.join(','))}|1" data-bulk="${over.length}">기한 지난 ${admin&&Object.keys(byUid).length>1?esc(users[u]?.name||'')+' ':''}${ids.length}건 모두 지급 완료로</a>`).join(' '):'';
+  return `<div class="shipsum"><span class="tag ${unpaid.length?'bad':'ok'}">미지급 ${unpaid.length}곳 · ${won(sum)}</span><span class="tag">지급 완료 ${cl.length-unpaid.length}곳</span><span class="note">기한 = 작성월 다음 달 10일</span>${bulk?`<span style="flex:1"></span>${bulk}`:''}</div>
+    ${cl.length?`<div class="tbl"><table>${head}<tbody>${cl.map(row).join('')}</tbody></table></div>`:'<p class="note" style="margin:6px 0 0">청구 계산서가 없어요.</p>'}
+    ${rc.length?`<details class="shipd"><summary><b>영수 계산서</b> <span class="note">수수료·광고비·임대료처럼 이미 결제됐거나 자동이체되는 건 · ${rc.length}곳 ${won(rc.filter(g=>!g.paid).reduce((a,g)=>a+g.total,0))}</span></summary><div class="tbl"><table>${head}<tbody>${rc.map(row).join('')}</tbody></table></div></details>`:''}`;
+}
+function salesInvHtml(list,base,o={}){
+  const s=list.filter(v=>v.kind==='매출').sort((a,b)=>(a.paid-b.paid)||(b.date||'').localeCompare(a.date||''));
+  return s.length?invTable(s,base,o):'<p class="note" style="margin:6px 0 0">매출 계산서가 없어요.</p>';
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-paygrp]');if(!b)return;e.preventDefault();
+  const[uid,ids,on]=b.dataset.paygrp.split('|');const list=ids.split(',').filter(Boolean);if(!list.length)return;
+  if(on==='0'&&!(await ask('지급 완료를 되돌릴까요?','되돌리기')))return;
+  if(b.dataset.bulk&&!(await ask(`기한이 지난 ${list.length}건을 모두 지급 완료로 표시할까요?\n처음 엑셀을 올렸을 때 이미 지급한 지난 달 계산서를 정리할 때 쓰세요.`,'모두 지급 완료')))return;
+  b.style.pointerEvents='none';
+  try{const wb=writeBatch(db);const now=new Date().toISOString();
+    list.forEach(id=>wb.update(doc(db,'users',uid,'invoices',id),on==='1'?{paid:true,paidAt:now,paidBy:isAdminUser?'관리자':(me?.name||'')}:{paid:false,paidAt:'',paidBy:''}));
+    await wb.commit();toast(on==='1'?`대금지급 완료 (${list.length}건) · 목록 아래로 옮겼어요`:'되돌렸어요');}
+  catch(err){toast(authMsg(err));b.style.pointerEvents='';}
+});
 function renderDue(){
   const box=$('#rDue');if(!box)return;
   const show=mySections().some(k=>k==='cs.taxinv'||k==='cs.vendorpay');
@@ -1263,9 +1344,10 @@ function sectionHtml(key){
   }else if(S.type==='ordercount'){
     const p=`${dk}|files`;
     h+=`<div class="field"><span class="lb">이번 달 네이버 주문내역 엑셀</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div><span class="hint">700KB가 넘는 파일은 집계만 하고 원본은 보관하지 않아요</span></div>
-      ${countResultHtml(d.result)}
       ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="cs_ordercount">다시 집계하기</button>`:''}
-      <div class="field" style="margin-top:10px"><span class="lb">다른 채널 판매수량 (직접 입력)</span></div>${rowsHtml(dk,{label:'기타 채널',fields:[['ch','text','채널'],['prod','text','상품명'],['qty','num','수량']]},d.rows)}`;
+      <div class="field" style="margin-top:10px"><span class="lb">다른 채널 판매수량 (자사몰·카카오·토스·매장 등 직접 입력)</span></div>${tableListHtml(dk,OC_EXTRA,d.rows,R.date)}
+      <div id="ocCats">${ocCatsHtml(d,true)}</div>
+      ${countResultHtml(d.result)}`;
   }else if(S.type==='channels'){
     h+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>chCardHtml(dk,c,l,b,cls,d[c]||{})).join('')}</div>`;
     if(S.extra)h+=fieldsHtml(dk,S.extra,d);
@@ -1281,18 +1363,20 @@ function sectionHtml(key){
   }else if(S.type==='taxinv'){
     const p=`${dk}|files`;const res=d.result;
     h+=`${fieldHtml(dk+'|kindSel',['kindSel','radio','파일 구분','',{opts:[['auto','자동 구분'],['매출','매출'],['매입','매입']]}],d.kindSel||'auto')}
-      <div class="field"><span class="lb">국세청 전자세금계산서 목록 엑셀 (매출·매입 각각 올려도 돼요)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div></div>
-      ${res?`${probHtml(res)}<div class="shipsum"><span class="tag cs">매출 ${res.sales||0}건</span><span class="tag acc">매입 ${res.buys||0}건</span><span class="note">${esc(fmtT(res.at))} 정리</span></div>`:''}
+      <div class="field"><span class="lb">국세청 매출·매입 목록 엑셀 (여러 달 시트가 있어도 전부 읽어요 · 같은 계산서는 한 번만 들어가요)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div></div>
+      ${res?`${probHtml(res)}<div class="shipsum"><span class="tag cs">매출 ${res.sales||0}건</span><span class="tag acc">매입 ${res.buys||0}건</span>${res.months?`<span class="note">${esc(res.months)}</span>`:''}<span class="note">${esc(fmtT(res.at))} 정리</span></div>`:''}
       ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="cs_taxinv">다시 정리하기</button>`:''}
-      <h4 class="subh">미처리 계산서 <span class="note">기한 순 · 처리하면 목록에서 빠져요</span></h4>${invTable(myInv.filter(v=>!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||'')),R.date,{uid:meUid})}
+      <h4 class="subh">매입 · 거래처별 대금지급 확인</h4>${vendorPayHtml(myInv,R.date)}
+      <h4 class="subh">매출 계산서</h4>${salesInvHtml(myInv,R.date,{uid:meUid})}
+      <h4 class="subh">매장 포스매출 <span class="note">포스 월 정산 금액 · 합계는 자동 계산</span></h4>${tableListHtml(dk,S,d.rows,R.date)}${posTotalHtml(d.rows)}
       ${fieldHtml(dk+'|memo',['memo','textarea','누락·확인 필요 건'],d.memo)}`;
   }else if(S.type==='vendorpay'){
-    const unpaid=myInv.filter(v=>v.kind==='매입'&&!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
-    h+=`<h4 class="subh" style="margin-top:0">미지급 매입 계산서 <span class="note">${unpaid.length}건 · 합계 ${won(unpaid.reduce((s,v)=>s+(+v.total||0),0))}</span></h4>${invTable(unpaid,R.date,{uid:meUid})}
+    h+=`<h4 class="subh" style="margin-top:0">매입 계산서 · 거래처별</h4>${vendorPayHtml(myInv,R.date)}
       <h4 class="subh">계산서 없는 거래처 대금</h4>${tableListHtml(dk,S,d.rows,R.date)}`;
   }
   return h+'</section>';
 }
+function posTotalHtml(rows){const t=(rows||[]).reduce((a,r)=>a+(+r.card||0)+(+r.cash||0)+(+r.etc||0),0);return t?`<p class="note" style="margin:6px 0 0">포스매출 합계 <b class="num">${won(t)}</b></p>`:'';}
 function rerenderSection(dk){const el=$('#sec-'+dk);if(el){el.outerHTML=sectionHtml(KD(dk));applyShowIf();}}
 function applyShowIf(){$$('#rForm [data-showif]').forEach(el=>{const v=getP(R.data,el.dataset.showif.split('|'));el.hidden=String(v??'')!==el.dataset.showval&&!(el.dataset.showval==='true'&&v===true);});}
 
@@ -1307,6 +1391,9 @@ function onField(e){
   if(ps[0]==='cs_carrot'&&ps[1]==='workers')refreshWorker(+ps[2]);
   const S=SCHEMA[KD(ps[0])];
   if(S?.calc&&ps[1]==='rows'){const c=$(`[data-calc="${ps[0]}|${ps[2]}"]`);if(c){const cv=calcVal(S,R.data[ps[0]].rows[+ps[2]]||{},R.date);c.textContent=cv.t;c.classList.toggle('bad',!!cv.bad);}}
+  if(ps[0]==='cs_ordercount'&&(ps[1]==='rows'||ps[1]==='final')){const box=$('#ocCats');if(box){const t=box.querySelector('[data-octext]');if(t)t.textContent='(월말보고) 주문서 카운팅\n'+ocText(R.data.cs_ordercount);
+      const cs=ocCalc(R.data.cs_ordercount);$$('[data-p^="cs_ordercount|final|"]',box).forEach(inp=>{const c=cs.find(x=>x.k===inp.dataset.p.split('|')[2]);if(c)inp.placeholder=c.a+c.m;});
+      if(ps[1]==='rows'){const trs=$$('tbody tr',box);cs.forEach((c,i)=>{const td=trs[i]?.children;if(td)td[2].textContent=c.m.toLocaleString('ko-KR');});}}}
   clearTimeout(agT);agT=setTimeout(renderAgendaPreview,900);
   scheduleSave();
 }
@@ -1444,16 +1531,24 @@ async function analyzeCount(){
 async function analyzeTax(){
   const d=R.data.cs_taxinv||{};const files=d.files||[];
   if(!files.length){setP(R.data,['cs_taxinv','result'],null);R.dirty=true;saveDraft();return;}
-  const{sets,problems}=await readSheetsRaw(files);let sales=0,buys=0;const now=new Date().toISOString();const force=d.kindSel&&d.kindSel!=='auto'?d.kindSel:'';
+  const{sets,problems}=await readSheetsRaw(files,true);const now=new Date().toISOString();const force=d.kindSel&&d.kindSel!=='auto'?d.kindSel:'';
+  const seen=new Map();
   for(const x of sets){
     const r=IMP.invoices(x.rows,force);
-    if(!r.list.length){problems.push(`${x.name}: 승인번호 열이 있는 국세청 계산서 목록이 아니에요`);continue;}
-    if(!r.kind){problems.push(`${x.name}: 매출인지 매입인지 알 수 없어요. 위에서 "매출" 또는 "매입"을 고른 뒤 다시 정리해주세요`);continue;}
-    for(const v of r.list){const id=v.no.replace(/[^A-Za-z0-9_-]/g,'');if(!id)continue;
-      await setDoc(doc(db,'users',meUid,'invoices',id),{...v,file:x.name,report:R.date,updatedAt:now},{merge:true});
-      if(v.kind==='매출')sales++;else buys++;}
+    if(!r.list.length)continue;   // 빈 시트·다른 표는 건너뜀
+    const nk=r.list.filter(v=>!v.kind).length;
+    if(nk){problems.push(`${x.file} · ${x.name}: 매출인지 매입인지 알 수 없는 ${nk}건이 있어요. 위에서 "매출" 또는 "매입"을 고른 뒤 다시 정리해주세요`);}
+    for(const v of r.list){if(!v.kind)continue;const id=v.no.replace(/[^A-Za-z0-9_-]/g,'');if(id&&!seen.has(id))seen.set(id,{...v,file:x.file,sheet:x.name});}
   }
-  setP(R.data,['cs_taxinv','result'],{sales,buys,problems,at:now});R.dirty=true;saveDraft();
+  if(!seen.size&&!problems.length)problems.push('승인번호 열이 있는 국세청 계산서 목록을 찾지 못했어요. 홈택스에서 받은 파일인지 확인해주세요');
+  const known=new Map(myInv.map(v=>[v.id,v]));let wb=writeBatch(db),n=0;
+  for(const[id,v] of seen){const prev=known.get(id);
+    // 이미 지급 완료로 체크한 건은 그대로 둠 (금액 등 내용만 갱신)
+    wb.set(doc(db,'users',meUid,'invoices',id),{...v,report:R.date,updatedAt:now,...(prev?{}:{paid:false})},{merge:true});
+    if(++n%400===0){await wb.commit();wb=writeBatch(db);}}
+  if(n%400)await wb.commit();
+  const vals=[...seen.values()];const months=[...new Set(vals.map(v=>(v.date||'').slice(0,7)).filter(Boolean))].sort();
+  setP(R.data,['cs_taxinv','result'],{sales:vals.filter(v=>v.kind==='매출').length,buys:vals.filter(v=>v.kind==='매입').length,months:months.length?`${months[0]} ~ ${months[months.length-1]}`:'',problems,at:now});R.dirty=true;saveDraft();
 }
 // 날짜를 원래 값(엑셀 일련번호)으로 읽는 버전 — 시간대 때문에 하루 밀리는 문제 방지
 async function readSheetsRaw(files,allSheets){
@@ -1522,10 +1617,26 @@ function friResultHtml(res,okMap,editable){
     ${hits.length?`<div class="tbl"><table><thead><tr><th>주말 수령 확인</th><th>송장번호</th><th>받는분</th><th>주소</th><th>걸린 단어</th></tr></thead><tbody>${hits.map(h=>{const ok=!!okMap?.[h.inv];
       return `<tr><td>${editable?`<label class="opt" style="padding:5px 8px"><input type="checkbox" data-p="cs_friinv|ok|${esc(h.inv)}" ${ok?'checked':''}><span>확인</span></label>`:(ok?'<span class="tag ok">확인</span>':'<span class="tag bad">미확인</span>')}</td><td class="num">${esc(h.inv)}</td><td>${esc(h.rcv)}</td><td>${esc(h.addr)}</td><td><b>${esc(h.kw)}</b></td></tr>`;}).join('')}</tbody></table></div>`:'<p class="note">관공서·회사로 보이는 송장이 없어요.</p>'}`;
 }
+const OC_EXTRA={label:'기타 채널',fields:[['ch','text','채널'],['cat','select','분류','',{opts:SHIP.ORDCAT.map(c=>[c[0],c[1]])}],['prod','text','상품명 (선택)'],['qty','num','수량']]};
+function ocCalc(d){
+  const auto=d?.result?.cats||{};const man={};
+  (d?.rows||[]).forEach(r=>{const c=r.cat||SHIP.catOf(r.prod,'');if(c)man[c]=(man[c]||0)+(+r.qty||0);});
+  return SHIP.ORDSHOW.map(id=>SHIP.ORDCAT.find(c=>c[0]===id)).map(([k,l,sub])=>{const a=auto[k]||0,m=man[k]||0;const ov=d?.final?.[k];const fin=ov!==''&&ov!=null&&!isNaN(+ov)?+ov:a+m;return{k,l,sub,a,m,fin,ov:ov!=null&&ov!==''};});
+}
+function ocText(d){return ocCalc(d).map(c=>`${c.l}${c.sub} : ${c.fin.toLocaleString('ko-KR')}개${c.k==='favor'?'(추가포함)':''}`).join('\n');}
+function ocCatsHtml(d,edit){
+  const cs=ocCalc(d);const res=d?.result;
+  return `<h4 class="subh">월말보고 수량 <span class="note">네이버 자동 + 다른 채널${edit?' · 실제와 다르면 "보고 수량"을 고쳐주세요 (비우면 자동 합계)':''}</span></h4>
+    <div class="fx tl"><table><thead><tr><th>분류</th><th>네이버</th><th>다른 채널</th><th>보고 수량</th></tr></thead><tbody>${cs.map(c=>`<tr><td><b>${esc(c.l)}</b> <span class="note">${esc(c.sub)}</span></td><td class="num">${c.a.toLocaleString('ko-KR')}</td><td class="num">${c.m.toLocaleString('ko-KR')}</td>
+      <td>${edit?`<input type="number" min="0" data-p="cs_ordercount|final|${c.k}" value="${c.ov?esc(d.final[c.k]):''}" placeholder="${c.a+c.m}" aria-label="${esc(c.l)} 보고 수량">`:`<b class="num">${c.fin.toLocaleString('ko-KR')}</b>${c.ov?' <span class="tag acc">수정</span>':''}`}</td></tr>`).join('')}</tbody></table></div>
+    ${(res?.unk||[]).length?`<div class="flagnote" style="margin-top:8px">분류 안 된 상품 ${res.unk.reduce((a,x)=>a+x.q,0).toLocaleString('ko-KR')}개 — 필요하면 위 보고 수량에 더해주세요<br>${res.unk.slice(0,15).map(x=>`${esc(x.p)} ${x.q}개`).join(' · ')}${res.unk.length>15?` 외 ${res.unk.length-15}종`:''}</div>`:''}
+    <div class="octext"><div class="btnrow" style="justify-content:space-between"><b>보고 문구</b><button type="button" class="linkbtn" data-copyoc>복사</button></div><pre data-octext>${esc('(월말보고) 주문서 카운팅\n'+ocText(d))}</pre></div>`;
+}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-copyoc]');if(!b)return;const t=b.closest('.octext').querySelector('[data-octext]').textContent;try{await navigator.clipboard.writeText(t);toast('복사했어요');}catch(err){toast('복사하지 못했어요. 글자를 길게 눌러 복사해주세요');}});
 function countResultHtml(res){
   if(!res)return '';
-  return `${probHtml(res)}<div class="shipsum"><span class="tag">주문 ${res.orders||0}건</span><span class="tag acc">총 판매수량 ${res.total||0}개</span><span class="tag">상품 ${(res.rows||[]).length}종</span><span class="note">${esc(fmtT(res.at))} 집계</span></div>
-    ${(res.rows||[]).length?`<div class="tbl"><table><thead><tr><th>순위</th><th>상품명</th><th>수량</th></tr></thead><tbody>${res.rows.map((r,i)=>`<tr><td class="num">${i+1}</td><td>${esc(r.p)}</td><td class="num"><b>${r.q}</b></td></tr>`).join('')}</tbody></table></div>`:''}`;
+  return `${probHtml(res)}<details class="shipd"><summary><b>네이버 상품별 수량</b> <span class="note">주문 ${res.orders||0}건 · 총 ${(res.total||0).toLocaleString('ko-KR')}개 · ${esc(fmtT(res.at))} 집계</span></summary>
+    ${(res.rows||[]).length?`<div class="tbl"><table><thead><tr><th>순위</th><th>상품명</th><th>분류</th><th>수량</th></tr></thead><tbody>${res.rows.map((r,i)=>{const c=SHIP.ORDCAT.find(x=>x[0]===SHIP.catOf(r.p,''));return `<tr><td class="num">${i+1}</td><td>${esc(r.p)}</td><td>${c?esc(c[1]):'<span class="note">옵션·주문으로 분류</span>'}</td><td class="num"><b>${r.q.toLocaleString('ko-KR')}</b></td></tr>`;}).join('')}</tbody></table></div>`:''}</details>`;
 }
 function healthWarn(rows,base){
   const lim=new Date(base+'T00:00');lim.setDate(lim.getDate()+30);const L=CALC.ymd(lim);
@@ -1831,15 +1942,16 @@ const allInv=()=>Object.values(invBy).flat();
 function renderInvTab(){
   const all=allInv();const td=today();
   const open=all.filter(v=>!v.paid);const soon=invUnpaidSoon(all,td,5);
-  const over=open.filter(v=>v.due&&v.due<td);const sumBuy=open.filter(v=>v.kind==='매입').reduce((s,v)=>s+(+v.total||0),0);
+  const over=open.filter(v=>v.receipt!=='영수'&&v.due&&v.due<td);const sumBuy=open.filter(v=>v.kind==='매입'&&v.receipt!=='영수').reduce((s,v)=>s+(+v.total||0),0);
   $('#invDot').hidden=!soon.length;$('#invDot').textContent=soon.length;
   $('#invKpis').innerHTML=`<div class="kpi ${over.length?'alert':''}"><div class="l">기한 지남</div><div class="v">${over.length}<small> 건</small></div></div>
     <div class="kpi ${soon.length-over.length?'alert':''}"><div class="l">5일 안 마감</div><div class="v">${soon.length-over.length}<small> 건</small></div></div>
-    <div class="kpi"><div class="l">미지급 매입</div><div class="v" style="font-size:19px">${won(sumBuy)}</div></div>
+    <div class="kpi"><div class="l">미지급 매입 (청구)</div><div class="v" style="font-size:19px">${won(sumBuy)}</div></div>
     <div class="kpi"><div class="l">미처리 전체</div><div class="v">${open.length}<small> / ${all.length}건</small></div></div>`;
   const list=all.filter(v=>(invF==='all'||(invF==='open'?!v.paid:v.paid))&&(!invK||v.kind===invK))
     .sort(invF==='done'?(a,b)=>(b.paidAt||'').localeCompare(a.paidAt||''):(a,b)=>(a.due||'9').localeCompare(b.due||'9')||(a.date||'').localeCompare(b.date||''));
-  $('#invList').innerHTML=all.length?invTable(list,td,{admin:true}):'<div class="empty">아직 정리된 계산서가 없어요. 직원이 월간보고의 "계산서 조회"에 국세청 엑셀을 올리면 여기에 모여요.</div>';
+  $('#invVendor').innerHTML=all.length?vendorPayHtml(all,td,{admin:true}):'<div class="empty">아직 정리된 계산서가 없어요. 직원이 월간보고의 "계산서 조회"에 국세청 엑셀을 올리면 여기에 모여요.</div>';
+  $('#invList').innerHTML=all.length?invTable(list,td,{admin:true}):'';
   $('#homeDue').hidden=!soon.length;
   $('#homeDue').innerHTML=soon.length?`<h2>계산서 기한 알림 <span class="s">기한(익월 10일)이 5일 안으로 남았거나 지난 미처리 계산서</span></h2>${invTable(soon,td,{admin:true})}`:'';
 }
@@ -2055,12 +2167,12 @@ function sectionView(u,key,d,rv,grp,canReview){
   }else if(S.type==='taxinv'){
     body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
     const res=d?.result;if(res)body+=`${probHtml(res)}<div class="shipsum"><span class="tag cs">매출 ${res.sales||0}건</span><span class="tag acc">매입 ${res.buys||0}건</span></div>`;
-    const inv=(invBy[u.uid]||[]).filter(v=>!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
-    body+=`<h4 class="subh">미처리 계산서 ${inv.length}건</h4>${invTable(inv,today(),{uid:u.uid})}`;
+    const inv=(invBy[u.uid]||[]);
+    body+=`<h4 class="subh">매입 · 거래처별 대금지급</h4>${vendorPayHtml(inv,today())}<h4 class="subh">매출 계산서</h4>${salesInvHtml(inv,today(),{uid:u.uid})}`;
+    body+=`<h4 class="subh">매장 포스매출</h4>${tableViewHtml(u.uid,S,d?.rows,today(),grp)}${posTotalHtml(d?.rows)}`;
     if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
   }else if(S.type==='vendorpay'){
-    const inv=(invBy[u.uid]||[]).filter(v=>v.kind==='매입'&&!v.paid).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
-    body+=`<h4 class="subh" style="margin-top:0">미지급 매입 계산서 ${inv.length}건</h4>${invTable(inv,today(),{uid:u.uid})}<h4 class="subh">계산서 없는 거래처 대금</h4>${tableViewHtml(u.uid,S,d?.rows,today(),grp)}`;
+    body+=`<h4 class="subh" style="margin-top:0">매입 계산서 · 거래처별</h4>${vendorPayHtml(invBy[u.uid]||[],today())}<h4 class="subh">계산서 없는 거래처 대금</h4>${tableViewHtml(u.uid,S,d?.rows,today(),grp)}`;
   }else if(S.type==='list'&&S.table){
     body+=tableViewHtml(u.uid,S,d?.rows,u._date||today(),grp);
   }else if(S.type==='fixedrows'){
@@ -2072,8 +2184,9 @@ function sectionView(u,key,d,rv,grp,canReview){
     if(d?.memo)body+=`<dl class="kv" style="margin-top:8px"><dt>메모</dt><dd>${esc(d.memo)}</dd></dl>`;
   }else if(S.type==='ordercount'){
     body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
+    body+=ocCatsHtml(d||{},false);
+    if((d?.rows||[]).length)body+=`<h4 class="subh">다른 채널 입력</h4>${tableViewHtml(u.uid,OC_EXTRA,d.rows,today(),grp)}`;
     body+=countResultHtml(d?.result);
-    if((d?.rows||[]).length)body+=`<div class="tbl"><table><thead><tr><th>채널</th><th>상품명</th><th>수량</th></tr></thead><tbody>${d.rows.map(r=>`<tr><td>${esc(r.ch||'')}</td><td>${esc(r.prod||'')}</td><td class="num">${esc(r.qty||'')}</td></tr>`).join('')}</tbody></table></div>`;
   }else if(S.type==='channels'){
     body+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>{const cd=d?.[c]||{};return `<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}${cd.done?'<span class="tag ok">완료</span>':'<span class="tag">미체크</span>'}</div>${cd.ocr?ocrLine(cd.ocr,true):''}${(cd.imgs||[]).length?`<div class="gthumbs">${cd.imgs.map(im=>galThumb(u.uid,im,`${ITEM[key].label} · ${l}`,grp)).join('')}</div>`:'<span class="note">캡쳐 없음</span>'}</div>`;}).join('')}</div>`;
     if(S.extra)body+=kvHtml(u.uid,S.extra,d,grp);
