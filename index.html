@@ -336,6 +336,8 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .inp{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
 #galDel{border-color:var(--bad)!important;color:#ffb4a6!important}
 .tbl td.num{white-space:nowrap}
+.mebox{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--sunk)}
+.mebox>b{display:block;margin-bottom:8px}
 .tbl td.num.bad{color:var(--bad);font-weight:700}
 .sumgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 @media (max-width:900px){.sumgrid{grid-template-columns:1fr}}
@@ -426,7 +428,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-16</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-17</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -486,7 +488,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
  <div class="slay">
   <aside class="sside" aria-label="보고 정보">
     <div class="panel sinfo">
-      <div class="btnrow"><b style="font-size:17px" id="stName"></b><span class="tag" id="stPart"></span></div>
+      <div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px" id="stName"></b><span class="tag" id="stPart"></span></div><button type="button" class="linkbtn" id="meBtn">내 정보</button></div>
       <div id="rKind"></div>
       <div class="field" style="margin:10px 0 0"><label for="rDate" class="lb">보고 날짜</label><input type="date" id="rDate"></div>
     </div>
@@ -681,6 +683,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
       <h2>원재료 가격 기록 <span class="s">원재료 탭 그래프에 쓰이는 월별 목록 (공용)</span></h2>
       <div id="dmPrices"></div>
     </div>
+    <div class="panel" id="mediaPanel"></div>
     <div class="panel dzone">
       <h2>직원 데이터 전체 삭제 <span class="s">위에서 고른 직원의 보고서·업무·이미지·파일·일정·발주·계산서와 직원 정보를 모두 지워요</span></h2>
       <p class="note" style="margin:0 0 10px">로그인 계정(아이디·비밀번호)은 Firebase 콘솔 → Authentication에서 따로 삭제해야 해요. 계정만 남아 있으면 로그인해도 "가입 정보가 없어요"로 나와요.</p>
@@ -689,6 +692,9 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </section>
 
   <section id="tabInv" hidden>
+    <div class="panel"><div class="btnrow" style="justify-content:space-between"><h2 style="margin:0">계산서 조회 <span class="s">작성월 기준</span></h2>
+      <div class="btnrow"><button type="button" class="secondary" data-invm="-1" aria-label="이전 달">‹</button><select id="invMonth" class="inp" aria-label="조회 월"></select><button type="button" class="secondary" data-invm="1" aria-label="다음 달">›</button></div></div>
+      <div id="invMonthSum"></div></div>
     <div class="kpis" id="invKpis"></div>
     <div class="panel">
       <h2>매입 대금지급 <span class="s">거래처별 · 지급 완료하면 아래로 내려가요 · 기한은 익월 10일</span></h2>
@@ -728,12 +734,32 @@ tr.off td{opacity:.45;text-decoration:line-through}
   <div class="strip" id="galStrip"></div>
   <div class="bar"><button id="galDel" hidden>이 이미지 삭제</button><button id="galClose">닫기</button></div>
 </div>
+<div class="overlay" id="dlgMe" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="meTitle">
+    <h2 id="meTitle" style="margin:0 0 4px;font-size:16px">내 정보</h2>
+    <p class="note" id="meSub" style="margin:0 0 14px"></p>
+    <form id="meIdForm" novalidate class="mebox">
+      <b>아이디 바꾸기</b>
+      <div class="field"><label for="meNewId">새 아이디</label><input id="meNewId" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false"><span class="hint">영문 소문자·숫자·밑줄(_) 4~20자 · 바꾸면 예전 아이디로는 로그인할 수 없어요</span></div>
+      <div class="field"><label for="meIdPw">현재 비밀번호</label><input id="meIdPw" type="password" autocomplete="current-password"></div>
+      <button class="primary" type="submit" style="padding:9px 16px;font-size:14px">아이디 바꾸기</button>
+    </form>
+    <form id="mePwForm" novalidate class="mebox">
+      <b>비밀번호 바꾸기</b>
+      <div class="field"><label for="meCurPw">현재 비밀번호</label><input id="meCurPw" type="password" autocomplete="current-password"></div>
+      <div class="field"><label for="meNewPw">새 비밀번호</label><input id="meNewPw" type="password" autocomplete="new-password"><span class="hint">8자 이상</span></div>
+      <div class="field"><label for="meNewPw2">새 비밀번호 확인</label><input id="meNewPw2" type="password" autocomplete="new-password"></div>
+      <button class="primary" type="submit" style="padding:9px 16px;font-size:14px">비밀번호 바꾸기</button>
+    </form>
+    <div class="btnrow" style="justify-content:flex-end"><button type="button" class="secondary" id="meClose">닫기</button></div>
+  </div>
+</div>
 <div class="overlay" id="cf" hidden><div class="dialog"><p id="cfMsg"></p><div class="btnrow"><button class="primary" id="cfYes" style="padding:9px 16px;font-size:14px">확인</button><button class="secondary" id="cfNo">취소</button></div></div></div>
 <div class="overlay" id="pop" hidden><div class="dialog big"><b id="popTitle"></b><p id="popMsg" class="note"></p><button class="primary" id="popOk">확인</button></div></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, arrayUnion, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1261,8 +1287,17 @@ function popup(t,m){return new Promise(res=>{$('#popTitle').textContent=t;$('#po
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
 const VIEWS=['vLoading','vLogin','vSignup','vWait','vStaff','vAdmin'];
 function show(v){VIEWS.forEach(x=>$('#'+x).hidden=(x!==v));$('#sendBar').hidden=v!=='vStaff';window.scrollTo(0,0);}
+// 아이디 → 로그인 이메일 (아이디를 바꾼 직원은 logins 표에서 찾음)
+async function loginEmail(id){
+  try{const s=await getDoc(doc(db,'logins',id));if(s.exists()){const d=s.data();if(d.retired)throw Object.assign(new Error('retired'),{code:'retired'});if(d.email)return d.email;}}
+  catch(e){if(e.code==='retired')throw e;}
+  return idToEmail(id);
+}
 function authMsg(e){
   const c=e&&e.code||'';
+  if(c==='retired')return '바뀐 아이디예요. 새 아이디로 로그인해주세요.';
+  if(c==='id-taken')return '이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요.';
+  if(c.includes('requires-recent-login'))return '보안을 위해 로그아웃 후 다시 로그인한 뒤 바꿔주세요.';
   if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return '아이디 또는 비밀번호가 맞지 않아요.';
   if(c.includes('email-already-in-use'))return '이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요.';
   if(c.includes('weak-password'))return '비밀번호를 8자 이상으로 정해주세요.';
@@ -1297,7 +1332,8 @@ async function galShow(i){
   $('#galStrip img.on')?.scrollIntoView({block:'nearest',inline:'center'});
   const img=$('#galImg');img.src=it.thumb;
   const key=it.uid+'/'+it.id;
-  if(!fullCache[key]){try{const s=await getDoc(doc(db,'users',it.uid,'images',it.id));if(s.exists())fullCache[key]=s.data().full;}catch(e){}}
+  if(!fullCache[key]&&!it.slim){try{const s=await getDoc(doc(db,'users',it.uid,'images',it.id));if(s.exists())fullCache[key]=s.data().full;else it.slim=true;}catch(e){}}
+  if(it.slim&&gal.items[gal.i]===it)$('#galCap').textContent=`${gal.i+1} / ${n} · ${it.cap} · 원본 정리됨 (미리보기만 보관)`;
   if(gal.items[gal.i]===it&&fullCache[key])img.src=fullCache[key];
   [1,-1].forEach(async d=>{const nx=gal.items[(gal.i+d+n)%n];const k=nx.uid+'/'+nx.id;if(!fullCache[k]){try{const s=await getDoc(doc(db,'users',nx.uid,'images',nx.id));if(s.exists())fullCache[k]=s.data().full;}catch(e){}}});
 }
@@ -1333,7 +1369,7 @@ $('#loginForm').addEventListener('submit',async e=>{
   e.preventDefault();const id=$('#liId').value.trim().toLowerCase(),pw=$('#liPw').value;
   if(!id||!pw){toast('아이디와 비밀번호를 입력해주세요');return;}
   const b=$('#liBtn');b.disabled=true;
-  try{await signInWithEmailAndPassword(auth,idToEmail(id),pw);$('#liPw').value='';}catch(err){toast(authMsg(err));}finally{b.disabled=false;}
+  try{await signInWithEmailAndPassword(auth,await loginEmail(id),pw);$('#liPw').value='';}catch(err){toast(authMsg(err));}finally{b.disabled=false;}
 });
 $('#suPw2').addEventListener('input',()=>{$('#pwErr').hidden=!$('#suPw2').value||$('#suPw2').value===$('#suPw').value;});
 let pendingSignup=null;
@@ -1345,8 +1381,10 @@ $('#signupForm').addEventListener('submit',async e=>{
   if(pw.length<8){toast('비밀번호를 8자 이상으로 정해주세요');$('#suPw').focus();return;}
   if(pw!==pw2){$('#pwErr').hidden=false;toast('비밀번호 확인이 일치하지 않아요');$('#suPw2').focus();return;}
   const b=$('#suBtn');b.disabled=true;
-  try{pendingSignup=true;const cred=await createUserWithEmailAndPassword(auth,idToEmail(id),pw);
+  try{const ex=await getDoc(doc(db,'logins',id)).catch(()=>null);if(ex&&ex.exists()){toast('이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요.');b.disabled=false;return;}
+    pendingSignup=true;const cred=await createUserWithEmailAndPassword(auth,idToEmail(id),pw);
     await setDoc(doc(db,'users',cred.user.uid),{name,loginId:id,status:'pending',createdAt:new Date().toISOString()});
+    await setDoc(doc(db,'logins',id),{email:idToEmail(id),uid:cred.user.uid,createdAt:new Date().toISOString()}).catch(()=>{});
     pendingSignup=null;$('#signupForm').reset();toast('가입 신청이 접수됐어요');watchMe(cred.user.uid);
   }catch(err){pendingSignup=null;toast(authMsg(err));}finally{b.disabled=false;}
 });
@@ -1375,6 +1413,39 @@ onAuthStateChanged(auth,user=>{
   watchMe(user.uid);
 });
 
+
+/* ---------- 내 정보: 아이디·비밀번호 바꾸기 ---------- */
+$('#meBtn').onclick=()=>{$('#meSub').textContent=`${me?.name||''} · 현재 아이디 ${me?.loginId||''}`;['#meNewId','#meIdPw','#meCurPw','#meNewPw','#meNewPw2'].forEach(x=>$(x).value='');$('#dlgMe').hidden=false;};
+$('#meClose').onclick=()=>{$('#dlgMe').hidden=true;};
+const meMsg=e=>/wrong-password|invalid-credential|invalid-login/.test(e&&e.code||'')?'현재 비밀번호가 맞지 않아요.':(e&&e.code||'').includes('too-many-requests')?'시도가 너무 많아요. 잠시 후 다시 해주세요.':authMsg(e);
+async function reauth(pw){const u=auth.currentUser;await reauthenticateWithCredential(u,EmailAuthProvider.credential(u.email,pw));return u;}
+$('#meIdForm').addEventListener('submit',async e=>{
+  e.preventDefault();const nid=$('#meNewId').value.trim().toLowerCase(),pw=$('#meIdPw').value;const old=me?.loginId||'';
+  if(!/^[a-z0-9_]{4,20}$/.test(nid)||nid==='wonsabu'){toast('아이디는 영문 소문자·숫자·밑줄 4~20자로 정해주세요');$('#meNewId').focus();return;}
+  if(nid===old){toast('지금 쓰는 아이디와 같아요');return;}
+  if(!pw){toast('현재 비밀번호를 입력해주세요');$('#meIdPw').focus();return;}
+  const b=e.submitter||$('#meIdForm button');b.disabled=true;
+  try{
+    const u=await reauth(pw);const now=new Date().toISOString();
+    const ex=await getDoc(doc(db,'logins',nid));
+    if(ex.exists()&&ex.data().uid!==u.uid)throw Object.assign(new Error('taken'),{code:'id-taken'});
+    await setDoc(doc(db,'logins',nid),{email:u.email,uid:u.uid,retired:false,createdAt:now});
+    if(old)await setDoc(doc(db,'logins',old),{email:u.email,uid:u.uid,retired:true,to:nid,createdAt:now});
+    await updateDoc(doc(db,'users',u.uid),{loginId:nid,authEmail:u.email,loginIdAt:now});
+    $('#dlgMe').hidden=true;toast(`아이디를 ${nid}(으)로 바꿨어요. 다음부터 새 아이디로 로그인하세요`);
+  }catch(err){toast(meMsg(err));}finally{b.disabled=false;}
+});
+$('#mePwForm').addEventListener('submit',async e=>{
+  e.preventDefault();const cur=$('#meCurPw').value,np=$('#meNewPw').value,np2=$('#meNewPw2').value;
+  if(!cur){toast('현재 비밀번호를 입력해주세요');$('#meCurPw').focus();return;}
+  if(np.length<8){toast('새 비밀번호를 8자 이상으로 정해주세요');$('#meNewPw').focus();return;}
+  if(np!==np2){toast('새 비밀번호 확인이 일치하지 않아요');$('#meNewPw2').focus();return;}
+  if(np===cur){toast('지금 비밀번호와 같아요');return;}
+  const b=e.submitter||$('#mePwForm button');b.disabled=true;
+  try{const u=await reauth(cur);await updatePassword(u,np);$('#dlgMe').hidden=true;toast('비밀번호를 바꿨어요');}
+  catch(err){toast(meMsg(err));}finally{b.disabled=false;}
+});
+
 /* ===================== 직원 ===================== */
 let meSub=null;
 function watchMe(uid){
@@ -1386,6 +1457,7 @@ function watchMe(uid){
     if(d.status==='rejected')return showWait('가입이 반려됐어요','대표님께 확인해주세요.',d.name);
     if(d.status==='disabled')return showWait('사용이 중지된 계정이에요','대표님께 확인해주세요.',d.name);
     const first=!me;me=d;startStaff(first);
+    if(first&&d.loginId){const em=auth.currentUser?.email;getDoc(doc(db,'logins',d.loginId)).then(x=>{if(!x.exists()&&em)setDoc(doc(db,'logins',d.loginId),{email:em,uid,createdAt:new Date().toISOString()}).catch(()=>{});}).catch(()=>{});}
   },e=>toast(authMsg(e)));
   unsubs.push(meSub);
 }
@@ -1617,7 +1689,7 @@ function imgsInner(path,val){
     +`<label class="attach"><input type="file" accept="image/*" multiple data-up="${esc(path)}">＋ 사진</label>`;
 }
 const FILE_MAX=700*1024;
-function fileChip(uid,f,rmPath,i){return `<span class="fchip"><span class="fic">${esc((f.name.split('.').pop()||'').toUpperCase().slice(0,4))}</span>${f.id?`<a href="#" class="fname" data-dl="${esc(uid)}|${esc(f.id)}" title="내려받기">${esc(f.name)}</a>`:`<span>${esc(f.name)} <span class="note">(원본 미보관)</span></span>`}<span class="note num">${esc(kb(f.size||0))}</span>${rmPath!=null?`<button type="button" class="x2" data-rmfile="${esc(rmPath)}" data-i="${i}" aria-label="파일 삭제">×</button>`:''}</span>`;}
+function fileChip(uid,f,rmPath,i){return `<span class="fchip"><span class="fic">${esc((f.name.split('.').pop()||'').toUpperCase().slice(0,4))}</span>${f.removed?`<span>${esc(f.name)} <span class="note">(원본 정리됨)</span></span>`:f.id?`<a href="#" class="fname" data-dl="${esc(uid)}|${esc(f.id)}" title="내려받기">${esc(f.name)}</a>`:`<span>${esc(f.name)} <span class="note">(원본 미보관)</span></span>`}<span class="note num">${esc(kb(f.size||0))}</span>${rmPath!=null?`<button type="button" class="x2" data-rmfile="${esc(rmPath)}" data-i="${i}" aria-label="파일 삭제">×</button>`:''}</span>`;}
 function filesInner(path,val,accept){
   const arr=Array.isArray(val)?val:[];
   return arr.map((f,i)=>fileChip(meUid,f,path,i)).join('')+`<label class="attach"><input type="file" multiple accept="${esc(accept||'')}" data-upfile="${esc(path)}">＋ 파일</label>`;
@@ -2009,7 +2081,7 @@ function renderInq(boxId){
   }
   box.innerHTML=h+'</section>';
 }
-async function loadInqFull(id,boxId){try{const s=await getDoc(doc(db,'csinqImg',id));if(s.exists()){inqFull[id]=s.data().full;const im=$(`#${boxId} [data-inqimg="${CSS.escape(id)}"]`);if(im)im.src=inqFull[id];}}catch(e){}}
+async function loadInqFull(id,boxId){if(INQ.find(x=>x.id===id)?.slim)return;try{const s=await getDoc(doc(db,'csinqImg',id));if(s.exists()){inqFull[id]=s.data().full;const im=$(`#${boxId} [data-inqimg="${CSS.escape(id)}"]`);if(im)im.src=inqFull[id];}}catch(e){}}
 // 캡쳐 → 글자 줄 → 고객/우리 대화 → 요약
 let ocr2=null,ocr2Loading=null;
 async function getOcr2(){
@@ -2646,6 +2718,7 @@ function startAdmin(){
   show('vAdmin');setTab('home');setTaskDefaults();renderTfAtt();$('#arDate').value=today();$('#hDate').value=today();$('#lDate').value=today();
   unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};queueRender();},e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
   watchInq();watchReels();
+  unsubs.push(onSnapshot(doc(db,'config','media'),s=>{if(s.exists())MEDIA={...MEDIA,...s.data(),stat:{...MEDIA.stat,...(s.data().stat||{})}};renderMediaPanel();},()=>{}));
   unsubs.push(onSnapshot(collection(db,'prices'),q=>{prices={};q.docs.forEach(x=>prices[x.id]=x.data());queueRender();},()=>{}));
   $('#payMonth').value=today().slice(0,7);
   unsubs.push(onSnapshot(collection(db,'users'),q=>{
@@ -2662,6 +2735,10 @@ function startAdmin(){
     queueRender();
   },e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
 }
+let loginsSynced=false;
+async function syncLogins(){if(loginsSynced||!Object.keys(users).length)return;loginsSynced=true;
+  try{const have=new Set((await getDocs(collection(db,'logins'))).docs.map(x=>x.id));
+    for(const u of Object.values(users)){if(!u.loginId||have.has(u.loginId))continue;await setDoc(doc(db,'logins',u.loginId),{email:u.authEmail||idToEmail(u.loginId),uid:u.uid,createdAt:new Date().toISOString()}).catch(()=>{});}}catch(e){loginsSynced=false;}}
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
 function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','stat','task','dsg','req','staff','cal','pay','mat','inv','data'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -2691,7 +2768,8 @@ function renderAdmin(){
   const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,24);
   $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<span class="thw"><button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button><button type="button" class="x" data-delimg="${esc(t.uid)}|${esc(t.id)}" aria-label="이미지 삭제">×</button></span>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
   renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);renderCal(act);
-  renderInvTab();renderMatTab();renderDsg();renderHomeSum();if(!$('#tabStat').hidden)renderStats(true);if(!$('#tabData').hidden)dmInit();
+  renderInvTab();renderMatTab();renderDsg();renderHomeSum();syncLogins();renderMediaPanel();
+  if(MEDIA.mode!=='off'&&!mediaBusy&&Date.now()-mediaLastRun>10*60*1000&&mediaPending().length)setTimeout(()=>runMediaClean(false),4000);if(!$('#tabStat').hidden)renderStats(true);if(!$('#tabData').hidden)dmInit();
 }
 function statusCard(u,date,sel){
   const r=repOf(u.uid,date);const st=r?r.status:'none';
@@ -2827,6 +2905,70 @@ $('#stDate').addEventListener('change',e=>{if(e.target.value){statV.date=e.targe
 $('#stWho').addEventListener('change',e=>{statV.who=e.target.value;renderStats();});
 $('#stReload').addEventListener('click',()=>{statCache={};renderStats();});
 $('#stTable').addEventListener('click',e=>{const r=e.target.closest('[data-stwho]');if(!r)return;statV.who=statV.who===r.dataset.stwho?'all':r.dataset.stwho;$('#stWho').value=statV.who;renderStats();});
+
+
+/* ---------- 9단계: 승인된 보고서 사진 원본 정리 (클레임 증빙은 보관) ---------- */
+let MEDIA={mode:'days',days:7,stat:{imgs:0,files:0,reports:0,inq:0,last:''}},mediaBusy=false,mediaLastRun=0;
+const MEDIA_KEEP=['cs_claim'];   // 항상 보관하는 항목
+function mediaSummary(data){
+  const out=[];
+  for(const[dk,v] of Object.entries(data||{})){if(!v||typeof v!=='object')continue;const m=collectMedia(v);if(!m.imgs.size&&!m.files.size)continue;
+    const lab=ITEM[KD(dk)]?.label||({tasks:'진행중 업무',incoming:'입고 내역',dprog:'디자인 진행중 업무'})[dk]||dk;
+    let t=`${lab}: ${m.imgs.size?`사진 ${m.imgs.size}장`:''}${m.imgs.size&&m.files.size?' · ':''}${m.files.size?`파일 ${m.files.size}개`:''}`;
+    if(dk==='cs_order'){const ok=CHS.filter(([c])=>v[c]?.ocr?.state==='ok').map(([c,l])=>`${l} ${v[c].ocr.read}`);if(ok.length)t+=` (캡쳐 시각 확인: ${ok.join(', ')})`;}
+    if(dk==='cs_ship'&&v.result?.counts)t+=` (비교 결과: 중복 ${v.result.counts.dup||0} · 미발송 ${v.result.counts.unshipped||0})`;
+    if(MEDIA_KEEP.includes(dk))t+=' · 증빙으로 원본 보관';
+    out.push(t);}
+  return out;
+}
+// 보고서 하나 정리: 원본 사진·파일 삭제, 미리보기·이름·요약은 남김
+async function slimReport(uid,r){
+  const data=JSON.parse(JSON.stringify(r.data||{}));const imgs=new Set(),files=new Set();
+  const keep=collectMedia(Object.fromEntries(MEDIA_KEEP.map(k=>[k,data[k]])));
+  const walk=o=>{if(Array.isArray(o))o.forEach(walk);else if(o&&typeof o==='object'){
+      if(typeof o.id==='string'&&o.id&&typeof o.thumb==='string'&&!keep.imgs.has(o.id)){imgs.add(o.id);o.slim=true;}
+      else if(typeof o.id==='string'&&o.id&&typeof o.name==='string'&&'size' in o&&!keep.files.has(o.id)){files.add(o.id);o.removed=true;}
+      for(const k in o)if(o[k]&&typeof o[k]==='object')walk(o[k]);}};
+  for(const[k,v] of Object.entries(data))if(!MEDIA_KEEP.includes(k))walk(v);
+  const summary=mediaSummary(r.data);
+  await delRefs([...[...imgs].map(id=>doc(db,'users',uid,'images',id)),...[...files].map(id=>doc(db,'users',uid,'files',id))]);
+  await updateDoc(doc(db,'users',uid,'reports',r.date||r.id),{data,mediaCleanedAt:new Date().toISOString(),mediaStat:{imgs:imgs.size,files:files.size,kept:keep.imgs.size+keep.files.size,summary}});
+  return{imgs:imgs.size,files:files.size};
+}
+const mediaDue=r=>r.status==='approved'&&!r.mediaCleanedAt&&r.reviewedAt&&(MEDIA.mode==='now'||(MEDIA.mode==='days'&&(Date.now()-new Date(r.reviewedAt).getTime())>=(+MEDIA.days||0)*86400000));
+function mediaPending(){return Object.values(repsBy).flat().filter(mediaDue);}
+async function runMediaClean(all){
+  if(mediaBusy||MEDIA.mode==='off'&&!all)return;mediaBusy=true;mediaLastRun=Date.now();let ni=0,nf=0,nr=0,nq=0;
+  try{
+    let list=mediaPending();
+    if(all){list=[];for(const u of Object.values(users)){try{(await getDocs(query(collection(db,'users',u.uid,'reports'),where('status','==','approved')))).docs.forEach(x=>{const r={...x.data(),id:x.id,uid:u.uid};if(mediaDue(r)||(MEDIA.mode==='off'&&!r.mediaCleanedAt))list.push(r);});}catch(e){}}}
+    for(const r of list){try{const c=await slimReport(r.uid,r);ni+=c.imgs;nf+=c.files;nr++;}catch(e){}}
+    // CS 문의건: 처리 완료 후 같은 기간이 지나면 큰 이미지 정리 (작은 미리보기는 남김)
+    if(typeof INQ!=='undefined'){const lim=MEDIA.mode==='now'?0:(+MEDIA.days||0)*86400000;
+      for(const q of INQ.filter(x=>x.status==='done'&&!x.slim&&x.doneAt&&(all||Date.now()-new Date(x.doneAt).getTime()>=lim))){try{await deleteDoc(doc(db,'csinqImg',q.id));await updateDoc(doc(db,'csinq',q.id),{slim:true});nq++;}catch(e){}}}
+    if(nr||nq){const st=MEDIA.stat||{};await setDoc(doc(db,'config','media'),{mode:MEDIA.mode,days:+MEDIA.days||0,stat:{imgs:(st.imgs||0)+ni,files:(st.files||0)+nf,reports:(st.reports||0)+nr,inq:(st.inq||0)+nq,last:new Date().toISOString()}},{merge:true}).catch(()=>{});}
+    if(all)toast(nr||nq?`보고서 ${nr}건 정리 (사진 ${ni}장 · 파일 ${nf}개)${nq?` · CS 문의 ${nq}건`:''}`:'정리할 원본이 없어요');
+  }finally{mediaBusy=false;renderMediaPanel();}
+}
+function renderMediaPanel(){
+  const box=$('#mediaPanel');if(!box)return;const st=MEDIA.stat||{};const pend=mediaPending().length;
+  box.innerHTML=`<h2>사진 원본 자동 정리 <span class="s">승인된 보고서의 큰 사진·첨부 원본을 지워 사이트를 가볍게 유지해요</span></h2>
+    <div class="choice" style="margin-bottom:10px">${[['off','끄기'],['now','승인하면 바로'],['days','승인 후 며칠 뒤']].map(([v,l])=>`<label><input type="radio" name="mediaMode" value="${v}" ${MEDIA.mode===v?'checked':''}>${l}</label>`).join('')}</div>
+    ${MEDIA.mode==='days'?`<div class="btnrow" style="margin-bottom:10px"><span class="note">승인 후</span><input type="number" id="mediaDays" class="inp" min="1" max="90" value="${esc(MEDIA.days)}" style="width:80px" aria-label="보관 일수"><span class="note">일 지나면 정리</span></div>`:''}
+    <ul class="sumlist" style="margin:0 0 10px">
+      <li><b>남는 것:</b> 작은 미리보기 사진, 파일 이름, 보고서 글, 엑셀 비교·집계 결과, 정리 기록(항목별 사진 장수·캡쳐 시각 확인 결과)</li>
+      <li><b>지우는 것:</b> 큰 원본 사진(장당 약 0.3MB), 첨부 엑셀·PDF 원본</li>
+      <li><b>항상 보관:</b> 클레임 발생내역의 캡쳐·파일 (증빙) · 릴스 기획안 원본</li>
+    </ul>
+    <div class="shipsum"><span class="tag ${pend?'acc':''}">정리 대기 ${pend}건</span><span class="tag">누적 보고서 ${st.reports||0}건 · 사진 ${st.imgs||0}장 · 파일 ${st.files||0}개${st.inq?` · CS 문의 ${st.inq}건`:''}</span>${st.last?`<span class="note">최근 정리 ${esc(fmtT(st.last))}</span>`:''}<span class="note">절약 추정 약 ${Math.round((st.imgs||0)*0.3)}MB</span></div>
+    <div class="btnrow"><button type="button" class="secondary" id="mediaRun">${mediaBusy?'정리 중…':'지금 정리하기'}</button><span class="note">관리자 화면을 열 때마다 조건에 맞는 보고서를 자동으로 정리해요</span></div>`;
+}
+document.addEventListener('change',async e=>{
+  if(e.target.name==='mediaMode'){MEDIA.mode=e.target.value;await setDoc(doc(db,'config','media'),{mode:MEDIA.mode,days:+MEDIA.days||7},{merge:true}).catch(err=>toast(authMsg(err)));renderMediaPanel();return;}
+  if(e.target.id==='mediaDays'){const v=Math.max(1,Math.min(90,+e.target.value||7));MEDIA.days=v;await setDoc(doc(db,'config','media'),{days:v},{merge:true}).catch(err=>toast(authMsg(err)));renderMediaPanel();}
+});
+document.addEventListener('click',async e=>{if(e.target.id!=='mediaRun')return;
+  if(!(await ask(MEDIA.mode==='off'?'자동 정리가 꺼져 있어요. 승인된 모든 보고서의 원본 사진·파일을 지금 정리할까요?\n(클레임 증빙은 보관돼요)':'조건에 맞는 승인 보고서의 원본 사진·파일을 지금 정리할까요?\n(클레임 증빙은 보관돼요)','정리하기')))return;runMediaClean(true);});
 
 /* ---------- 디자인 업무판 탭 ---------- */
 const dsStaff=()=>active().filter(u=>hasDS(u.sections));
@@ -3023,11 +3165,19 @@ $('#dmWipe').addEventListener('click',async()=>{
 /* ---------- 계산서 탭 ---------- */
 let invF='open',invK='';
 const allInv=()=>Object.values(invBy).flat();
+let invMonth='';
 function renderInvTab(){
-  const all=allInv();const td=today();
+  const ALL=allInv();const td=today();
+  const months=[...new Set(ALL.map(v=>(v.date||'').slice(0,7)).filter(Boolean))].sort().reverse();
+  const opt=`<option value="">전체 기간</option>`+months.map(m=>`<option value="${m}">${m.slice(0,4)}년 ${+m.slice(5)}월</option>`).join('');
+  const sel=$('#invMonth');if(sel.dataset.sig!==opt){sel.dataset.sig=opt;sel.innerHTML=opt;}sel.value=invMonth;
+  const all=invMonth?ALL.filter(v=>(v.date||'').startsWith(invMonth)):ALL;
+  if(invMonth){const S=(k,f)=>all.filter(v=>v.kind===k&&(!f||f(v))).reduce((a,v)=>a+(+v.total||0),0);
+    $('#invMonthSum').innerHTML=`<div class="shipsum" style="margin-bottom:0"><span class="tag cs">매출 ${all.filter(v=>v.kind==='매출').length}건 · ${won(S('매출'))}</span><span class="tag acc">매입 ${all.filter(v=>v.kind==='매입').length}건 · ${won(S('매입'))}</span><span class="tag">매입 중 청구 ${won(S('매입',v=>v.receipt!=='영수'))} · 영수 ${won(S('매입',v=>v.receipt==='영수'))}</span><span class="tag ${S('매입',v=>!v.paid&&v.receipt!=='영수')?'bad':'ok'}">미지급 ${won(S('매입',v=>!v.paid&&v.receipt!=='영수'))}</span><span class="note">기한 ${esc(fmtD(DT.nextMonth10(invMonth+'-01')))}(익월 10일)</span></div>`;}
+  else $('#invMonthSum').innerHTML='<p class="note" style="margin:8px 0 0">월을 고르면 그 달 매출·매입 합계와 거래처별 지급 현황만 볼 수 있어요.</p>';
   const open=all.filter(v=>!v.paid);const soon=invUnpaidSoon(all,td,5);
   const over=open.filter(v=>v.receipt!=='영수'&&v.due&&v.due<td);const sumBuy=open.filter(v=>v.kind==='매입'&&v.receipt!=='영수').reduce((s,v)=>s+(+v.total||0),0);
-  $('#invDot').hidden=!soon.length;$('#invDot').textContent=soon.length;
+  {const sa=invUnpaidSoon(ALL,td,5).length;$('#invDot').hidden=!sa;$('#invDot').textContent=sa;}
   $('#invKpis').innerHTML=`<div class="kpi ${over.length?'alert':''}"><div class="l">기한 지남</div><div class="v">${over.length}<small> 건</small></div></div>
     <div class="kpi ${soon.length-over.length?'alert':''}"><div class="l">5일 안 마감</div><div class="v">${soon.length-over.length}<small> 건</small></div></div>
     <div class="kpi"><div class="l">미지급 매입 (청구)</div><div class="v" style="font-size:19px">${won(sumBuy)}</div></div>
@@ -3036,9 +3186,12 @@ function renderInvTab(){
     .sort(invF==='done'?(a,b)=>(b.paidAt||'').localeCompare(a.paidAt||''):(a,b)=>(a.due||'9').localeCompare(b.due||'9')||(a.date||'').localeCompare(b.date||''));
   $('#invVendor').innerHTML=all.length?vendorPayHtml(all,td,{admin:true}):'<div class="empty">아직 정리된 계산서가 없어요. 직원이 월간보고의 "계산서 조회"에 국세청 엑셀을 올리면 여기에 모여요.</div>';
   $('#invList').innerHTML=all.length?invTable(list,td,{admin:true}):'';
-  $('#homeDue').hidden=!soon.length;
-  $('#homeDue').innerHTML=soon.length?`<h2>계산서 기한 알림 <span class="s">기한(익월 10일)이 5일 안으로 남았거나 지난 미처리 계산서</span></h2>${invTable(soon,td,{admin:true})}`:'';
+  const soonAll=invUnpaidSoon(ALL,td,5);
+  $('#homeDue').hidden=!soonAll.length;
+  $('#homeDue').innerHTML=soonAll.length?`<h2>계산서 기한 알림 <span class="s">기한(익월 10일)이 5일 안으로 남았거나 지난 미처리 계산서</span></h2>${invTable(soonAll,td,{admin:true})}`:'';
 }
+$('#invMonth').addEventListener('change',e=>{invMonth=e.target.value;renderInvTab();});
+$('#tabInv').addEventListener('click',e=>{const mv=e.target.closest('[data-invm]');if(mv){const base=invMonth||today().slice(0,7);const d=new Date(+base.slice(0,4),+base.slice(5)-1+(+mv.dataset.invm),1);invMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;renderInvTab();return;}});
 $('#tabInv').addEventListener('click',e=>{
   const b=e.target.closest('.tfilter button');if(!b)return;
   if(b.closest('#invFilter'))invF=b.dataset.f;else invK=b.dataset.f;
@@ -3336,6 +3489,7 @@ function reportView(u,r,date){
     <div class="field"><label for="rvAll">전체 의견 (선택)</label><input id="rvAll" data-k="rvAll" placeholder="예: 클레임 처리 결과 단톡방 공유 부탁해요"></div>
     <div class="btnrow"><button type="button" class="okbtn" data-final="approved" style="padding:11px 22px;font-size:15px">승인</button><button type="button" class="danger" data-final="hold" style="padding:11px 22px;font-size:15px">보류 (보완 요청)</button></div></div>`;
   else if(r.reviewNote)h+=`<div class="panel"><p class="note" style="margin:0">전체 의견: ${esc(r.reviewNote)}</p></div>`;
+  if(r.mediaCleanedAt)h+=`<div class="panel"><h2>사진 정리 기록 <span class="s">${esc(fmtT(r.mediaCleanedAt))} · 원본 사진 ${r.mediaStat?.imgs||0}장 · 파일 ${r.mediaStat?.files||0}개 정리${r.mediaStat?.kept?` · 증빙 ${r.mediaStat.kept}개 보관`:''}</span></h2>${(r.mediaStat?.summary||[]).length?`<ul class="sumlist">${r.mediaStat.summary.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<p class="note" style="margin:6px 0 0">사진을 누르면 미리보기(작은 사진)로 보여요.</p></div>`;
   h+=`<div class="btnrow" style="justify-content:flex-end;margin:4px 0 16px"><button type="button" class="danger" data-repdel="${esc(u.uid)}|${esc(date)}">이 보고서 삭제</button></div>`;
   return h;
 }
@@ -3375,6 +3529,7 @@ $('#arDetail').addEventListener('click',async e=>{
       // 승인하면 모든 항목을 '확인'으로 정리 (보완 후 재전송된 항목 포함)
       if(st==='approved'){(users[arSel.uid].sections||[]).filter(k=>SCHEMA[k]).forEach(k=>{if(r.review?.[DK(k)]?.state!=='ok')patch[`review.${DK(k)}`]={state:'ok',note:'',at:now};});}
       await updateDoc(ref,patch);
+      if(st==='approved'&&MEDIA.mode==='now'){const rr=repOf(arSel.uid,arSel.date);if(rr)slimReport(arSel.uid,{...rr,status:'approved'}).catch(()=>{});}
       if(st==='approved'&&(r.data?.cs_material?.rows||[]).length){await setDoc(doc(db,'prices',arSel.date.slice(0,7)),{rows:r.data.cs_material.rows.map(x=>({cat:x.cat||'',item:x.item||'',site:x.site||'',price:IMP.num(x.price),g:IMP.num(x.g),change:x.change||''})),updatedAt:now,from:users[arSel.uid]?.name||'',report:arSel.date}).catch(()=>toast('원재료 가격 저장 실패 · 보안 규칙(prices)을 확인해주세요'));}
       toast(st==='approved'?'승인했어요':'보류하고 보완을 요청했어요');}catch(err){toast(authMsg(err));}
     return;}
