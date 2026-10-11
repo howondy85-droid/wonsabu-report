@@ -377,6 +377,19 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .bub{margin:6px 0;padding:7px 10px;border-radius:10px;font-size:13px;white-space:pre-wrap}
 .bub.c{background:var(--surface);border:1px solid var(--line);margin-right:20%}
 .bub.o{background:var(--cs-soft);margin-left:20%}
+.reels .reel{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--sunk)}
+.reel.draft{border:2px dashed var(--accent);background:var(--surface)}
+.rtopics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+@media (max-width:700px){.rtopics{grid-template-columns:1fr}}
+.rtopic{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);min-width:0}
+.rtopic.on{border:2px solid var(--ok);background:var(--ok-soft)}
+.rtopic.off{opacity:.6}
+.rtopic h3{font-size:15px;margin:6px 0 4px}
+.rk{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:var(--ds);color:#fff;font-weight:700;font-size:13px}
+.rsubs{margin:4px 0 0;padding-left:20px;font-size:12.5px;color:var(--ink)}
+.rsubs li{margin:1px 0}
+.rtext{white-space:pre-wrap;font-family:var(--f-body);font-size:12.5px;max-height:320px;overflow:auto;margin:6px 0 0}
+.reelbox{border-left:4px solid var(--ds)}
 .fthumb{width:28px;height:28px;object-fit:cover;border-radius:4px}
 .dgform{display:grid;grid-template-columns:2fr 2fr 110px 150px auto;gap:8px}
 @media (max-width:760px){.dgform{grid-template-columns:1fr 1fr}.dgform input:first-child,.dgform input:nth-child(2){grid-column:1/-1}}
@@ -406,7 +419,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
     <button data-tab="task" aria-pressed="false">업무 지시<span class="dot" id="taskDot" hidden></span></button>
-    <button data-tab="dsg" aria-pressed="false">디자인 업무판</button>
+    <button data-tab="dsg" aria-pressed="false">디자인 업무판<span class="dot" id="dsgDot" hidden></span></button>
     <button data-tab="req" aria-pressed="false">가입 승인<span class="dot" id="reqDot" hidden></span></button>
     <button data-tab="staff" aria-pressed="false">직원 관리</button>
     <button data-tab="cal" aria-pressed="false">휴무일</button>
@@ -469,6 +482,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </aside>
   <div class="smain">
     <div id="rDue"></div>
+    <div id="rReel"></div>
     <div id="rInq"></div>
     <form id="rForm" novalidate><fieldset id="rSet">
       <div id="rSections"></div>
@@ -541,6 +555,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </section>
 
   <section id="tabDsg" hidden>
+    <div id="aReel"></div>
     <div class="panel">
       <div class="btnrow" style="justify-content:space-between;margin-bottom:10px">
         <h2 style="margin:0">디자인 업무판 <span class="s">여기 적은 대기·이번주·차주 업무가 디자인 업무보고(월·금)에 그대로 나와요 · 주가 바뀌면 자동으로 넘어가요</span></h2>
@@ -824,6 +839,43 @@ const CSO={
   }
 };
 /*CSO-LOGIC-END*/
+/*RP-LOGIC-START*/
+// 릴스 기획안(워드) → A/B 두 주제 뽑기 (순수 함수)
+const RP={
+  // word/document.xml → 줄 단위 글자
+  docxText(xml){
+    const dec=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+    return xml.replace(/<w:tab\/>/g,'\t').replace(/<w:br[^>]*\/>/g,'\n').split(/<\/w:p>/).map(p=>{let t='';p.replace(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|(\t)|(\n)/g,(m,a,b,c)=>{t+=a!=null?dec(a):b?' ':'\n';return '';});return t;}).join('\n');
+  },
+  MARK:/^(?:[━─=\-*#\s]*)(?:(🅐|🅑)\s*)?(?:(?:버전|VERSION|Ver\.?)\s*([AB])(?![A-Za-z])|([AB])\s*(?:안|버전)(?![가-힣])|\[([AB])\])/i,
+  split(text){
+    const L=String(text||'').split('\n').map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
+    const marks=[];
+    L.forEach((l,i)=>{if(l.length>80||/A\s*\/\s*B/i.test(l))return;const m=l.match(RP.MARK);let k=m&&(m[2]||m[3]||m[4]);if(!k&&m&&m[1])k=m[1]==='🅐'?'A':'B';if(!k&&/^🅐/.test(l))k='A';if(!k&&/^🅑/.test(l))k='B';
+      if(k&&!marks.some(x=>x.k===k.toUpperCase()))marks.push({k:k.toUpperCase(),i,line:l});});
+    let parts=[];
+    if(marks.length>=2){marks.sort((a,b)=>a.i-b.i);parts=marks.slice(0,2).map((m,j)=>({k:m.k,head:m.line,lines:L.slice(m.i+1,j===0?marks[1].i:L.length)}));}
+    else{ // "주제 1 / 주제 2" 형식
+      const m2=[];L.forEach((l,i)=>{const m=l.match(/^(?:주제|기획|안)\s*([12])\b|^([12])\s*[.)]\s*(?:주제|안)/);if(m&&l.length<=80&&!m2.some(x=>x.k===(m[1]||m[2])))m2.push({k:(m[1]||m[2])==='1'?'A':'B',i,line:l});});
+      if(m2.length>=2)parts=m2.slice(0,2).map((m,j)=>({k:m.k,head:m.line,lines:L.slice(m.i+1,j===0?m2[1].i:L.length)}));
+      else parts=[{k:'A',head:L[0]||'',lines:L.slice(1)}];
+    }
+    return parts.map(p=>RP.topic(p));
+  },
+  after(lines,re,stop){const i=lines.findIndex(l=>re.test(l));if(i<0)return '';const same=lines[i].replace(re,'').replace(/^[\s:：\-—]+/,'').trim();if(same)return same;const out=[];for(let j=i+1;j<lines.length&&out.length<3;j++){if(stop.test(lines[j]))break;out.push(lines[j]);}return out.join(' ');},
+  STOP:/^(?:[━─]{3,}|🎬|🎯|🎵|🎥|✏️|📌|컷\s*\d|엔딩|BGM|영상\s*흐름|콘텐츠\s*방향|릴스\s*제목|자막\s*전체|게시글)/,
+  topic({k,head,lines}){
+    const sub=head.replace(RP.MARK,'').replace(/^[🅐🅑\s]+/,'').replace(/^[\s:：\-—–·]+/,'').replace(/[━─]+/g,'').trim();
+    const title=RP.after(lines,/^(?:🎬\s*)?릴스\s*제목\s*/,RP.STOP)||RP.after(lines,/^(?:📝\s*)?제목\s*/,RP.STOP);
+    const dir=RP.after(lines,/^(?:🎯\s*)?콘텐츠\s*방향\s*/,RP.STOP)||RP.after(lines,/^(?:🎯\s*)?(?:방향|컨셉)\s*/,RP.STOP);
+    const si=lines.findIndex(l=>/자막\s*전체\s*정리/.test(l));let subs=[];
+    if(si>=0)for(let j=si+1;j<lines.length;j++){const m=lines[j].match(/^(컷\s*\d+|엔딩(?:컷)?)\s*[:：]\s*(.+)$/);if(m)subs.push(`${m[1].replace(/\s/g,'')}: ${m[2]}`);else if(subs.length)break;}
+    if(!subs.length)lines.forEach(l=>{const m=l.match(/💬\s*자막\s*[:：]\s*(.+)/);if(m)subs.push(m[1]);});
+    const cap=RP.after(lines,/^(?:📌\s*)?릴스\s*게시글\s*문구\s*/,/^(?:[━─]{3,}|🅐|🅑)/).slice(0,400);
+    return{k,sub:sub.slice(0,60),title:(title||sub||'(제목을 찾지 못했어요)').slice(0,120),dir:dir.slice(0,300),subs:subs.slice(0,10),cap,text:lines.join('\n').slice(0,8000)};
+  }
+};
+/*RP-LOGIC-END*/
 /*DSP-LOGIC-START*/
 // 디자인 업무판: week(그 주 월요일)로 대기·이번주·차주를 자동 판단 → 주가 바뀌면 저절로 넘어감
 const DSP={
@@ -1257,7 +1309,7 @@ let users={},thumbs={},thumbSubs={},taskSubs={},tasksBy={},repSubs={},repsBy={},
 let me=null,myTasks=[],R=null,repUnsub=null,saveT=null,myPurch=[],myAgenda=[];
 let invBy={},invSubs={},prices={},myPlan=[],planBy={},planSubs={};
 function cleanup(){
-  if(typeof INQ!=='undefined'){$('#rInq').innerHTML='';$('#aInq').innerHTML='';}
+  if(typeof INQ!=='undefined'){$('#rInq').innerHTML='';$('#aInq').innerHTML='';$('#rReel').innerHTML='';$('#aReel').innerHTML='';reelDraft=null;}
   unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
   [thumbSubs,taskSubs,repSubs,invSubs,planSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));planSubs={};planBy={};myPlan=[];
   thumbSubs={};thumbs={};taskSubs={};tasksBy={};repSubs={};repsBy={};usersSig='';users={};invSubs={};invBy={};prices={};payCache={};
@@ -1297,6 +1349,7 @@ function startStaff(first){
     unsubs.push(onSnapshot(collection(db,'users',meUid,'purchases'),q=>{myPurch=q.docs.map(x=>({...x.data(),id:x.id}));if(R)renderIncoming();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(R&&R.loaded){renderDue();['cs_taxinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
     if(me.part==='CS'){watchInq();}else $('#rInq').innerHTML='';
+    if(me.part==='디자인')watchReels();else $('#rReel').innerHTML='';
     unsubs.push(onSnapshot(collection(db,'users',meUid,'dplan'),q=>{myPlan=q.docs.map(x=>({...x.data(),id:x.id}));if(R&&R.loaded){const any=['ds_waiting','ds_thisweek','ds_nextweek','ds_result'].some(dk=>$('#sec-'+dk));if(any)['ds_waiting','ds_thisweek','ds_nextweek','ds_result'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});else if(hasDS(mySections())&&!$('#rForm').contains(document.activeElement))renderReport();}},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'agenda'),q=>{myAgenda=q.docs.map(x=>({...x.data(),id:x.id}));if(R&&R.loaded)renderToday();},()=>{}));
     openReport($('#rDate').value);
@@ -1473,7 +1526,9 @@ function renderIndex(){
   const grps=$$('#rSections .sgrp').filter(g=>!g.hidden);
   const item=sec=>{const st=secState(sec.id);const lab=SEC_L[sec.id]||ITEM[KD(sec.id.slice(4))]?.label||sec.querySelector('.rh b')?.textContent||'';return `<button type="button" class="ix ${st.c||''} ${sec.classList.contains('flag')?'bad':''}" data-goto="${esc(sec.id)}"><span>${esc(lab)}</span><b>${esc(st.t)}</b></button>`;};
   const inqOpen=typeof INQ!=='undefined'&&$('#rInq')?.innerHTML?INQ.filter(x=>x.status!=='done').length:null;
-  let h=inqOpen!=null?`<button type="button" class="ix ${inqOpen?'bad':'ok'}" data-goto="rInq"><span>CS 문의건</span><b>${inqOpen?`미처리 ${inqOpen}`:'완료'}</b></button>`:'';
+  const rl=$('#rReel')?.innerHTML&&typeof REELS!=='undefined'?REELS[0]:null;
+  let h=rl?`<button type="button" class="ix ${['new','revise'].includes(rl.status)?'bad':rl.status==='produced'?'ok':'acc'}" data-goto="rReel"><span>릴스 기획안</span><b>${esc(RL_L[rl.status]||'')}</b></button>`:'';
+  h+=inqOpen!=null?`<button type="button" class="ix ${inqOpen?'bad':'ok'}" data-goto="rInq"><span>CS 문의건</span><b>${inqOpen?`미처리 ${inqOpen}`:'완료'}</b></button>`:'';
   if(grps.length)h+=grps.map(g=>{const ss=$$('.rsec',g).filter(x=>x.id&&x.id!=='sec-agenda');if(!ss.length)return '';const t=g.querySelector('.sgh')?.textContent||'';return `${t?`<div class="ixh">${esc(t)}</div>`:''}${ss.map(item).join('')}`;}).join('');
   else h+=$$('#rForm .rsec').filter(x=>x.id&&x.id!=='sec-agenda').map(item).join('');
   box.innerHTML=`<div class="panel rindex"><div class="btnrow" style="justify-content:space-between;margin-bottom:8px"><b>오늘 업무 한눈에 보기</b><div class="btnrow"><button type="button" class="linkbtn" data-foldall="1">모두 펼치기</button><button type="button" class="linkbtn" data-foldall="0">모두 접기</button></div></div><div class="ixgrid">${h}</div><p class="note" style="margin:8px 0 0">누르면 해당 업무로 이동해서 펼쳐져요</p></div>`;
@@ -1482,7 +1537,7 @@ let ixT=null;function refreshIndexSoon(){clearTimeout(ixT);ixT=setTimeout(()=>{i
 document.addEventListener('click',e=>{
   const rh=e.target.closest('#rForm .rsec>.rh[data-fold]');
   if(rh&&!e.target.closest('input,button,a,label,select,textarea')){const id=rh.dataset.fold;const sec=$('#'+id);const open=sec.classList.contains('fold');if(open)openSecs.add(id);else openSecs.delete(id);saveFold();sec.classList.toggle('fold',!open);rh.setAttribute('aria-expanded',String(open));return;}
-  const g=e.target.closest('[data-goto]');if(g){const id=g.dataset.goto;if(id==='rInq'){if(INQV.rInq.fold){INQV.rInq.fold=false;renderInq('rInq');}$('#rInq').scrollIntoView({behavior:'smooth',block:'start'});return;}openSecs.add(id);saveFold();const sec=$('#'+id);if(sec){sec.classList.remove('fold');sec.scrollIntoView({behavior:'smooth',block:'start'});}return;}
+  const g=e.target.closest('[data-goto]');if(g){const id=g.dataset.goto;if(id==='rReel'){$('#rReel').scrollIntoView({behavior:'smooth',block:'start'});return;}if(id==='rInq'){if(INQV.rInq.fold){INQV.rInq.fold=false;renderInq('rInq');}$('#rInq').scrollIntoView({behavior:'smooth',block:'start'});return;}openSecs.add(id);saveFold();const sec=$('#'+id);if(sec){sec.classList.remove('fold');sec.scrollIntoView({behavior:'smooth',block:'start'});}return;}
   const fa=e.target.closest('[data-foldall]');if(fa){const on=fa.dataset.foldall==='1';$$('#rForm .rsec').forEach(s=>{if(!s.id||s.id==='sec-agenda')return;if(on)openSecs.add(s.id);else openSecs.delete(s.id);});saveFold();applyFold();}
 });
 document.addEventListener('keydown',e=>{const rh=e.target.closest?.('#rForm .rsec>.rh[data-fold]');if(rh&&e.target===rh&&(e.key==='Enter'||e.key===' ')){e.preventDefault();rh.click();}});
@@ -1649,7 +1704,8 @@ function sectionHtml(key){
   let h=`<section class="rsec ${flag?'flag':''}" id="sec-${dk}"><div class="rh"><b>${esc(ITEM[key].label)}</b>${rv&&rv.state==='ok'?'<span class="tag ok">확인됨</span>':''}${flag?'<span class="tag bad">보완 요청</span>':''}${S.hint?`<span class="note">${esc(S.hint)}</span>`:''}</div>`;
   if(flag&&rv.note)h+=`<div class="flagnote">대표님: ${esc(rv.note)}</div>`;
   if(key==='cs.health')h+=healthWarn(d.rows,R.date);
-  if(key==='ds.sns'&&!d.rows&&editable()){const m=CALC.mon(R.date);const day=n=>{const x=new Date(m+'T00:00');x.setDate(x.getDate()+n);return CALC.ymd(x);};d.rows=[{date:day(1)},{date:day(3)}];setP(R.data,[dk],d);}
+  if(key==='ds.sns')h+=reelReportHtml(dk,d);
+  if(key==='ds.sns'&&!d.rows&&editable()&&!reelUpFor(R.date)){const m=CALC.mon(R.date);const day=n=>{const x=new Date(m+'T00:00');x.setDate(x.getDate()+n);return CALC.ymd(x);};d.rows=[{date:day(1)},{date:day(3)}];setP(R.data,[dk],d);}
   if(key==='cs.bestreview'&&(d.rows||[]).some(r=>r.picked))h+=`<div class="banner ok" style="margin-bottom:10px"><b>선정됨</b><span>${(d.rows||[]).filter(r=>r.picked).map(r=>esc(r.who||'아이디 없음')).join(', ')} · 다음날 회신 업무로 등록됐어요</span></div>`;
   if(S.type==='ship'){
     const p=`${dk}|files`;
@@ -1968,6 +2024,131 @@ document.addEventListener('touchstart',e=>{if(e.target.closest('[data-inqswipe]'
 document.addEventListener('touchend',e=>{const st=e.target.closest('[data-inqswipe]');if(!st||inqTx==null)return;const dx=e.changedTouches[0].clientX-inqTx;inqTx=null;if(Math.abs(dx)>45){const b=st.dataset.inqswipe;const n=INQ.filter(x=>x.batch===INQV[b].batch).length;if(n>1){INQV[b].i=(INQV[b].i+(dx<0?1:-1)+n)%n;renderInq(b);}}});
 document.addEventListener('keydown',e=>{const b=e.target.closest?.('[data-inqfold]');if(b&&(e.key==='Enter'||e.key===' ')){e.preventDefault();b.click();}});
 ['rInq','aInq'].forEach(b=>{try{INQV[b].fold=localStorage.getItem('inqfold-'+b)==='1';}catch(e){}});
+
+
+/* ===================== 릴스 기획안 (대표님 업로드 → 디자인 선택 → 확인·보완 → 금요일 제작 완료) ===================== */
+let REELS=[],reelUnsub=null,reelDraft=null;const RV={rReel:{more:false},aReel:{more:false}};
+const RL_L={new:'주제 선택 대기',chosen:'대표님 확인 대기',revise:'보완 요청',replied:'보완 답변 도착',confirmed:'제작 진행',produced:'제작 완료'};
+const RL_C={new:'acc',chosen:'acc',revise:'bad',replied:'acc',confirmed:'cs',produced:'ok'};
+const plusD=(d,n)=>DT.addDays(d,n);
+const reelSched=r=>({end:plusD(r.week,6),up1:plusD(r.week,6),up2:plusD(r.week,8)});
+function watchReels(){
+  if(reelUnsub)return;
+  reelUnsub=onSnapshot(query(collection(db,'reels'),orderBy('week','desc'),limit(40)),q=>{REELS=q.docs.map(x=>({...x.data(),id:x.id}));['rReel','aReel'].forEach(paintReel);
+      if(isAdminUser){const n=REELS.filter(r=>r.status==='chosen'||r.status==='replied').length;$('#dsgDot').hidden=!n;$('#dsgDot').textContent=n;}
+      if(R&&R.loaded){if($('#sec-ds_sns')&&!busyIn('ds_sns'))rerenderSection('ds_sns');else renderIndex();}},
+    e=>{['rReel','aReel'].forEach(b=>{const el=$('#'+b);if(el)el.innerHTML=`<div class="panel"><p class="note" style="margin:0">릴스 기획안을 불러오지 못했어요: ${esc(authMsg(e))} (보안 규칙을 확인해주세요)</p></div>`;});});
+  unsubs.push(()=>{try{reelUnsub();}catch(e){}reelUnsub=null;REELS=[];});
+}
+function paintReel(b){const box=$('#'+b);if(!box)return;if(b==='rReel'&&(isAdminUser||me?.part!=='디자인'))return;if(b==='aReel'&&!isAdminUser)return;
+  const a=document.activeElement;if(a&&box.contains(a)&&/INPUT|TEXTAREA/.test(a.tagName)&&a.type!=='file'){box.dataset.dirty='1';return;}box.dataset.dirty='';renderReel(b);}
+document.addEventListener('focusout',e=>{for(const b of ['rReel','aReel']){const box=$('#'+b);if(box&&box.contains(e.target)&&box.dataset.dirty)setTimeout(()=>{if(!box.contains(document.activeElement))paintReel(b);},150);}});
+function reelWho(){return isAdminUser?{by:'admin',name:'대표님'}:{by:'staff',uid:meUid,name:me?.name||''};}
+function topicHtml(r,t,canPick){
+  const on=r.choice===t.k;
+  return `<div class="rtopic ${on?'on':''} ${r.choice&&!on?'off':''}"><div class="btnrow" style="justify-content:space-between"><div class="btnrow"><span class="rk">${esc(t.k)}</span>${t.sub?`<span class="note">${esc(t.sub)}</span>`:''}</div>${on?'<span class="tag ok">선택됨 ✓</span>':''}</div>
+    <h3>${esc(t.title||'')}</h3>${t.dir?`<p class="note" style="margin:0 0 6px">${esc(t.dir)}</p>`:''}
+    ${(t.subs||[]).length?`<ol class="rsubs">${t.subs.map(x=>`<li>${esc(x.replace(/^(컷\d+|엔딩(컷)?)\s*:\s*/,''))}</li>`).join('')}</ol>`:''}
+    ${t.text?`<details class="shipd"><summary><b>전체 내용</b></summary><pre class="rtext">${esc(t.text)}</pre>${t.cap?`<p class="note"><b>게시글 문구</b><br>${esc(t.cap)}</p>`:''}</details>`:''}
+    ${canPick&&!on?`<button type="button" class="okbtn" data-reelpick="${esc(r.id)}|${esc(t.k)}" style="margin-top:8px">이 주제로 제작</button>`:''}</div>`;
+}
+function reelCardHtml(r,admin){
+  const sc=reelSched(r);const st=r.status||'new';const f=d=>`${fmtD(d)}(${dayName(d)})`;
+  const canPick=!admin&&['new','chosen','revise','replied'].includes(st);
+  const th=(r.thread||[]).slice().sort((a,b)=>(a.at||'').localeCompare(b.at||''));
+  const K={pick:'주제 선택',confirm:'확인',revise:'보완 요청',edit:'수정사항',reply:'답장',comment:'메모'};
+  let h=`<div class="reel" id="reel-${esc(r.id)}"><div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:15px">${esc(f(r.week))} 기획안</b><span class="tag ${RL_C[st]||''}">${RL_L[st]||st}</span>${r.hasFile?`<a href="#" class="fname" data-reeldl="${esc(r.id)}">${esc(r.name||'기획안.docx')}</a>`:`<span class="note">${esc(r.name||'')}</span>`}</div>
+    <span class="note">제작 ~${esc(f(sc.end))} · 업로드 ${esc(f(sc.up1))} · ${esc(f(sc.up2))}</span></div>
+    <div class="rtopics">${(r.topics||[]).map(t=>topicHtml(r,t,canPick)).join('')}</div>`;
+  if(r.choice)h+=`<p class="note" style="margin:8px 0 0">${esc(r.chosenBy?.name||'')} · ${esc(fmtT(r.chosenAt))} <b>${esc(r.choice)}</b> 선택</p>`;
+  else if(admin)h+=`<p class="note" style="margin:8px 0 0">디자인 파트가 아직 주제를 고르지 않았어요.</p>`;
+  if(th.length)h+=`<div class="log" style="margin-top:10px">${th.map(m=>`<div class="e ${m.kind==='revise'||m.kind==='edit'?'revise':m.kind==='confirm'?'done':'update'}"><div class="h"><b>${esc(m.name||'')} · ${esc(K[m.kind]||'')}</b><span class="num">${esc(fmtT(m.at))}</span></div>${m.text?`<p>${esc(m.text)}</p>`:''}</div>`).join('')}</div>`;
+  if(r.prod?.done)h+=`<div class="banner ok" style="margin:10px 0 0"><b>제작 완료</b><span>${esc(fmtD(r.prod.report||''))} 보고${r.prod.link1?` · <a href="${esc(r.prod.link1)}" target="_blank" rel="noopener">화 업로드</a>`:''}${r.prod.link2?` · <a href="${esc(r.prod.link2)}" target="_blank" rel="noopener">목 업로드</a>`:''}</span></div>`;
+  if(admin){
+    h+=r.choice&&st!=='produced'?`<div class="rvbar"><textarea data-reelmsg="${esc(r.id)}" rows="2" class="inp" style="flex:1;min-width:200px" placeholder="보완·수정할 내용 (확인은 비워도 돼요)" aria-label="피드백"></textarea>
+      <div class="btnrow"><button type="button" class="okbtn" data-reelact="${esc(r.id)}|confirm">확인 (제작 진행)</button><button type="button" class="danger" data-reelact="${esc(r.id)}|revise">보완 요청</button><button type="button" class="secondary" data-reelact="${esc(r.id)}|edit">수정사항 전달</button></div></div>`:'';
+    h+=`<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-reeldel="${esc(r.id)}" style="color:var(--bad)">기획안 삭제</button></div>`;
+  }else if(r.choice&&['revise','replied','chosen','confirmed'].includes(st)){
+    h+=`<div class="rvbar"><textarea data-reelmsg="${esc(r.id)}" rows="2" class="inp" style="flex:1;min-width:200px" placeholder="${st==='revise'?'보완한 내용을 적어주세요':'대표님께 남길 말 (선택)'}" aria-label="답장"></textarea><button type="button" class="${st==='revise'?'okbtn':'secondary'}" data-reelreply="${esc(r.id)}">${st==='revise'?'보완 완료 보내기':'메모 보내기'}</button></div>`;
+  }
+  return h+'</div>';
+}
+function draftHtml(){
+  const d=reelDraft;if(!d)return '';
+  return `<div class="reel draft"><div class="btnrow" style="justify-content:space-between"><b>미리보기 · ${esc(fmtD(d.week))}(${dayName(d.week)}) 기획안</b><span class="note">${esc(d.name)} · 자동으로 뽑은 내용을 확인하고 고쳐주세요</span></div>
+    ${d.warn?`<div class="flagnote">${esc(d.warn)}</div>`:''}
+    <div class="rtopics">${d.topics.map((t,i)=>`<div class="rtopic"><div class="btnrow"><span class="rk">${esc(t.k)}</span></div>
+      <div class="field"><label>부제 (후킹 방식 등)</label><input class="inp" data-rdf="${i}|sub" value="${esc(t.sub||'')}"></div>
+      <div class="field"><label>릴스 제목</label><input class="inp" data-rdf="${i}|title" value="${esc(t.title||'')}"></div>
+      <div class="field"><label>콘텐츠 방향</label><textarea class="inp" rows="2" data-rdf="${i}|dir">${esc(t.dir||'')}</textarea></div>
+      <p class="note" style="margin:0">자막 ${(t.subs||[]).length}개 · 전체 내용 ${(t.text||'').length}자</p></div>`).join('')}</div>
+    <div class="btnrow" style="margin-top:10px"><button type="button" class="primary" data-reelsave style="padding:10px 18px;font-size:14px">디자인 파트에 올리기</button><button type="button" class="secondary" data-reelcancel>취소</button></div></div>`;
+}
+function renderReel(b){
+  const box=$('#'+b);if(!box)return;const admin=b==='aReel';
+  const list=REELS;const more=RV[b].more;const shown=more?list:list.slice(0,admin?3:2);
+  const wed=plusD(CALC.mon(today()),2);
+  let h=`<section class="panel reels"><div class="btnrow" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">릴스 기획안 <span class="s">수요일 기획 → 차주 화요일까지 제작 → 화·목 업로드${admin?' · 워드 파일을 올리면 A/B 두 주제를 뽑아 디자인 파트에 보여줘요':' · 두 주제 중 하나를 골라주세요'}</span></h2></div>`;
+  if(admin)h+=reelDraft?draftHtml():`<div class="btnrow" style="margin-bottom:12px"><span class="note">기획일</span><input type="date" class="inp" id="reelWeek" value="${esc(RV.aReel.week||wed)}" aria-label="기획일"><label class="attach"><input type="file" accept=".docx" data-reelup>＋ 기획안 워드 파일 (.docx)</label></div>`;
+  h+=shown.length?shown.map(r=>reelCardHtml(r,admin)).join(''):`<div class="empty">${admin?'올린 기획안이 없어요.':'아직 받은 기획안이 없어요.'}</div>`;
+  if(list.length>shown.length||more)h+=`<button type="button" class="linkbtn" data-reelmore="${b}">${more?'최근 것만 보기':`지난 기획안 ${list.length-shown.length}개 더 보기`}</button>`;
+  box.innerHTML=h+'</section>';
+}
+async function docxToText(file){await ensureZip();const z=await JSZip.loadAsync(file);const f=z.file('word/document.xml');if(!f)throw new Error('not docx');return RP.docxText(await f.async('string'));}
+document.addEventListener('change',async e=>{
+  if(e.target.id==='reelWeek'){RV.aReel.week=e.target.value;return;}
+  const up=e.target.closest('[data-reelup]');if(!up)return;const f=up.files[0];up.value='';if(!f)return;
+  if(!/\.docx$/i.test(f.name)){toast('워드(.docx) 파일만 올릴 수 있어요. .doc 파일은 워드에서 .docx로 다시 저장해주세요');return;}
+  const lab=up.closest('.attach');lab.classList.add('busy');
+  try{const text=await docxToText(f);let topics=RP.split(text);let warn='';
+    if(topics.length<2){topics=[topics[0]||{k:'A',title:'',sub:'',dir:'',subs:[],text},{k:'B',title:'',sub:'',dir:'',subs:[],text:''}];warn='A/B 두 버전을 찾지 못했어요. 두 번째 주제를 직접 적어주세요. (파일 안에 "버전 A", "버전 B" 또는 "A안", "B안" 제목이 있으면 자동으로 나눠요)';}
+    const week=$('#reelWeek')?.value||plusD(CALC.mon(today()),2);
+    reelDraft={week,name:f.name,size:f.size,file:f.size<=FILE_MAX?await readDataURL(f):'',topics,warn:warn||(f.size>FILE_MAX?'파일이 700KB가 넘어 원본은 보관하지 않고 글자만 저장해요':'')};
+    renderReel('aReel');}
+  catch(err){toast('워드 파일을 읽지 못했어요: '+f.name);}finally{lab.classList.remove('busy');}
+});
+document.addEventListener('input',e=>{const t=e.target.closest('[data-rdf]');if(!t||!reelDraft)return;const[i,k]=t.dataset.rdf.split('|');reelDraft.topics[+i][k]=t.value;});
+document.addEventListener('click',async e=>{
+  const t=e.target;
+  if(t.closest('[data-reelcancel]')){reelDraft=null;renderReel('aReel');return;}
+  if(t.closest('[data-reelsave]')){const d=reelDraft;if(!d)return;if(d.topics.some(x=>!String(x.title||'').trim())){toast('두 주제의 릴스 제목을 모두 적어주세요');return;}
+    const b=t.closest('[data-reelsave]');b.disabled=true;const id=rid();const now=new Date().toISOString();
+    try{if(d.file)await setDoc(doc(db,'reelFile',id),{data:d.file,name:d.name,createdAt:now});
+      await setDoc(doc(db,'reels',id),{week:d.week,name:d.name,size:d.size,hasFile:!!d.file,topics:d.topics.map(x=>({k:x.k,sub:x.sub||'',title:x.title||'',dir:x.dir||'',subs:x.subs||[],cap:x.cap||'',text:x.text||''})),choice:'',status:'new',thread:[],prod:{},createdAt:now,updatedAt:now});
+      reelDraft=null;renderReel('aReel');toast('디자인 파트에 올렸어요');}catch(err){toast(authMsg(err));b.disabled=false;}return;}
+  const mo=t.closest('[data-reelmore]');if(mo){RV[mo.dataset.reelmore].more=!RV[mo.dataset.reelmore].more;renderReel(mo.dataset.reelmore);return;}
+  const dl=t.closest('[data-reeldl]');if(dl){e.preventDefault();try{const s=await getDoc(doc(db,'reelFile',dl.dataset.reeldl));if(!s.exists()){toast('원본 파일이 없어요');return;}const f=s.data();const blob=await (await fetch(f.data)).blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=f.name||'기획안.docx';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}catch(err){toast('내려받지 못했어요');}return;}
+  const pk=t.closest('[data-reelpick]');if(pk){const[id,k]=pk.dataset.reelpick.split('|');const r=REELS.find(x=>x.id===id);if(!r)return;
+    if(r.choice&&r.choice!==k&&!(await ask(`${r.choice} 대신 ${k} 주제로 바꿀까요?`,'바꾸기')))return;
+    const now=new Date().toISOString();const w=reelWho();
+    try{await updateDoc(doc(db,'reels',id),{choice:k,chosenBy:{uid:meUid,name:w.name},chosenAt:now,status:'chosen',thread:arrayUnion({...w,kind:'pick',text:`${k} 주제 선택 · ${(r.topics||[]).find(x=>x.k===k)?.title||''}`,at:now}),updatedAt:now});toast(`${k} 주제를 골랐어요. 대표님 확인을 기다려요`);}catch(err){toast(authMsg(err));}return;}
+  const ac=t.closest('[data-reelact]');if(ac){const[id,kind]=ac.dataset.reelact.split('|');const ta=$(`[data-reelmsg="${CSS.escape(id)}"]`);const text=ta?.value.trim()||'';
+    if(kind!=='confirm'&&!text){toast('보완·수정할 내용을 적어주세요');ta?.focus();return;}
+    const now=new Date().toISOString();
+    try{await updateDoc(doc(db,'reels',id),{status:kind==='confirm'?'confirmed':'revise',thread:arrayUnion({by:'admin',name:'대표님',kind,text,at:now}),updatedAt:now});if(ta)ta.value='';toast(kind==='confirm'?'확인했어요. 제작 진행으로 바뀌었어요':'디자인 파트에 전달했어요');}catch(err){toast(authMsg(err));}return;}
+  const rp=t.closest('[data-reelreply]');if(rp){const id=rp.dataset.reelreply;const r=REELS.find(x=>x.id===id);const ta=$(`[data-reelmsg="${CSS.escape(id)}"]`);const text=ta?.value.trim()||'';
+    if(!text){toast('내용을 적어주세요');ta?.focus();return;}const now=new Date().toISOString();
+    try{await updateDoc(doc(db,'reels',id),{status:r?.status==='revise'?'replied':r?.status,thread:arrayUnion({...reelWho(),kind:r?.status==='revise'?'reply':'comment',text,at:now}),updatedAt:now});ta.value='';toast('보냈어요');}catch(err){toast(authMsg(err));}return;}
+  const rd=t.closest('[data-reeldel]');if(rd){if(!(await ask('이 기획안을 삭제할까요? 선택·피드백 기록도 함께 지워져요.','삭제')))return;
+    try{await deleteDoc(doc(db,'reels',rd.dataset.reeldel));await deleteDoc(doc(db,'reelFile',rd.dataset.reeldel)).catch(()=>{});toast('삭제했어요');}catch(err){toast(authMsg(err));}return;}
+});
+// 금요일 보고: 이번 주 화·목에 올라갈 기획안 / 지금 제작 중인 기획안
+const reelUpFor=date=>REELS.find(r=>CALC.mon(reelSched(r).up1)===CALC.mon(date));
+const reelNowFor=date=>REELS.find(r=>CALC.mon(r.week)===CALC.mon(date));
+function reelReportHtml(dk,d){
+  const up=reelUpFor(R.date),now=reelNowFor(R.date);let h='';
+  if(up){const t=(up.topics||[]).find(x=>x.k===up.choice);const v=d.reel||{};const b=dk+'|reel';
+    h+=`<div class="row reelbox"><div class="row-h"><b>이번주 업로드 릴스 · ${esc(fmtD(up.week))} 기획안</b><span class="tag ${RL_C[up.status]||''}">${esc(RL_L[up.status]||'')}</span></div>
+      <p class="note" style="margin:0 0 8px">${up.choice?`<b>${esc(up.choice)}</b> ${esc(t?.title||'')}`:'아직 주제를 고르지 않았어요'} · 업로드 ${esc(fmtD(reelSched(up).up1))}(화) · ${esc(fmtD(reelSched(up).up2))}(목)</p>
+      ${fieldHtml(b+'|done',['done','check','제작 완료'],v.done)}
+      <div class="grid2">${fieldHtml(b+'|up1',['up1','check','화요일 업로드 완료'],v.up1)}${fieldHtml(b+'|up2',['up2','check','목요일 업로드 완료'],v.up2)}</div>
+      <div class="grid2">${fieldHtml(b+'|link1',['link1','text','화요일 릴스 링크'],v.link1)}${fieldHtml(b+'|link2',['link2','text','목요일 릴스 링크'],v.link2)}</div>
+      ${fieldHtml(b+'|imgs',['imgs','imgs','업로드 화면 캡쳐'],v.imgs)}</div>`;}
+  if(now&&now!==up)h+=`<p class="note" style="margin:0 0 10px">제작 중: ${esc(fmtD(now.week))} 기획안 · <span class="tag ${RL_C[now.status]||''}">${esc(RL_L[now.status]||'')}</span>${now.choice?` ${esc(now.choice)} 선택`:''} · 다음 주 화·목 업로드</p>`;
+  return h;
+}
+function reelViewHtml(v){if(!v?.pid)return '';return `<div class="row reelbox"><div class="row-h"><b>업로드 릴스 · ${esc(v.title||'')}</b>${v.done?'<span class="tag ok">제작 완료</span>':'<span class="tag bad">제작 미완료</span>'}</div>
+  <p class="note" style="margin:0">화 ${v.up1?'✓ 업로드':'미업로드'}${v.link1?` · <a href="${esc(v.link1)}" target="_blank" rel="noopener">링크</a>`:''} / 목 ${v.up2?'✓ 업로드':'미업로드'}${v.link2?` · <a href="${esc(v.link2)}" target="_blank" rel="noopener">링크</a>`:''}</p></div>`;}
 
 /* ---------- 엑셀 자동 분석 (공통) ---------- */
 async function readSheets(files){
@@ -2317,7 +2498,9 @@ ${none.map(x=>x.title).join(', ')}
 
 그래도 전송할까요? (고르지 않은 업무는 다음 주로 넘어가요)`,'그래도 전송'))){$('#sec-ds_result')?.scrollIntoView({behavior:'smooth',block:'center'});return;}}
   if(miss.length){toast(`필수 항목이 비어 있어요: ${miss.join(', ')}`);$('#sec-'+firstMiss)?.scrollIntoView({behavior:'smooth',block:'center'});return;}
-  const tmiss=[];if(secs.includes('ds.thisweek')&&CALC.dsDay(R.date,CAL,meUid)==='mon'&&!R.data.ds_thisweek?.ack)tmiss.push('이번주 업무 · 확인 체크');
+  const reelUp=secs.includes('ds.sns')?reelUpFor(R.date):null;
+  const tmiss=[];if(reelUp&&!R.data.ds_sns?.reel?.done)tmiss.push('SNS 업무 · 릴스 제작 완료 체크');
+  if(secs.includes('ds.thisweek')&&CALC.dsDay(R.date,CAL,meUid)==='mon'&&!R.data.ds_thisweek?.ack)tmiss.push('이번주 업무 · 확인 체크');
   for(const k of secs){const S=SCHEMA[k];if(S.type!=='group')continue;S.fields.filter(f=>f[1]==='tcheck').forEach(f=>{if(!R.data[DK(k)]?.[f[0]])tmiss.push(`${ITEM[k].label} · ${f[2]}`);});}
   if(tmiss.length&&!(await ask(`확인 체크가 빠졌어요:\n${tmiss.join('\n')}\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-'+DK(secs.find(k=>tmiss.some(t=>t.startsWith(ITEM[k].label)))))?.scrollIntoView({behavior:'smooth',block:'center'});return;}
   if(secs.includes('cs.order')){
@@ -2350,6 +2533,9 @@ ${none.map(x=>x.title).join(', ')}
         for(const it of its){const v=R.data.ds_result?.items?.[it.id];if(!v?.st)continue;
           await updateDoc(doc(db,'users',meUid,'dplan',it.id),{status:v.st,note:v.note||'',reportDate:R.date,updatedAt:now}).catch(()=>{});}}
     }
+    // 릴스 기획안: 금요일 제작 완료 반영
+    if(reelUp){const v=R.data.ds_sns?.reel||{};const t=(reelUp.topics||[]).find(x=>x.k===reelUp.choice);setP(R.data,['ds_sns','reel','pid'],reelUp.id);setP(R.data,['ds_sns','reel','title'],`${fmtD(reelUp.week)} 기획안 ${reelUp.choice||''} ${t?.title||''}`.trim());
+      await updateDoc(doc(db,'reels',reelUp.id),{prod:{done:!!v.done,up1:!!v.up1,up2:!!v.up2,link1:v.link1||'',link2:v.link2||'',report:R.date,at:now},status:v.done?'produced':reelUp.status,updatedAt:now}).catch(()=>{});}
     // 자동 일정 등록 (글 속 날짜)
     const known=new Set(myAgenda.map(a=>a.id));const skip=R.data.agendaSkip||{};const added=[];
     for(const a of agendaFromData(R.data,R.date)){if(known.has(a.id)||skip[a.id])continue;
@@ -2372,7 +2558,7 @@ function startAdmin(){
   $('#adminTabs').hidden=false;$('#barSub').textContent='업무보고 · 관리자';
   show('vAdmin');setTab('home');setTaskDefaults();renderTfAtt();$('#arDate').value=today();$('#hDate').value=today();$('#lDate').value=today();
   unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};queueRender();},e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
-  watchInq();
+  watchInq();watchReels();
   unsubs.push(onSnapshot(collection(db,'prices'),q=>{prices={};q.docs.forEach(x=>prices[x.id]=x.data());queueRender();},()=>{}));
   $('#payMonth').value=today().slice(0,7);
   unsubs.push(onSnapshot(collection(db,'users'),q=>{
@@ -2887,6 +3073,7 @@ function sectionView(u,key,d,rv,grp,canReview){
     body+=`<div class="chgrid">${CHS.map(([c,l,b,cls])=>{const cd=d?.[c]||{};return `<div class="chcard"><div class="cn"><span class="logo ${cls}">${b}</span>${l}${cd.done?'<span class="tag ok">완료</span>':'<span class="tag">미체크</span>'}</div>${cd.ocr?ocrLine(cd.ocr,true):''}${(cd.imgs||[]).length?`<div class="gthumbs">${cd.imgs.map(im=>galThumb(u.uid,im,`${ITEM[key].label} · ${l}`,grp)).join('')}</div>`:'<span class="note">캡쳐 없음</span>'}</div>`;}).join('')}</div>`;
     if(S.extra)body+=kvHtml(u.uid,S.extra,d,grp);
   }else if(S.type==='group'){
+    if(key==='ds.sns')body+=reelViewHtml(d?.reel);
     body+=kvHtml(u.uid,S.fields,d,grp);
     if(S.list)body+=(d?.rows||[]).map((r,i)=>`<div class="vrow"><b style="font-size:12.5px">${esc(S.list.label)} ${i+1}</b>${kvHtml(u.uid,S.list.fields,r,grp)}</div>`).join('');
   }else{
