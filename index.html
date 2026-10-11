@@ -321,6 +321,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .chart .ax{fill:var(--muted)}
 .chart .vl{fill:var(--ink);font-weight:600}
 .seg{row-gap:2px}
+.brand .ver{opacity:.45;font-size:10.5px;margin-left:4px;font-family:var(--f-num)}
 .thw{position:relative;display:block}
 .thw .th{width:100%}
 .thw .x,.dmimg input{position:absolute;top:4px;right:4px}
@@ -414,7 +415,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-15</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -1325,7 +1326,7 @@ let users={},thumbs={},thumbSubs={},taskSubs={},tasksBy={},repSubs={},repsBy={},
 let me=null,myTasks=[],R=null,repUnsub=null,saveT=null,myPurch=[],myAgenda=[];
 let invBy={},invSubs={},prices={},myPlan=[],planBy={},planSubs={};
 function cleanup(){
-  if(typeof INQ!=='undefined'){$('#rInq').innerHTML='';$('#aInq').innerHTML='';$('#rReel').innerHTML='';$('#aReel').innerHTML='';reelDraft=null;}
+  if(typeof INQ!=='undefined'){$('#rInq').innerHTML='';$('#aInq').innerHTML='';$('#rReel').innerHTML='';$('#aReel').innerHTML='';reelDrafts=[];}
   unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
   [thumbSubs,taskSubs,repSubs,invSubs,planSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));planSubs={};planBy={};myPlan=[];
   thumbSubs={};thumbs={};taskSubs={};tasksBy={};repSubs={};repsBy={};usersSig='';users={};invSubs={};invBy={};prices={};payCache={};
@@ -2051,7 +2052,7 @@ document.addEventListener('keydown',e=>{const b=e.target.closest?.('[data-inqfol
 
 
 /* ===================== 릴스 기획안 (대표님 업로드 → 디자인 선택 → 확인·보완 → 금요일 제작 완료) ===================== */
-let REELS=[],reelUnsub=null,reelDraft=null;const RV={rReel:{more:false},aReel:{more:false}};
+let REELS=[],reelUnsub=null,reelDrafts=[];const RV={rReel:{more:false},aReel:{more:false}};
 const RL_L={new:'주제 선택 대기',chosen:'대표님 확인 대기',revise:'보완 요청',replied:'보완 답변 도착',confirmed:'제작 진행',produced:'제작 완료'};
 const RL_C={new:'acc',chosen:'acc',revise:'bad',replied:'acc',confirmed:'cs',produced:'ok'};
 const plusD=(d,n)=>DT.addDays(d,n);
@@ -2100,25 +2101,29 @@ function reelCardHtml(r,admin){
   }
   return h+'</div>';
 }
-function draftHtml(){
-  const d=reelDraft;if(!d)return '';
-  return `<div class="reel draft"><div class="btnrow" style="justify-content:space-between"><b>미리보기 · ${esc(d.docTitle||d.name)}</b><span class="note">${esc(d.name)} · 자동으로 뽑은 내용을 확인하고 고쳐주세요</span></div>
-    <div class="btnrow" style="margin:8px 0"><span class="note">기획일</span><input type="date" class="inp" data-rdw value="${esc(d.week)}" aria-label="기획일"><span class="note">${d.docDate?'파일의 작성일로 채웠어요':'파일에 작성일이 없어 선택한 날짜로 넣었어요'} · 제작 ~${esc(fmtD(plusD(d.week,6)))}(화)</span>
-      <span class="note">업로드</span><select class="inp" data-rds aria-label="업로드 요일">${Object.entries(SLOT_L).map(([k,l])=>`<option value="${k}" ${d.slot===k?'selected':''}>${l}요일</option>`).join('')}</select></div>
+function draftHtml(d,n){
+  return `<div class="reel draft"><div class="btnrow" style="justify-content:space-between"><b>미리보기 ${n+1} · ${esc(d.docTitle||d.name)}</b><span class="btnrow"><span class="note">${esc(d.name)}</span><button type="button" class="linkbtn" data-reelrm="${n}" style="color:var(--bad)">빼기</button></span></div>
+    <div class="btnrow" style="margin:8px 0"><span class="note">기획일</span><input type="date" class="inp" data-rdw="${n}" value="${esc(d.week)}" aria-label="기획일"><span class="note">${d.docDate?'파일의 작성일로 채웠어요':'파일에 작성일이 없어 선택한 날짜로 넣었어요'} · 제작 ~${esc(fmtD(plusD(d.week,6)))}(화)</span>
+      <span class="note">업로드</span><select class="inp" data-rds="${n}" aria-label="업로드 요일">${Object.entries(SLOT_L).map(([k,l])=>`<option value="${k}" ${d.slot===k?'selected':''}>${l}요일</option>`).join('')}</select></div>
     ${d.warn?`<div class="flagnote">${esc(d.warn)}</div>`:''}
     <div class="rtopics">${d.topics.map((t,i)=>`<div class="rtopic"><div class="btnrow"><span class="rk">${esc(t.k)}</span></div>
-      <div class="field"><label>부제 (후킹 방식 등)</label><input class="inp" data-rdf="${i}|sub" value="${esc(t.sub||'')}"></div>
-      <div class="field"><label>릴스 제목</label><input class="inp" data-rdf="${i}|title" value="${esc(t.title||'')}"></div>
-      <div class="field"><label>콘텐츠 방향</label><textarea class="inp" rows="2" data-rdf="${i}|dir">${esc(t.dir||'')}</textarea></div>
-      <p class="note" style="margin:0">스토리보드·자막 ${(t.subs||[]).length}줄 · 게시글 문구 ${t.cap?'있음':'없음'} · 전체 내용 ${(t.text||'').length}자</p></div>`).join('')}</div>
-    <div class="btnrow" style="margin-top:10px"><button type="button" class="primary" data-reelsave style="padding:10px 18px;font-size:14px">디자인 파트에 올리기</button><button type="button" class="secondary" data-reelcancel>취소</button></div></div>`;
+      <div class="field"><label>부제 (후킹 방식 등)</label><input class="inp" data-rdf="${n}|${i}|sub" value="${esc(t.sub||'')}"></div>
+      <div class="field"><label>릴스 제목</label><input class="inp" data-rdf="${n}|${i}|title" value="${esc(t.title||'')}"></div>
+      <div class="field"><label>콘텐츠 방향</label><textarea class="inp" rows="2" data-rdf="${n}|${i}|dir">${esc(t.dir||'')}</textarea></div>
+      <p class="note" style="margin:0">스토리보드·자막 ${(t.subs||[]).length}줄 · 게시글 문구 ${t.cap?'있음':'없음'} · 전체 내용 ${(t.text||'').length}자</p></div>`).join('')}</div></div>`;
+}
+function draftsHtml(){
+  if(!reelDrafts.length)return '';
+  const dup=reelDrafts.filter((d,i)=>reelDrafts.findIndex(x=>x.week===d.week&&x.slot===d.slot)!==i).length;
+  return reelDrafts.map(draftHtml).join('')+`${dup?'<div class="flagnote">같은 기획일·업로드 요일로 된 기획안이 있어요. 하나는 화요일, 하나는 목요일로 바꿔주세요.</div>':''}
+    <div class="btnrow" style="margin:0 0 14px"><button type="button" class="primary" data-reelsave style="padding:10px 18px;font-size:14px">${reelDrafts.length}개 기획안 디자인 파트에 올리기</button><button type="button" class="secondary" data-reelcancel>모두 취소</button></div>`;
 }
 function renderReel(b){
   const box=$('#'+b);if(!box)return;const admin=b==='aReel';
   const list=REELS;const more=RV[b].more;const shown=more?list:list.slice(0,admin?3:2);
   const wed=plusD(CALC.mon(today()),2);
   let h=`<section class="panel reels"><div class="btnrow" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">릴스 기획안 <span class="s">수요일 기획 → 차주 화요일까지 제작 → 화·목 업로드${admin?' · 워드 파일을 올리면 A/B 두 주제를 뽑아 디자인 파트에 보여줘요':' · 두 주제 중 하나를 골라주세요'}</span></h2></div>`;
-  if(admin)h+=reelDraft?draftHtml():`<div class="btnrow" style="margin-bottom:12px"><span class="note">기획일</span><input type="date" class="inp" id="reelWeek" value="${esc(RV.aReel.week||wed)}" aria-label="기획일"><label class="attach"><input type="file" accept=".docx" data-reelup>＋ 기획안 워드 파일 (.docx)</label></div>`;
+  if(admin)h+=`<div class="btnrow" style="margin-bottom:12px"><span class="note">기획일</span><input type="date" class="inp" id="reelWeek" value="${esc(RV.aReel.week||wed)}" aria-label="기획일"><label class="attach"><input type="file" accept=".docx" multiple data-reelup>＋ 기획안 워드 파일 (.docx · 여러 개 가능)</label><span class="note">화·목 기획안 2개를 한 번에 골라도 돼요</span></div>`+draftsHtml();
   h+=shown.length?shown.map(r=>reelCardHtml(r,admin)).join(''):`<div class="empty">${admin?'올린 기획안이 없어요.':'아직 받은 기획안이 없어요.'}</div>`;
   if(list.length>shown.length||more)h+=`<button type="button" class="linkbtn" data-reelmore="${b}">${more?'최근 것만 보기':`지난 기획안 ${list.length-shown.length}개 더 보기`}</button>`;
   box.innerHTML=h+'</section>';
@@ -2126,28 +2131,36 @@ function renderReel(b){
 async function docxToText(file){await ensureZip();const z=await JSZip.loadAsync(file);const f=z.file('word/document.xml');if(!f)throw new Error('not docx');return RP.docxText(await f.async('string'));}
 document.addEventListener('change',async e=>{
   if(e.target.id==='reelWeek'){RV.aReel.week=e.target.value;return;}
-  const up=e.target.closest('[data-reelup]');if(!up)return;const f=up.files[0];up.value='';if(!f)return;
-  if(!/\.docx$/i.test(f.name)){toast('워드(.docx) 파일만 올릴 수 있어요. .doc 파일은 워드에서 .docx로 다시 저장해주세요');return;}
+  const up=e.target.closest('[data-reelup]');if(!up)return;const files=[...up.files];up.value='';if(!files.length)return;
   const lab=up.closest('.attach');lab.classList.add('busy');
-  try{const text=await docxToText(f);let topics=RP.split(text);let warn='';
-    if(topics.length<2){topics=[topics[0]||{k:'A',title:'',sub:'',dir:'',subs:[],text},{k:'B',title:'',sub:'',dir:'',subs:[],text:''}];warn='A/B 두 버전을 찾지 못했어요. 두 번째 주제를 직접 적어주세요. (파일 안에 "버전 A", "버전 B" 또는 "A안", "B안" 제목이 있으면 자동으로 나눠요)';}
-    const week=topics.date||$('#reelWeek')?.value||plusD(CALC.mon(today()),2);
-    const same=REELS.filter(r=>r.week===week);
-    reelDraft={slot:same.some(r=>r.slot==='tue'||r.slot==='both'||!r.slot)?'thu':'tue',week,docDate:topics.date||'',docTitle:topics.docTitle||'',common:topics.common||'',name:f.name,size:f.size,file:f.size<=FILE_MAX?await readDataURL(f):'',topics,warn:warn||(f.size>FILE_MAX?'파일이 700KB가 넘어 원본은 보관하지 않고 글자만 저장해요':'')};
-    renderReel('aReel');}
-  catch(err){toast('워드 파일을 읽지 못했어요: '+f.name);}finally{lab.classList.remove('busy');}
+  for(const f of files){
+    if(!/\.docx$/i.test(f.name)){toast(`${f.name}: 워드(.docx) 파일만 올릴 수 있어요. .doc 파일은 워드에서 .docx로 다시 저장해주세요`);continue;}
+    try{const text=await docxToText(f);let topics=RP.split(text);let warn='';
+      if(topics.length<2){const t0=topics[0];topics=[t0||{k:'A',title:'',sub:'',dir:'',subs:[],text},{k:'B',title:'',sub:'',dir:'',subs:[],text:''}];topics.date=t0?.date;warn='A/B 두 버전을 찾지 못했어요. 두 번째 주제를 직접 적어주세요. (파일 안에 "버전 A·버전 B" 또는 "A안·B안" 제목이 있으면 자동으로 나눠요)';}
+      const week=topics.date||$('#reelWeek')?.value||plusD(CALC.mon(today()),2);
+      const taken=[...REELS.filter(r=>r.week===week).map(r=>r.slot||'both'),...reelDrafts.filter(d=>d.week===week).map(d=>d.slot)];
+      const slot=taken.includes('tue')||taken.includes('both')?'thu':'tue';
+      reelDrafts.push({slot,week,docDate:topics.date||'',docTitle:topics.docTitle||'',common:topics.common||'',name:f.name,size:f.size,file:f.size<=FILE_MAX?await readDataURL(f):'',topics:[...topics],warn:warn||(f.size>FILE_MAX?'파일이 700KB가 넘어 원본은 보관하지 않고 글자만 저장해요':'')});}
+    catch(err){toast('워드 파일을 읽지 못했어요: '+f.name);}
+  }
+  lab.classList.remove('busy');renderReel('aReel');
 });
-document.addEventListener('change',e=>{const sl=e.target.closest('[data-rds]');if(sl&&reelDraft){reelDraft.slot=sl.value;return;}const w=e.target.closest('[data-rdw]');if(!w||!reelDraft||!w.value)return;reelDraft.week=w.value;renderReel('aReel');});
-document.addEventListener('input',e=>{const t=e.target.closest('[data-rdf]');if(!t||!reelDraft)return;const[i,k]=t.dataset.rdf.split('|');reelDraft.topics[+i][k]=t.value;});
+document.addEventListener('change',e=>{const sl=e.target.closest('[data-rds]');if(sl){const d=reelDrafts[+sl.dataset.rds];if(d){d.slot=sl.value;renderReel('aReel');}return;}const w=e.target.closest('[data-rdw]');if(!w||!w.value)return;const d=reelDrafts[+w.dataset.rdw];if(d){d.week=w.value;renderReel('aReel');}});
+document.addEventListener('input',e=>{const t=e.target.closest('[data-rdf]');if(!t)return;const[n,i,k]=t.dataset.rdf.split('|');const d=reelDrafts[+n];if(d)d.topics[+i][k]=t.value;});
 document.addEventListener('click',async e=>{
   const t=e.target;
-  if(t.closest('[data-reelcancel]')){reelDraft=null;renderReel('aReel');return;}
-  if(t.closest('[data-reelsave]')){const d=reelDraft;if(!d)return;if(d.topics.some(x=>!String(x.title||'').trim())){toast('두 주제의 릴스 제목을 모두 적어주세요');return;}
-    const b=t.closest('[data-reelsave]');b.disabled=true;const id=rid();const now=new Date().toISOString();
-    try{if(d.file)await setDoc(doc(db,'reelFile',id),{data:d.file,name:d.name,createdAt:now});
-      if(REELS.some(r=>r.week===d.week&&(r.slot||'both')===d.slot)&&!(await ask(`${fmtD(d.week)} ${SLOT_L[d.slot]}요일 업로드 기획안이 이미 있어요. 하나 더 올릴까요?`,'올리기'))){b.disabled=false;return;}
-      await setDoc(doc(db,'reels',id),{slot:d.slot||'both',week:d.week,docTitle:d.docTitle||'',common:d.common||'',name:d.name,size:d.size,hasFile:!!d.file,topics:d.topics.map(x=>({k:x.k,sub:x.sub||'',title:x.title||'',dir:x.dir||'',subs:x.subs||[],cap:x.cap||'',text:x.text||''})),choice:'',status:'new',thread:[],prod:{},createdAt:now,updatedAt:now});
-      reelDraft=null;renderReel('aReel');toast('디자인 파트에 올렸어요');}catch(err){toast(authMsg(err));b.disabled=false;}return;}
+  if(t.closest('[data-reelcancel]')){reelDrafts=[];renderReel('aReel');return;}
+  const rm=t.closest('[data-reelrm]');if(rm){reelDrafts.splice(+rm.dataset.reelrm,1);renderReel('aReel');return;}
+  if(t.closest('[data-reelsave]')){if(!reelDrafts.length)return;
+    if(reelDrafts.some(d=>d.topics.some(x=>!String(x.title||'').trim()))){toast('모든 주제의 릴스 제목을 적어주세요');return;}
+    const dupOld=reelDrafts.filter(d=>REELS.some(r=>r.week===d.week&&(r.slot||'both')===d.slot));
+    if(dupOld.length&&!(await ask(`${dupOld.map(d=>`${fmtD(d.week)} ${SLOT_L[d.slot]}요일`).join(', ')} 업로드 기획안이 이미 있어요. 그래도 올릴까요?`,'올리기')))return;
+    const b=t.closest('[data-reelsave]');b.disabled=true;const now=new Date().toISOString();let n=0;
+    try{for(const d of reelDrafts.slice()){const id=rid();
+        if(d.file)await setDoc(doc(db,'reelFile',id),{data:d.file,name:d.name,createdAt:now});
+        await setDoc(doc(db,'reels',id),{slot:d.slot||'both',week:d.week,docTitle:d.docTitle||'',common:d.common||'',name:d.name,size:d.size,hasFile:!!d.file,topics:d.topics.map(x=>({k:x.k,sub:x.sub||'',title:x.title||'',dir:x.dir||'',subs:x.subs||[],cap:x.cap||'',text:x.text||''})),choice:'',status:'new',thread:[],prod:{},createdAt:new Date(Date.now()+n).toISOString(),updatedAt:now});
+        n++;reelDrafts.splice(reelDrafts.indexOf(d),1);}
+      renderReel('aReel');toast(`${n}개 기획안을 디자인 파트에 올렸어요`);}catch(err){toast(authMsg(err));b.disabled=false;renderReel('aReel');}return;}
   const mo=t.closest('[data-reelmore]');if(mo){RV[mo.dataset.reelmore].more=!RV[mo.dataset.reelmore].more;renderReel(mo.dataset.reelmore);return;}
   const dl=t.closest('[data-reeldl]');if(dl){e.preventDefault();try{const s=await getDoc(doc(db,'reelFile',dl.dataset.reeldl));if(!s.exists()){toast('원본 파일이 없어요');return;}const f=s.data();const blob=await (await fetch(f.data)).blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=f.name||'기획안.docx';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}catch(err){toast('내려받지 못했어요');}return;}
   const pk=t.closest('[data-reelpick]');if(pk){const[id,k]=pk.dataset.reelpick.split('|');const r=REELS.find(x=>x.id===id);if(!r)return;
