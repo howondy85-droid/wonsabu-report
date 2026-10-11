@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#191512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="원사부 업무보고">
+<meta name="theme-color" content="#191512">
 <title>원사부 업무보고</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,7 +66,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .sgh{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em;margin:14px 2px 8px;display:flex;align-items:center;gap:8px}
 .sgh::after{content:"";flex:1;height:1px;background:var(--line)}
 .sgrp:first-child .sgh{margin-top:0}
-@media (max-width:980px){.slay{grid-template-columns:1fr}.sside{position:static;max-height:none;overflow:visible}.sside .ixgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+@media (max-width:980px){.slay{grid-template-columns:minmax(0,1fr)}.sside{position:static;max-height:none;overflow:visible}.sside .ixgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 .tchk{margin:0 6px 8px 0}
 .tchk.on{border-color:var(--ok);background:var(--ok-soft)}
 .tchk input:disabled+span{opacity:.6}
@@ -362,6 +366,12 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .rsec.fold>.rh .note{display:none}
 .rindex{position:relative}
 .ixgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.ixgrid .ixh{grid-column:1/-1}
+.ops{list-style:none;margin:0;padding:0}.ops li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}.ops li:first-child{border-top:0}
+.ops .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;background:var(--ok)}.ops .ic.warn{background:var(--accent)}.ops .ic.bad{background:var(--bad)}.ops .ic.info{background:var(--muted)}
+.ops .bd{flex:1;min-width:0}.ops .bd p{margin:2px 0 0}
+.hlist{margin:0;padding-left:20px}.hlist li{margin:0 0 8px;line-height:1.6}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;margin:10px 0}
 .ix{display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:left;border:1px solid var(--line);background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:12.5px;color:var(--ink);min-width:0}
 .ix span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ix b{font-size:11.5px;color:var(--muted);white-space:nowrap}
@@ -430,7 +440,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-18</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-19</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -444,6 +454,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <button data-tab="mat" aria-pressed="false">원재료</button>
     <button data-tab="inv" aria-pressed="false">계산서<span class="dot" id="invDot" hidden></span></button>
     <button data-tab="data" aria-pressed="false">데이터 관리</button>
+    <button data-tab="ops" aria-pressed="false">운영 점검<span class="dot" id="opsDot" hidden></span></button>
   </div>
   <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
 </header>
@@ -492,7 +503,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
  <div class="slay">
   <aside class="sside" aria-label="보고 정보">
     <div class="panel sinfo">
-      <div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px" id="stName"></b><span class="tag" id="stPart"></span></div><button type="button" class="linkbtn" id="meBtn">내 정보</button></div>
+      <div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px" id="stName"></b><span class="tag" id="stPart"></span></div><div class="btnrow" style="gap:10px"><button type="button" class="linkbtn" data-help="staff">사용 안내</button><button type="button" class="linkbtn" id="meBtn">내 정보</button></div></div>
       <div id="rKind"></div>
       <div class="field" style="margin:10px 0 0"><label for="rDate" class="lb">보고 날짜</label><input type="date" id="rDate"></div>
     </div>
@@ -664,6 +675,16 @@ tr.off td{opacity:.45;text-decoration:line-through}
     </div>
   </section>
 
+  <section id="tabOps" hidden>
+    <div class="panel"><div class="btnrow" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">자동 점검 <span class="s">운영에 필요한 설정을 사이트가 직접 확인해요</span></h2><div class="btnrow"><button type="button" class="secondary" data-help="admin">대표님용 사용 안내</button><button type="button" class="secondary" id="opsRe">다시 점검</button></div></div><ul class="ops" id="opsList"></ul></div>
+    <div class="panel" id="opsHol"></div>
+    <div class="panel"><h2>데이터 백업 <span class="s">한 달에 한 번 내려받아 보관하세요 · 사진 원본은 들어가지 않아요</span></h2>
+      <div class="btnrow" style="margin-bottom:8px"><button type="button" class="primary" id="bkXlsx" style="padding:9px 16px;font-size:14px">엑셀 백업 내려받기</button><button type="button" class="secondary" id="bkJson">복구용 원본(JSON) 내려받기</button></div>
+      <p class="note" style="margin:0" id="bkInfo"></p>
+      <ul class="sumlist" style="margin:10px 0 0"><li><b>엑셀:</b> 직원·업무보고 목록·보고 내용(글)·지시 업무·디자인 업무판·계산서·발주입고·원재료 가격·휴무일·릴스 기획안·CS 문의건을 시트별로 정리해요. 사람이 읽고 찾아보는 용도예요.</li><li><b>복구용 원본:</b> 사이트 데이터를 그대로 담은 파일이에요. 문제가 생겼을 때 되살리는 데 쓰니 열지 말고 보관만 하세요.</li></ul></div>
+    <div class="panel"><h2>운영 시작 체크리스트 <span class="s">직접 확인하고 체크하세요 · 체크 상태는 저장돼요</span></h2><div id="opsChecks"></div></div>
+  </section>
+
   <section id="tabData" hidden>
     <div class="panel">
       <h2>데이터 관리 <span class="s">지시·완료 업무, 업무보고, 업로드 이미지·파일 등을 골라서 삭제해요 · 삭제하면 되돌릴 수 없어요</span></h2>
@@ -757,6 +778,13 @@ tr.off td{opacity:.45;text-decoration:line-through}
       <button class="primary" type="submit" style="padding:9px 16px;font-size:14px">비밀번호 바꾸기</button>
     </form>
     <div class="btnrow" style="justify-content:flex-end"><button type="button" class="secondary" id="meClose">닫기</button></div>
+  </div>
+</div>
+<div class="overlay" id="dlgHelp" hidden>
+  <div class="dialog wide" role="dialog" aria-labelledby="helpTitle">
+    <div class="btnrow" style="justify-content:space-between;margin-bottom:8px"><h2 id="helpTitle" style="margin:0;font-size:16px">사용 안내</h2><div class="tfilter" id="helpTabs" style="margin:0"></div></div>
+    <div id="helpBody" style="max-height:62vh;overflow:auto"></div>
+    <div class="btnrow" style="justify-content:flex-end;margin-top:12px"><button type="button" class="secondary" id="helpClose">닫기</button></div>
   </div>
 </div>
 <div class="overlay" id="cf" hidden><div class="dialog"><p id="cfMsg"></p><div class="btnrow"><button class="primary" id="cfYes" style="padding:9px 16px;font-size:14px">확인</button><button class="secondary" id="cfNo">취소</button></div></div></div>
@@ -2752,6 +2780,7 @@ function startAdmin(){
   show('vAdmin');setTab('home');setTaskDefaults();renderTfAtt();$('#arDate').value=today();$('#hDate').value=today();$('#lDate').value=today();
   unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};queueRender();},e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
   watchInq();watchReels();
+  unsubs.push(onSnapshot(doc(db,'config','ops'),s=>{OPS={checks:{},lastBackup:'',by:'',...(s.exists()?s.data():{})};renderOps();},()=>{}));
   unsubs.push(onSnapshot(doc(db,'config','media'),s=>{if(s.exists())MEDIA={...MEDIA,...s.data(),stat:{...MEDIA.stat,...(s.data().stat||{})}};renderMediaPanel();},()=>{}));
   unsubs.push(onSnapshot(collection(db,'prices'),q=>{prices={};q.docs.forEach(x=>prices[x.id]=x.data());queueRender();},()=>{}));
   $('#payMonth').value=today().slice(0,7);
@@ -2774,7 +2803,7 @@ async function syncLogins(){if(loginsSynced||!Object.keys(users).length)return;l
   try{const have=new Set((await getDocs(collection(db,'logins'))).docs.map(x=>x.id));
     for(const u of Object.values(users)){if(!u.loginId||have.has(u.loginId))continue;await setDoc(doc(db,'logins',u.loginId),{email:u.authEmail||idToEmail(u.loginId),uid:u.uid,createdAt:new Date().toISOString()}).catch(()=>{});}}catch(e){loginsSynced=false;}}
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','stat','task','dsg','req','staff','cal','pay','mat','inv','data'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','stat','task','dsg','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='ops')renderOps(true);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -2802,7 +2831,7 @@ function renderAdmin(){
   const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,24);
   $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<span class="thw"><button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button><button type="button" class="x" data-delimg="${esc(t.uid)}|${esc(t.id)}" aria-label="이미지 삭제">×</button></span>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
   renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);renderCal(act);
-  renderInvTab();renderMatTab();renderDsg();renderHomeSum();syncLogins();renderMediaPanel();
+  renderInvTab();renderMatTab();renderDsg();renderHomeSum();syncLogins();renderMediaPanel();renderOps();
   if(MEDIA.mode!=='off'&&!mediaBusy&&Date.now()-mediaLastRun>10*60*1000&&mediaPending().length)setTimeout(()=>runMediaClean(false),4000);if(!$('#tabStat').hidden)renderStats(true);if(!$('#tabData').hidden)dmInit();
 }
 function statusCard(u,date,sel){
@@ -3003,6 +3032,154 @@ document.addEventListener('change',async e=>{
 });
 document.addEventListener('click',async e=>{if(e.target.id!=='mediaRun')return;
   if(!(await ask(MEDIA.mode==='off'?'자동 정리가 꺼져 있어요. 승인된 모든 보고서의 원본 사진·파일을 지금 정리할까요?\n(클레임 증빙은 보관돼요)':'조건에 맞는 승인 보고서의 원본 사진·파일을 지금 정리할까요?\n(클레임 증빙은 보관돼요)','정리하기')))return;runMediaClean(true);});
+
+
+/* ---------- 10단계: 운영 점검 · 백업 · 사용 안내 ---------- */
+const HELP={
+ cs:{t:'CS 직원 사용 안내',items:[
+  '<b>매일 보고</b> — 출근하면 "오늘 업무 한눈에 보기"에서 상단 → 중간 → 하단 순서로 채워요. 입력하면 바로 자동 저장돼요.',
+  '<b>시간 확인 체크</b> — 전일출고분은 출근·점심(11:30)·퇴근(17:00), 스스 광고비는 출근·퇴근 때 체크해요. 체크한 시각이 기록돼요.',
+  '<b>발송처리</b> — 한진 송장 엑셀과 네이버 주문내역 엑셀을 함께 올리면 중복·미발송을 자동으로 찾아줘요.',
+  '<b>CS 문의건</b> — 주말·업무시간 외 문의 캡쳐를 올리면 고객 아이디와 요청이 정리돼요. 처리하면 "완료"를 눌러주세요. 대표님도 같은 화면을 봐요.',
+  '<b>주문접수 완료는 마지막</b> — 17:25 이후 6개 채널 화면을 전체화면으로 캡쳐해 올려요. 이전 시각 캡쳐는 인정되지 않아요.',
+  '<b>전송</b> — 다 쓰면 아래 "전송"을 눌러요. 대표님이 보완을 요청하면 빨갛게 표시된 항목만 고쳐서 다시 전송해요.',
+  '<b>주간·월간 보고</b> — 한 주 마지막 근무일과 말일에는 항목이 더 나와요(알바 출퇴근, 원재료, 계산서 등). 휴무일은 자동으로 반영돼요.',
+  '<b>조회 탭</b> — 화면 위 알바급여·원재료·계산서 탭에서 정리된 결과를 볼 수 있어요. 계산서 기한은 작성월 다음 달 10일이에요.',
+  '<b>내 정보</b> — 아이디와 비밀번호를 바꿀 수 있어요. 비밀번호를 잊으면 대표님께 말씀해주세요.',
+  '<b>휴대폰</b> — 브라우저 메뉴에서 "홈 화면에 추가"를 하면 앱처럼 열 수 있어요.']},
+ ds:{t:'디자인 직원 사용 안내',items:[
+  '<b>보고는 월·금</b> — 월요일과 금요일에만 보고서가 열려요. 휴무면 자동으로 앞뒤 근무일로 옮겨져요.',
+  '<b>월요일: 이번주 업무 확인</b> — "이번주 업무를 확인했어요"를 체크하면 일반 업무는 진행중 업무로, 채널 업무는 각 채널 항목으로, 마감이 다음 주 이후인 업무는 차주로 옮겨져요.',
+  '<b>주중에 들어온 업무</b> — 이번주 업무 목록의 "확인 → ○○ 업무로" 버튼으로 옮겨요.',
+  '<b>채널 업무</b> — 스마트스토어·자사몰·오픈마켓·SNS 항목의 "대표님 지시 업무"에서 진행중/완료를 고르고 캡쳐를 올려요. 완료로 전송하면 업무판에서 완료 처리돼요.',
+  '<b>금요일: 결과</b> — 이번주 업무마다 완료·미완료를 골라요. 미완료는 다음 주 업무로 자동으로 넘어가요. 다음주 피드 예약 캡쳐도 올려요.',
+  '<b>릴스 기획안</b> — 수요일에 올라온 기획안에서 A/B 중 하나를 고르고, 대표님 보완 요청에 답장해요. 화·목 업로드 후 금요일 보고에 제작 완료와 링크를 적어요.',
+  '<b>내 정보</b> — 아이디와 비밀번호를 바꿀 수 있어요.',
+  '<b>휴대폰</b> — 브라우저 메뉴에서 "홈 화면에 추가"를 하면 앱처럼 열 수 있어요.']},
+ admin:{t:'대표님용 사용 안내',items:[
+  '<b>매일 아침</b> — 홈에서 전일·오늘·내일 요약을 보고, 업무보고 탭에서 항목마다 확인/보완 요청을 누른 뒤 승인 또는 보류해요.',
+  '<b>업무 지시</b> — 업무 지시 탭에서 사진·파일과 함께 지시해요. 디자인은 디자인 업무판에서 이번주·차주·대기와 채널을 정해 넣어요.',
+  '<b>새 직원</b> — 직원이 가입하면 가입 승인 탭에 떠요. 승인할 때 파트와 보고 양식을 정해요.',
+  '<b>휴무일·연차</b> — 휴무일 탭에 넣으면 주간·월간 보고일이 자동으로 바뀌어요. 운영 점검 탭에서 공휴일을 한 번에 넣을 수 있어요.',
+  '<b>계산서</b> — 기한(익월 10일) 5일 전부터 홈과 계산서 탭에 알림이 떠요.',
+  '<b>한 달에 한 번</b> — 운영 점검 탭에서 엑셀 백업을 내려받아요. 사진 원본은 데이터 관리 탭의 자동 정리 설정에 따라 지워져요(클레임 증빙은 보관).',
+  '<b>직원 비밀번호 분실</b> — Firebase 콘솔 → Authentication에서 해당 계정의 비밀번호를 재설정하거나, 계정을 지우고 다시 가입하게 해요.',
+  '<b>새 버전 받으면</b> — GitHub에 index.html을 올리고 Ctrl+Shift+R로 새로고침해요. firestore.rules가 바뀐 버전이면 Firebase 콘솔 → Firestore → 규칙에도 게시해요.']}
+};
+function openHelp(k){const keys=isAdminUser?['admin','cs','ds']:[me?.part==='디자인'?'ds':'cs'];if(!keys.includes(k))k=keys[0];
+  $('#helpTabs').innerHTML=keys.length>1?keys.map(x=>`<button type="button" data-hk="${x}" aria-pressed="${x===k}">${{admin:'대표님',cs:'CS 직원',ds:'디자인 직원'}[x]}</button>`).join(''):'';
+  $('#helpTitle').textContent=HELP[k].t;$('#helpBody').innerHTML=`<ol class="hlist">${HELP[k].items.map(x=>`<li>${x}</li>`).join('')}</ol>`;$('#dlgHelp').hidden=false;}
+document.addEventListener('click',e=>{const h=e.target.closest('[data-help]');if(h){openHelp(h.dataset.help==='staff'?'':h.dataset.help);return;}const k=e.target.closest('[data-hk]');if(k)openHelp(k.dataset.hk);});
+$('#helpClose').onclick=()=>{$('#dlgHelp').hidden=true;};
+
+// 공휴일 (인사혁신처 발표 기준 · 2027년은 발표 전 예정일이라 확인 필요)
+const KR_HOL={
+ 2026:[['2026-01-01','신정'],['2026-02-16','설날 연휴'],['2026-02-17','설날'],['2026-02-18','설날 연휴'],['2026-03-02','대체공휴일(삼일절)'],['2026-05-01','노동절'],['2026-05-05','어린이날'],['2026-05-25','대체공휴일(부처님오신날)'],['2026-06-03','지방선거일'],['2026-07-17','제헌절'],['2026-08-17','대체공휴일(광복절)'],['2026-09-24','추석 연휴'],['2026-09-25','추석'],['2026-10-05','대체공휴일(개천절)'],['2026-10-09','한글날'],['2026-12-25','크리스마스']],
+ 2027:[['2027-01-01','신정'],['2027-02-08','설날 연휴'],['2027-02-09','대체공휴일(설날)'],['2027-03-01','삼일절'],['2027-05-03','대체공휴일(노동절)'],['2027-05-05','어린이날'],['2027-05-13','부처님오신날'],['2027-07-19','대체공휴일(제헌절)'],['2027-08-16','대체공휴일(광복절)'],['2027-09-14','추석 연휴'],['2027-09-15','추석'],['2027-09-16','추석 연휴'],['2027-10-04','대체공휴일(개천절)'],['2027-10-11','대체공휴일(한글날)'],['2027-12-27','대체공휴일(크리스마스)']]
+};   // 주말에 겹친 공휴일은 보고일 계산에 영향이 없어 뺐어요
+let OPS={checks:{},lastBackup:'',by:''},opsRules=null,opsHolSel=null,opsHolYear=0;
+const OPS_MANUAL=[
+ ['deploy','GitHub에 최신 index.html을 올리고 사이트 상단 버전(v…)이 바뀐 것을 확인했어요'],
+ ['rules','Firebase 콘솔 → Firestore → 규칙에 최신 firestore.rules를 게시했어요'],
+ ['domain','Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 GitHub Pages 주소가 있어요'],
+ ['admin','관리자 계정(wonsabu)으로 로그인해서 이 화면이 보여요'],
+ ['staffjoin','직원에게 사이트 주소를 보내고, 가입 → 승인 → 첫 보고 전송까지 한 번 해봤어요'],
+ ['phone','직원 휴대폰에서 사이트를 열어 "홈 화면에 추가"를 했어요'],
+ ['photo','데이터 관리 탭에서 사진 원본 자동 정리 방식을 정했어요'],
+ ['budget','Firebase 콘솔 → 사용량 및 결제에서 무료 한도(Spark 요금제)를 확인했어요']];
+function opsItems(){
+  const us=Object.values(users);const appr=us.filter(u=>u.status==='approved');const td=today();const it=[];
+  it.push(opsRules===null?{c:'info',t:'보안 규칙 확인 중…'}:opsRules?{c:'ok',t:'보안 규칙이 최신이에요'}:{c:'bad',t:'보안 규칙이 예전 버전이에요',d:'Firebase 콘솔 → Firestore → 규칙에 최신 firestore.rules를 붙여넣고 게시해주세요. 아이디 변경·채널 업무 확인이 막혀요.'});
+  const y=+td.slice(0,4);const hs=(CAL.holidays||[]);const missing=[y,y+1].flatMap(yy=>(KR_HOL[yy]||[]).filter(([d])=>d>=td&&!hs.some(h=>h.d===d)));const soon=missing.filter(([d])=>DT.diff(d,td)<=60);
+  it.push(!missing.length?{c:'ok',t:'다가오는 공휴일이 휴무일에 들어가 있어요'}:{c:soon.length?'warn':'info',t:`휴무일에 없는 공휴일 ${missing.length}일${soon.length?` (60일 안 ${soon.length}일)`:''}`,d:`가장 가까운 날: ${missing.slice(0,3).map(([d,n])=>`${fmtD(d)} ${n}`).join(', ')} · 아래에서 한 번에 넣을 수 있어요. 공휴일에 문을 연다면 넣지 않아도 돼요.`});
+  const pend=us.filter(u=>u.status==='pending');it.push(pend.length?{c:'warn',t:`가입 승인 대기 ${pend.length}명`,d:pend.map(u=>u.name).join(', '),go:'req'}:{c:'ok',t:'가입 승인 대기 없음'});
+  const nos=appr.filter(u=>!(u.sections||[]).length);it.push(nos.length?{c:'bad',t:`보고 양식이 없는 직원 ${nos.length}명`,d:`${nos.map(u=>u.name).join(', ')} · 직원 관리에서 양식을 넣어야 보고서가 열려요`,go:'staff'}:{c:'ok',t:`승인된 직원 ${appr.length}명 모두 보고 양식이 있어요`});
+  const ds=appr.filter(u=>hasDS(u.sections));const emptyDs=ds.filter(u=>!DSP.items(planBy[u.uid]||[],'this',td).length);
+  if(ds.length)it.push(emptyDs.length?{c:'info',t:`이번주 디자인 업무판이 비어 있어요 (${emptyDs.map(u=>u.name).join(', ')})`,d:'월요일 보고 전에 이번주 업무를 넣어주세요',go:'dsg'}:{c:'ok',t:'디자인 업무판에 이번주 업무가 있어요'});
+  it.push({c:MEDIA.mode==='off'?'warn':'ok',t:MEDIA.mode==='off'?'사진 원본 자동 정리가 꺼져 있어요':`사진 원본 자동 정리: ${MEDIA.mode==='now'?'승인하면 바로':`승인 후 ${MEDIA.days}일`}`,d:MEDIA.mode==='off'?'사진이 계속 쌓이면 Firebase 무료 저장 한도(1GB)에 가까워질 수 있어요':'',go:'data'});
+  const lb=OPS.lastBackup;const ago=lb?DT.diff(td,lb.slice(0,10)):null;
+  it.push(!lb?{c:'warn',t:'아직 백업한 적이 없어요',d:'아래 "엑셀 백업 내려받기"를 눌러 첫 백업을 받아두세요'}:ago>31?{c:'warn',t:`마지막 백업 ${ago}일 전`,d:'한 달에 한 번 백업을 권해요'}:{c:'ok',t:`마지막 백업 ${fmtD(lb.slice(0,10))} (${ago}일 전)`});
+  const unpaid=invUnpaidSoon(allInv(),td,0);if(unpaid.length)it.push({c:'bad',t:`기한이 지난 미지급 계산서 ${unpaid.length}건`,go:'inv'});
+  return it;
+}
+async function checkRules(){try{await getDoc(doc(db,'logins','__rulecheck'));opsRules=true;}catch(e){opsRules=!/permission/i.test(e.code||e.message||'');}renderOps();}
+function renderOps(first){
+  if(first&&opsRules===null)checkRules();
+  const it=opsItems();const n=it.filter(x=>x.c==='bad'||x.c==='warn').length;$('#opsDot').hidden=!n;$('#opsDot').textContent=n;
+  if($('#tabOps').hidden&&!first)return;
+  const ic={ok:'✓',warn:'!',bad:'✕',info:'i'};
+  $('#opsList').innerHTML=it.map(x=>`<li><span class="ic ${x.c==='ok'?'':x.c}" aria-hidden="true">${ic[x.c]}</span><div class="bd"><b>${esc(x.t)}</b>${x.d?`<p class="note">${esc(x.d)}</p>`:''}</div>${x.go?`<button type="button" class="linkbtn" data-opsgo="${x.go}">바로가기</button>`:''}</li>`).join('');
+  // 공휴일
+  const td=today();const y=+td.slice(0,4);if(!opsHolYear)opsHolYear=y;const hs=CAL.holidays||[];
+  const list=(KR_HOL[opsHolYear]||[]).filter(([d])=>d>=td&&!hs.some(h=>h.d===d));   // 지난 날은 지난 보고서 종류가 바뀌지 않게 제외
+  if(!opsHolSel||opsHolSel.y!==opsHolYear)opsHolSel={y:opsHolYear,set:new Set(list.filter(([d])=>d>=td).map(([d])=>d))};
+  $('#opsHol').innerHTML=`<div class="btnrow" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">공휴일 한 번에 넣기 <span class="s">오늘 이후 평일 공휴일·대체공휴일만 · 이미 넣은 날은 빠져요</span></h2><div class="tfilter" style="margin:0">${Object.keys(KR_HOL).map(k=>`<button type="button" data-holy="${k}" aria-pressed="${+k===opsHolYear}">${k}년</button>`).join('')}</div></div>
+    ${opsHolYear>=2027?'<p class="flagnote" style="margin:0 0 8px">2027년은 정부 공식 발표 전 예정일이에요. 대체공휴일은 바뀔 수 있으니 인사혁신처 발표 후 한 번 더 확인해주세요.</p>':''}
+    ${list.length?`<div class="hgrid">${list.map(([d,nm])=>`<label class="opt" style="padding:6px 10px"><input type="checkbox" data-hold="${d}" ${opsHolSel.set.has(d)?'checked':''}><span>${esc(fmtD(d))}(${dayName(d)}) ${esc(nm)}${d<td?' <span class="note">지남</span>':''}</span></label>`).join('')}</div>
+    <div class="btnrow"><button type="button" class="primary" id="holAdd" style="padding:9px 16px;font-size:14px">선택한 ${opsHolSel.set.size}일 휴무일로 넣기</button><span class="note">공휴일에도 문을 여는 날은 체크를 풀어주세요</span></div>`:`<p class="note" style="margin:0">${opsHolYear}년 공휴일은 모두 휴무일에 들어가 있어요.</p>`}`;
+  // 체크리스트
+  const ck=OPS.checks||{};const done=OPS_MANUAL.filter(([k])=>ck[k]).length;
+  $('#opsChecks').innerHTML=`<p class="note" style="margin:0 0 8px">${done}/${OPS_MANUAL.length} 완료</p>`+OPS_MANUAL.map(([k,l])=>`<label class="opt" style="display:flex;padding:8px 10px;margin-bottom:6px"><input type="checkbox" data-opck="${k}" ${ck[k]?'checked':''}><span>${esc(l)}${ck[k]?` <span class="note">· ${esc(fmtD(String(ck[k]).slice(0,10)))}</span>`:''}</span></label>`).join('');
+  $('#bkInfo').textContent=OPS.lastBackup?`마지막 백업 ${fmtT(OPS.lastBackup)}${OPS.by?` · ${OPS.by}`:''}`:'아직 백업한 적이 없어요.';
+}
+$('#opsRe').onclick=()=>{opsRules=null;renderOps(true);toast('다시 점검했어요');};
+$('#tabOps').addEventListener('click',async e=>{
+  const g=e.target.closest('[data-opsgo]');if(g){setTab(g.dataset.opsgo);return;}
+  const yb=e.target.closest('[data-holy]');if(yb){opsHolYear=+yb.dataset.holy;renderOps();return;}
+  if(e.target.id==='holAdd'){const add=[...opsHolSel.set];if(!add.length){toast('넣을 날을 골라주세요');return;}
+    const names=Object.fromEntries(KR_HOL[opsHolYear]);const hs=(CAL.holidays||[]).filter(h=>!add.includes(h.d)).concat(add.map(d=>({d,n:names[d]||'공휴일'})));
+    try{await setDoc(doc(db,'config','calendar'),{holidays:hs,leave:CAL.leave||{}},{merge:true});CAL={...CAL,holidays:hs};opsHolSel=null;toast(`휴무일 ${add.length}일을 넣었어요`);renderOps();}catch(err){toast(authMsg(err));}}
+});
+$('#tabOps').addEventListener('change',async e=>{
+  const h=e.target.closest('[data-hold]');if(h){h.checked?opsHolSel.set.add(h.dataset.hold):opsHolSel.set.delete(h.dataset.hold);const b=$('#holAdd');if(b)b.textContent=`선택한 ${opsHolSel.set.size}일 휴무일로 넣기`;return;}
+  const c=e.target.closest('[data-opck]');if(c){const v=c.checked?new Date().toISOString():'';OPS.checks={...(OPS.checks||{}),[c.dataset.opck]:v};
+    try{await setDoc(doc(db,'config','ops'),{checks:OPS.checks},{merge:true});}catch(err){toast(authMsg(err));}renderOps();}
+});
+
+// 백업
+function bkFlat(dk,v){const S=SCHEMA[KD(dk)]||{};const L={};Object.assign(L,{rows:S.label||S.list?.label||'건',workers:'근무자',days:'근무일',items:'업무',plan:'지시 업무',reels:'릴스'});[...(S.fields||[]),...(S.list?.fields||[]),...(S.cols||[])].forEach(f=>L[f[0]]=f[2]);(S.rows||[]).forEach(([k,l])=>L[k]=l);
+  const out=[];const isMedia=o=>o&&typeof o==='object'&&typeof o.id==='string'&&('thumb' in o||'size' in o);
+  const walk=(o,pre)=>{if(o==null||o===''||o===false)return;
+    if(Array.isArray(o)){if(!o.length)return;if(isMedia(o[0])){out.push(`${pre}: ${o[0].thumb!==undefined?'사진':'파일'} ${o.length}개${o[0].name?` (${o.map(x=>x.name).join(', ')})`:''}`);return;}o.forEach((x,i)=>walk(x,`${pre}${pre?' ':''}${i+1}`));return;}
+    if(typeof o==='object'){if(isMedia(o)){out.push(`${pre}: ${o.name||'사진'}`);return;}for(const[k,x] of Object.entries(o)){if(['thumb','snap','review','ocr','slim','removed'].includes(k))continue;walk(x,pre?`${pre} · ${L[k]||k}`:(L[k]||k));}return;}
+    out.push(`${pre}: ${o===true?'예':String(o)}`);};
+  walk(v,'');return out.join('\n').slice(0,32000);}
+async function bkCollect(){
+  const snap=async(...p)=>{try{return(await getDocs(collection(db,...p))).docs.map(x=>({...x.data(),id:x.id}));}catch(e){return[];}};
+  const out={app:'원사부 업무보고',ver:$('.ver')?.textContent||'',exportedAt:new Date().toISOString(),users:{},config:{},prices:{},reels:[],csinq:[]};
+  for(const u of Object.values(users)){const o={profile:{...u}};for(const c of ['reports','tasks','dplan','invoices','purchases','agenda'])o[c]=await snap('users',u.uid,c);out.users[u.uid]=o;}
+  for(const c of ['calendar','media','ops']){try{const d=await getDoc(doc(db,'config',c));if(d.exists())out.config[c]=d.data();}catch(e){}}
+  (await snap('prices')).forEach(x=>out.prices[x.id]=x);out.reels=await snap('reels');out.csinq=(await snap('csinq')).map(({thumb,...r})=>r);
+  return out;
+}
+async function bkDone(){const now=new Date().toISOString();OPS.lastBackup=now;OPS.by='관리자';try{await setDoc(doc(db,'config','ops'),{lastBackup:now,by:'관리자'},{merge:true});}catch(e){}renderOps();}
+function dlFile(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);}
+async function bkRun(kind){
+  const b=$(kind==='xlsx'?'#bkXlsx':'#bkJson');const t0=b.textContent;b.disabled=true;b.textContent='모으는 중…';
+  try{
+    const data=await bkCollect();const stamp=today().replace(/-/g,'');
+    if(kind==='json'){dlFile(`원사부업무보고_복구용_${stamp}.json`,JSON.stringify(data),'application/json');await bkDone();toast('복구용 원본을 내려받았어요');return;}
+    await ensureXLSX();const wb=XLSX.utils.book_new();
+    const add=(name,head,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet([head,...rows]);ws['!cols']=(w||head.map(()=>14)).map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name);};
+    const U=Object.values(data.users);const nm=o=>o.profile.name||'';
+    add('직원',['이름','아이디','파트','상태','가입일','보고 양식 항목 수'],U.map(o=>[nm(o),o.profile.loginId||'',o.profile.part||'',{approved:'승인',pending:'승인 대기',disabled:'사용 중지',rejected:'반려'}[o.profile.status]||o.profile.status||'',(o.profile.createdAt||'').slice(0,10),(o.profile.sections||[]).length]));
+    const reps=U.flatMap(o=>o.reports.map(r=>({o,r}))).sort((a,b)=>(a.r.date||'').localeCompare(b.r.date||''));
+    add('업무보고',['직원','파트','날짜','종류','상태','전송','검토','대표님 의견','보완 항목 수','사진 정리'],reps.map(({o,r})=>[nm(o),o.profile.part||'',r.date||r.id,{daily:'일일',weekly:'주간',monthly:'월간'}[r.kind]||r.kind||'',RS_L[r.status]||r.status||'',fmtT(r.submittedAt||''),fmtT(r.reviewedAt||''),r.reviewNote||'',Object.values(r.review||{}).filter(v=>v?.state==='revise').length,r.mediaCleanedAt?fmtT(r.mediaCleanedAt):'']),[10,8,12,6,8,14,14,30,8,14]);
+    add('보고내용',['직원','날짜','항목','내용'],reps.flatMap(({o,r})=>Object.entries(r.data||{}).map(([dk,v])=>[nm(o),r.date||r.id,ITEM[KD(dk)]?.label||({tasks:'진행중 업무',incoming:'입고 내역',dprog:'디자인 진행중 업무',agendaSkip:'자동일정 제외'})[dk]||dk,bkFlat(dk,v)]).filter(x=>x[3])),[10,12,22,90]);
+    add('지시업무',['직원','업무','상태','시작','마감','지시일','기록 수','최근 기록'],U.flatMap(o=>o.tasks.map(t=>{const l=(t.log||[]).slice(-1)[0];return[nm(o),t.title||'',ST_L[t.status]||t.status||'',fmtDH(t.startAt||''),fmtDH(t.dueAt||''),(t.createdAt||'').slice(0,10),(t.log||[]).length,l?`${fmtT(l.at)} ${l.text||''}`:''];})),[10,30,10,14,14,12,8,40]);
+    add('디자인업무판',['직원','업무','설명','채널','주(월요일)','마감','상태','직원 메모','완료 보고일','진행 기록 수'],U.flatMap(o=>o.dplan.map(p=>[nm(o),p.title||'',p.desc||'',DCH_L[p.ch]||'',p.week||'대기',p.due||'',{todo:'진행 전',doing:'진행중',done:'완료',undone:'미완료'}[p.status]||p.status||'',p.note||'',p.reportDate||'',(p.log||[]).length])),[10,28,24,10,12,12,8,24,12,8]);
+    add('계산서',['직원','구분','작성일','거래처','사업자번호','품목','공급가액','세액','합계','청구/영수','기한','처리','처리일','처리자'],U.flatMap(o=>o.invoices.map(v=>[nm(o),v.kind||'',v.date||'',v.name||'',v.biz||'',v.item||'',+v.supply||0,+v.tax||0,+v.total||0,v.receipt||'',v.due||'',v.paid?'완료':'미처리',(v.paidAt||'').slice(0,10),v.paidBy||''])),[10,6,12,20,14,20,12,10,12,8,12,8,12,10]);
+    add('발주입고',['직원','품목','발주 수량','예상 입고일','입고','입고일','입고 수량','상태','메모'],U.flatMap(o=>o.purchases.map(p=>[nm(o),p.item||'',p.qty||'',p.eta||'',p.received?'입고':'대기',p.receivedDate||'',p.inQty||'',p.state||'',p.note||''])));
+    add('원재료가격',['월','분류','품목','사이트','가격','g','변동 메모','출처'],Object.entries(data.prices).sort().flatMap(([m,v])=>(v.rows||[]).map(r=>[m,r.cat||'',r.item||'',r.site||'',+r.price||0,+r.g||0,r.change||'',v.from==='import'?'엑셀':'승인'])));
+    const cal=data.config.calendar||{};
+    add('휴무일·연차',['구분','직원','날짜','이름'],[...(cal.holidays||[]).map(h=>['휴무일','',h.d,h.n||'']),...Object.entries(cal.leave||{}).flatMap(([uid,ds])=>ds.map(d=>['연차',users[uid]?.name||uid,d,'']))]);
+    add('릴스기획안',['주(수요일)','슬롯','기획안','선택','상태','제작 완료','업로드 링크'],data.reels.map(r=>[r.week||'',{tue:'화',thu:'목',both:'화·목'}[r.slot]||'',r.docTitle||'',r.choice||'',RL_L[r.status]||r.status||'',r.prod?.done?'완료':'',r.prod?.link||'']));
+    add('CS문의건',['문의 날짜','고객 아이디','요청 내용','메모','상태','처리 시각','올린 사람'],data.csinq.map(q=>[q.batch||'',q.cid||'',q.req||'',q.note||'',q.status==='done'?'완료':'미처리',fmtT(q.doneAt||''),q.by?.name||'']));
+    XLSX.writeFile(wb,`원사부업무보고_백업_${stamp}.xlsx`);await bkDone();toast('엑셀 백업을 내려받았어요');
+  }catch(err){console.warn(err);toast('백업을 만들지 못했어요: '+authMsg(err));}
+  finally{b.disabled=false;b.textContent=t0;}
+}
+$('#bkXlsx').onclick=()=>bkRun('xlsx');$('#bkJson').onclick=()=>bkRun('json');
 
 /* ---------- 디자인 업무판 탭 ---------- */
 const dsStaff=()=>active().filter(u=>hasDS(u.sections));
