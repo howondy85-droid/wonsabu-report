@@ -367,6 +367,15 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .rindex{position:relative}
 .ixgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .ixgrid .ixh{grid-column:1/-1}
+.livedot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:4px;vertical-align:middle}.livedot.on{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.livebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-radius:10px;background:var(--sunk);border:1px solid var(--line);margin-bottom:12px}
+.livebox .vsec.livecur{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
+.livebox [data-task] .btnrow,.livebox [data-task] textarea,.livebox .rvbar,.livebox [data-repdel]{display:none}
+.lkcard{border:1px solid var(--line);border-left:4px solid var(--ds);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--surface)}
+.lkcard>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.lkcard>summary::-webkit-details-marker{display:none}
+.lkcard[open]>summary{margin-bottom:8px}.lkdet{padding-top:4px}
+.lkform{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lkform .full{grid-column:1/-1}
+@media (max-width:620px){.lkform{grid-template-columns:1fr}}
 .ops{list-style:none;margin:0;padding:0}.ops li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}.ops li:first-child{border-top:0}
 .ops .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;background:var(--ok)}.ops .ic.warn{background:var(--accent)}.ops .ic.bad{background:var(--bad)}.ops .ic.info{background:var(--muted)}
 .ops .bd{flex:1;min-width:0}.ops .bd p{margin:2px 0 0}
@@ -440,13 +449,15 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-19</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-20</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
+    <button data-tab="live" aria-pressed="false">실시간<span class="dot" id="liveDot" hidden></span></button>
     <button data-tab="stat" aria-pressed="false">통계</button>
     <button data-tab="task" aria-pressed="false">업무 지시<span class="dot" id="taskDot" hidden></span></button>
     <button data-tab="dsg" aria-pressed="false">디자인 업무판<span class="dot" id="dsgDot" hidden></span></button>
+    <button data-tab="link" aria-pressed="false">업무 연계<span class="dot" id="linkDot" hidden></span></button>
     <button data-tab="req" aria-pressed="false">가입 승인<span class="dot" id="reqDot" hidden></span></button>
     <button data-tab="staff" aria-pressed="false">직원 관리</button>
     <button data-tab="cal" aria-pressed="false">휴무일</button>
@@ -512,6 +523,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </aside>
   <div class="smain">
     <div id="rDue"></div>
+    <div id="rLink"></div>
     <div id="rReel"></div>
     <div id="rInq"></div>
     <form id="rForm" novalidate><fieldset id="rSet">
@@ -554,6 +566,17 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <div id="arDetail"></div>
   </section>
 
+  <section id="tabLive" hidden>
+    <div class="panel"><div class="btnrow" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">실시간 모니터링 <span class="s">직원이 지금 열어 둔 업무보고 화면을 그대로 보여줘요 · 입력하면 1~2초 뒤 반영돼요</span></h2><span class="note" id="liveClock"></span></div><div class="staff-grid" id="liveGrid"></div></div>
+    <div id="liveDetail" class="livebox"></div>
+  </section>
+
+  <section id="tabLink" hidden>
+    <div class="panel"><h2>승인 대기 <span class="s">직원이 보낸 연계 요청 · 승인하면 받는 직원의 업무로 넘어가요</span></h2><div id="lkReq"></div></div>
+    <div class="panel"><h2>진행 중인 연계 <span class="s">앞 업무가 끝나거나 직원이 '연계하기'를 누르면 받는 직원 보드에 올라가요</span></h2><div id="lkRun"></div></div>
+    <div class="panel"><h2>끝난 연계 <span class="s">받은 업무 완료 · 거절 · 취소 (최근 20건)</span></h2><div id="lkEnd"></div></div>
+  </section>
+
   <section id="tabTask" hidden>
     <div id="aInq"></div>
     <div class="panel">
@@ -569,6 +592,16 @@ tr.off td{opacity:.45;text-decoration:line-through}
         </div>
         <label class="opt" style="margin-bottom:12px"><input type="checkbox" id="tfToday"><span>금일 마무리 기준 <small>오늘 안에 끝내야 하는 업무 · 완료일시가 오늘 18시로 채워져요</small></span></label>
         <div class="field"><label for="tfDesc">업무설명</label><textarea id="tfDesc" rows="3" placeholder="완료 기준, 참고사항"></textarea></div>
+        <label class="opt" style="margin-bottom:10px"><input type="checkbox" id="tfLink"><span>연계 업무 추가 <small>이 업무가 끝나면(또는 직원이 '연계하기'를 누르면) 다음 직원에게 이어지는 업무 · 그전까지 받는 직원 보드에 '대기'로 보여 미리 준비할 수 있어요</small></span></label>
+        <div id="tfLinkBox" class="panel" style="background:var(--sunk);margin-bottom:12px" hidden>
+          <div class="lkform">
+            <div class="field"><label for="tfLkTo">연계 받을 직원</label><select id="tfLkTo"></select></div>
+            <div class="field"><label for="tfLkTitle">연계 업무명</label><input id="tfLkTitle" maxlength="60" placeholder="예: 상세페이지 이미지 교체"></div>
+            <div class="field"><label for="tfLkStart">시작일</label><input type="date" id="tfLkStart"></div>
+            <div class="field"><label for="tfLkDue">마감일</label><input type="date" id="tfLkDue"></div>
+            <div class="field full"><label for="tfLkDesc">연계 업무 내용</label><textarea id="tfLkDesc" rows="2" placeholder="받는 직원이 할 일, 준비물, 참고사항"></textarea></div>
+          </div>
+        </div>
         <div class="field"><span class="lb">첨부 (사진·파일)</span><div class="files" id="tfAtt"></div><span class="hint">사진은 자동으로 줄여서 올려요 · 파일은 700KB까지 (엑셀·PDF·한글·워드 등)</span></div>
         <button class="primary" id="tfBtn" type="submit">업무 등록</button>
       </form>
@@ -642,7 +675,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <div class="panel"><h2>가입 승인 대기 <span class="s">승인할 때 파트와 업무보고 양식을 지정해요</span></h2><div id="reqList"></div></div>
   </section>
   <section id="tabStaff" hidden>
-    <div class="panel"><h2>직원 목록</h2><div class="staff-grid" id="staffGrid"></div></div>
+    <div class="panel"><div class="btnrow" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">직원 목록 <span class="s">등록 · 정보·양식 수정 · 사용 중지 · 삭제</span></h2><button type="button" class="primary" id="stNew" style="padding:9px 16px;font-size:14px">+ 직원 등록</button></div><div class="staff-grid" id="staffGrid"></div></div>
   </section>
 
   <section id="tabPay" hidden>
@@ -743,6 +776,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   <div class="dialog wide" role="dialog" aria-labelledby="dsTitle">
     <h2 id="dsTitle" style="margin:0 0 4px;font-size:16px"></h2>
     <p class="note" id="dsSub" style="margin:0 0 14px"></p>
+    <div class="field"><label for="dsName">이름</label><input id="dsName" maxlength="20"></div>
     <div class="field"><span class="lb">파트</span>
       <div class="pick-part"><label class="cs"><input type="radio" name="dsPart" value="CS" checked>CS</label><label class="ds"><input type="radio" name="dsPart" value="디자인">디자인</label></div>
     </div>
@@ -778,6 +812,19 @@ tr.off td{opacity:.45;text-decoration:line-through}
       <button class="primary" type="submit" style="padding:9px 16px;font-size:14px">비밀번호 바꾸기</button>
     </form>
     <div class="btnrow" style="justify-content:flex-end"><button type="button" class="secondary" id="meClose">닫기</button></div>
+  </div>
+</div>
+<div class="overlay" id="dlgNew" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="nwTitle">
+    <h2 id="nwTitle" style="margin:0 0 4px;font-size:16px">직원 등록</h2>
+    <p class="note" style="margin:0 0 14px">대표님이 계정을 바로 만들어요. 가입 승인 없이 바로 쓸 수 있고, 직원은 첫 로그인 후 내 정보에서 비밀번호를 바꾸면 돼요.</p>
+    <form id="nwForm" novalidate>
+      <div class="field"><label for="nwName">이름</label><input id="nwName" maxlength="20"></div>
+      <div class="field"><label for="nwId">아이디</label><input id="nwId" maxlength="20" autocapitalize="none" spellcheck="false"><span class="hint">영문 소문자·숫자·밑줄(_) 4~20자</span></div>
+      <div class="field"><label for="nwPw">임시 비밀번호</label><input id="nwPw" type="text" autocomplete="off"><span class="hint">8자 이상 · 직원에게 따로 알려주세요</span></div>
+      <div class="field"><span class="lb">파트</span><div class="pick-part"><label class="cs"><input type="radio" name="nwPart" value="CS" checked>CS</label><label class="ds"><input type="radio" name="nwPart" value="디자인">디자인</label></div><span class="hint">보고 양식은 파트 기본값으로 들어가요 · 등록 후 수정할 수 있어요</span></div>
+      <div class="btnrow"><button class="primary" type="submit" id="nwBtn" style="padding:9px 16px;font-size:14px">등록</button><button type="button" class="secondary" id="nwClose">닫기</button></div>
+    </form>
   </div>
 </div>
 <div class="overlay" id="dlgHelp" hidden>
@@ -1441,6 +1488,7 @@ let me=null,myTasks=[],R=null,repUnsub=null,saveT=null,myPurch=[],myAgenda=[];
 let agBy={},agSubs={},puBy={},puSubs={};
 let invBy={},invSubs={},prices={},myPlan=[],planBy={},planSubs={};
 function cleanup(){
+  if(typeof LINKS!=='undefined'){LINKS=[];PRES={};myLinksIn=[];myLinksOut=[];lkNew=null;liveSel='';dirSig='';const lb=document.getElementById('rLink');if(lb)lb.innerHTML='';}
   restoreLookTabs();
   if(typeof INQ!=='undefined'){$('#rInq').innerHTML='';$('#aInq').innerHTML='';$('#rReel').innerHTML='';$('#aReel').innerHTML='';reelDrafts=[];}
   unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
@@ -1515,6 +1563,7 @@ function startStaff(first){
     unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};if(R&&R.loaded&&CALC.kind(R.date,CAL,meUid)!==R.kind)renderReport();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'purchases'),q=>{myPurch=q.docs.map(x=>({...x.data(),id:x.id}));if(R)renderIncoming();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(stTab==='inv'){invBy={[meUid]:myInv};renderInvTab();}if(R&&R.loaded){renderDue();['cs_taxinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
+    watchLinks();pingPresence(true);
     if(me.part==='CS'){watchInq();initStaffTabs();}else $('#rInq').innerHTML='';
     if(me.part==='디자인')watchReels();else $('#rReel').innerHTML='';
     unsubs.push(onSnapshot(collection(db,'users',meUid,'dplan'),q=>{myPlan=q.docs.map(x=>({...x.data(),id:x.id}));if(R&&R.loaded){const any=['ds_waiting','ds_thisweek','ds_nextweek','ds_result','ds_smartstore','ds_mall','ds_openmarket','ds_sns'].some(dk=>$('#sec-'+dk));if(any){['ds_waiting','ds_thisweek','ds_nextweek','ds_result','ds_smartstore','ds_mall','ds_openmarket','ds_sns'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});if(!($('#rTasks')?.contains(document.activeElement)))renderTasksBlock();}else if(hasDS(mySections())&&!$('#rForm').contains(document.activeElement))renderReport();}},()=>{}));
@@ -1525,7 +1574,7 @@ function startStaff(first){
 $('#rDate').addEventListener('change',()=>{if($('#rDate').value)openReport($('#rDate').value);});
 
 /* 보고서 열기 */
-function openReport(date){
+function openReport(date){setTimeout(()=>pingPresence(true),500);
   if(repUnsub){repUnsub();repUnsub=null;}clearTimeout(saveT);
   R={date,status:'draft',data:{},review:{},loaded:false,dirty:false};
   $('#rSections').innerHTML='<div class="empty">불러오는 중…</div>';
@@ -2580,7 +2629,7 @@ async function saveDraft(){
   if(!R||!editable())return;
   try{
     const ts=new Date().toISOString();R.lastSaved=ts;
-    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:R.status,kind:R.kind||'daily',data:R.data,updatedAt:ts},{merge:true});
+    await setDoc(doc(db,'users',meUid,'reports',R.date),{date:R.date,name:me.name,part:me.part||'',status:R.status,kind:R.kind||'daily',data:R.data,updatedAt:ts,editSec:R.curSec||''},{merge:true});
     R.dirty=false;const t=new Date();$('#saveMeta').textContent=`자동 저장됨 ${pad(t.getHours())}:${pad(t.getMinutes())}`;
   }catch(e){$('#saveMeta').textContent='저장 실패 · 인터넷 연결을 확인해주세요';}
 }
@@ -2648,7 +2697,7 @@ function isLate(t){if(t.status==='done')return false;if(t.dueAt)return Date.now(
 function sortTasks(a,b){return((ORDER[a.status]??9)-(ORDER[b.status]??9))||((a.dueAt||'9999').localeCompare(b.dueAt||'9999'));}
 function taskHead(t,who){
   const late=isLate(t);
-  return `<div class="th1">${who||''}<b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${t.today?'<span class="tag bad">금일 마무리</span>':''}${t.status!=='done'&&t.dueAt&&t.dueAt.slice(0,10)===(R?.date||today())?'<span class="tag acc">오늘 마감</span>':''}</div>
+  return `<div class="th1">${who||''}<b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${t.today?'<span class="tag bad">금일 마무리</span>':''}${t.linkFrom?`<span class="tag ds">연계 받음 · ${esc(t.linkFrom)}</span>`:''}${t.linkTo?`<span class="tag ds">연계 → ${esc(t.linkTo)}</span>`:''}${t.status!=='done'&&t.dueAt&&t.dueAt.slice(0,10)===(R?.date||today())?'<span class="tag acc">오늘 마감</span>':''}</div>
    <div class="when ${late?'late':''}">${t.startAt?esc(fmtDH(t.startAt))+' 시작 · ':''}${t.dueAt?esc(fmtDH(t.dueAt))+' 완료 예정':'완료일시 없음'}${late?' · 기한 지남':''}</div>
    ${t.desc?`<p class="desc">${esc(t.desc)}</p>`:''}
    ${(t.imgs||[]).length?`<div class="gthumbs">${t.imgs.map(im=>galThumb(t.uid,im,`${t.title} · 첨부`,'ta-'+t.id)).join('')}</div>`:''}${(t.files||[]).length?`<div class="files" style="margin-top:6px">${t.files.map(f=>fileChip(t.uid,f,null)).join('')}</div>`:''}`;
@@ -2667,7 +2716,7 @@ function renderTasksBlock(){
   const keep={};$$('#rTasks [data-p]').forEach(el=>{if(el.tagName==='TEXTAREA')keep[el.dataset.p]=el.value;});
   $('#rTasks').innerHTML=`<section class="rsec" id="sec-tasks"><div class="rh"><b>진행중 업무</b><span class="note">대표님이 지시한 업무 · 진행상황과 캡쳐를 적고 보고서와 함께 전송돼요</span></div>${
     open.length?open.map(t=>{const p=`tasks|${t.id}`;const d=R.data.tasks?.[t.id]||{};
-      return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}">${taskHead(t)}${taskLog(t)}${
+      return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}">${taskHead(t)}${taskLog(t)}<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lknew="task:${esc(t.id)}">이 업무 연계 보내기 →</button></div>${
         t.status==='submitted'?'<p class="note" style="margin:10px 0 0">대표님 확인을 기다리는 중이에요.</p>'
         :`<div class="inbox">${fieldHtml(p+'|text',['text','textarea',t.status==='revise'?'보완한 내용':'진행상황',''],d.text)}${fieldHtml(p+'|imgs',['imgs','imgs','진행 캡쳐'],d.imgs)}</div>`}</div>`;}).join('')
     :(doing.length?'':'<div class="empty">오늘 할 지시 업무가 없어요.</div>')}${doing.map(it=>{const p=`dprog|${it.id}`;const d=R.data.dprog?.[it.id]||{};
@@ -2780,6 +2829,8 @@ function startAdmin(){
   show('vAdmin');setTab('home');setTaskDefaults();renderTfAtt();$('#arDate').value=today();$('#hDate').value=today();$('#lDate').value=today();
   unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};queueRender();},e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
   watchInq();watchReels();
+  unsubs.push(onSnapshot(collection(db,'links'),q=>{LINKS=q.docs.map(x=>({...x.data(),id:x.id})).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));queueRender();},()=>{}));
+  unsubs.push(onSnapshot(collection(db,'presence'),q=>{PRES={};q.docs.forEach(x=>PRES[x.id]=x.data());queueRender();},()=>{}));
   unsubs.push(onSnapshot(doc(db,'config','ops'),s=>{OPS={checks:{},lastBackup:'',by:'',...(s.exists()?s.data():{})};renderOps();},()=>{}));
   unsubs.push(onSnapshot(doc(db,'config','media'),s=>{if(s.exists())MEDIA={...MEDIA,...s.data(),stat:{...MEDIA.stat,...(s.data().stat||{})}};renderMediaPanel();},()=>{}));
   unsubs.push(onSnapshot(collection(db,'prices'),q=>{prices={};q.docs.forEach(x=>prices[x.id]=x.data());queueRender();},()=>{}));
@@ -2803,7 +2854,7 @@ async function syncLogins(){if(loginsSynced||!Object.keys(users).length)return;l
   try{const have=new Set((await getDocs(collection(db,'logins'))).docs.map(x=>x.id));
     for(const u of Object.values(users)){if(!u.loginId||have.has(u.loginId))continue;await setDoc(doc(db,'logins',u.loginId),{email:u.authEmail||idToEmail(u.loginId),uid:u.uid,createdAt:new Date().toISOString()}).catch(()=>{});}}catch(e){loginsSynced=false;}}
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','stat','task','dsg','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='ops')renderOps(true);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','live','stat','task','dsg','link','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='live')renderLive();if(t==='link')renderLinkTab();if(t==='ops')renderOps(true);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -2831,7 +2882,7 @@ function renderAdmin(){
   const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,24);
   $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<span class="thw"><button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button><button type="button" class="x" data-delimg="${esc(t.uid)}|${esc(t.id)}" aria-label="이미지 삭제">×</button></span>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
   renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);renderCal(act);
-  renderInvTab();renderMatTab();renderDsg();renderHomeSum();syncLogins();renderMediaPanel();renderOps();
+  renderInvTab();renderMatTab();renderDsg();renderHomeSum();syncLogins();renderMediaPanel();renderOps();renderLive();renderLinkTab();linkSync();syncStaffDir();
   if(MEDIA.mode!=='off'&&!mediaBusy&&Date.now()-mediaLastRun>10*60*1000&&mediaPending().length)setTimeout(()=>runMediaClean(false),4000);if(!$('#tabStat').hidden)renderStats(true);if(!$('#tabData').hidden)dmInit();
 }
 function statusCard(u,date,sel){
@@ -3046,6 +3097,7 @@ const HELP={
   '<b>주간·월간 보고</b> — 한 주 마지막 근무일과 말일에는 항목이 더 나와요(알바 출퇴근, 원재료, 계산서 등). 휴무일은 자동으로 반영돼요.',
   '<b>조회 탭</b> — 화면 위 알바급여·원재료·계산서 탭에서 정리된 결과를 볼 수 있어요. 계산서 기한은 작성월 다음 달 10일이에요.',
   '<b>내 정보</b> — 아이디와 비밀번호를 바꿀 수 있어요. 비밀번호를 잊으면 대표님께 말씀해주세요.',
+  '<b>업무 연계</b> — 다른 직원에게 이어질 업무는 "업무 연계 → + 연계 보내기"(또는 진행중 업무의 "이 업무 연계 보내기")로 보내요. 대표님이 승인하면 그 직원의 업무로 넘어가요. 받을 연계는 넘어오기 전부터 "받을 연계"에서 내용·일정을 볼 수 있어요.',
   '<b>휴대폰</b> — 브라우저 메뉴에서 "홈 화면에 추가"를 하면 앱처럼 열 수 있어요.']},
  ds:{t:'디자인 직원 사용 안내',items:[
   '<b>보고는 월·금</b> — 월요일과 금요일에만 보고서가 열려요. 휴무면 자동으로 앞뒤 근무일로 옮겨져요.',
@@ -3054,12 +3106,15 @@ const HELP={
   '<b>채널 업무</b> — 스마트스토어·자사몰·오픈마켓·SNS 항목의 "대표님 지시 업무"에서 진행중/완료를 고르고 캡쳐를 올려요. 완료로 전송하면 업무판에서 완료 처리돼요.',
   '<b>금요일: 결과</b> — 이번주 업무마다 완료·미완료를 골라요. 미완료는 다음 주 업무로 자동으로 넘어가요. 다음주 피드 예약 캡쳐도 올려요.',
   '<b>릴스 기획안</b> — 수요일에 올라온 기획안에서 A/B 중 하나를 고르고, 대표님 보완 요청에 답장해요. 화·목 업로드 후 금요일 보고에 제작 완료와 링크를 적어요.',
+  '<b>업무 연계</b> — 다른 직원에게 이어질 업무는 "업무 연계 → + 연계 보내기"로 보내요. 대표님 승인 후 넘어가요. 대표님이 지정한 연계는 내 업무가 끝나면 "연계하기"를 눌러주세요.',
   '<b>내 정보</b> — 아이디와 비밀번호를 바꿀 수 있어요.',
   '<b>휴대폰</b> — 브라우저 메뉴에서 "홈 화면에 추가"를 하면 앱처럼 열 수 있어요.']},
  admin:{t:'대표님용 사용 안내',items:[
   '<b>매일 아침</b> — 홈에서 전일·오늘·내일 요약을 보고, 업무보고 탭에서 항목마다 확인/보완 요청을 누른 뒤 승인 또는 보류해요.',
   '<b>업무 지시</b> — 업무 지시 탭에서 사진·파일과 함께 지시해요. 디자인은 디자인 업무판에서 이번주·차주·대기와 채널을 정해 넣어요.',
-  '<b>새 직원</b> — 직원이 가입하면 가입 승인 탭에 떠요. 승인할 때 파트와 보고 양식을 정해요.',
+  '<b>직원 관리</b> — 직원이 가입하면 가입 승인 탭에 떠요. 직원 관리 탭의 "+ 직원 등록"으로 대표님이 바로 계정을 만들 수도 있고, 이름·파트·양식 수정과 삭제도 여기서 해요.',
+  '<b>실시간</b> — 실시간 탭에서 직원이 지금 쓰고 있는 보고서와 작성 중인 항목을 볼 수 있어요.',
+  '<b>업무 연계</b> — 업무 지시 때 "연계 업무 추가"로 다음 직원 업무를 미리 걸어둘 수 있어요. 직원끼리 보낸 연계 요청은 업무 연계 탭에서 승인·보완·보류·거절해요.',
   '<b>휴무일·연차</b> — 휴무일 탭에 넣으면 주간·월간 보고일이 자동으로 바뀌어요. 운영 점검 탭에서 공휴일을 한 번에 넣을 수 있어요.',
   '<b>계산서</b> — 기한(익월 10일) 5일 전부터 홈과 계산서 탭에 알림이 떠요.',
   '<b>한 달에 한 번</b> — 운영 점검 탭에서 엑셀 백업을 내려받아요. 사진 원본은 데이터 관리 탭의 자동 정리 설정에 따라 지워져요(클레임 증빙은 보관).',
@@ -3180,6 +3235,188 @@ async function bkRun(kind){
   finally{b.disabled=false;b.textContent=t0;}
 }
 $('#bkXlsx').onclick=()=>bkRun('xlsx');$('#bkJson').onclick=()=>bkRun('json');
+
+
+/* ===================== 실시간 모니터링 ===================== */
+let PRES={},liveSel='';
+const ONLINE_MS=150000;
+const isOn=p=>p&&p.at&&(Date.now()-new Date(p.at).getTime())<ONLINE_MS;
+const secLabel=id=>!id?'':(SEC_L[id]||ITEM[KD(String(id).replace(/^sec-/,''))]?.label||'');
+const agoTxt=iso=>{if(!iso)return '';const m=Math.round((Date.now()-new Date(iso).getTime())/60000);return m<1?'방금':m<60?`${m}분 전`:m<1440?`${Math.floor(m/60)}시간 전`:fmtT(iso);};
+function liveInfo(u){const p=PRES[u.uid]||{};const date=(isOn(p)&&p.date)||today();const r=repOf(u.uid,date);
+  const kind=r?.kind||CALC.kind(date,CAL,u.uid);let secs=[];try{secs=secsFor(u.sections,kind,{date,uid:u.uid});}catch(e){}
+  const filled=r?secs.filter(k=>hasVal(r.data?.[DK(k)])).length:0;return{p,date,r,secs,filled,on:isOn(p),sec:isOn(p)?(p.sec||r?.editSec):r?.editSec};}
+function renderLive(){
+  const act=active();const t=new Date();$('#liveClock').textContent=`${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())} 기준`;
+  const n=act.filter(u=>isOn(PRES[u.uid])).length;$('#liveDot').hidden=!n;$('#liveDot').textContent=n;
+  if($('#tabLive').hidden)return;
+  $('#liveGrid').innerHTML=act.length?act.map(u=>{const x=liveInfo(u);const st=x.r?x.r.status:'none';
+    return `<button type="button" class="scard ${u.part==='디자인'?'ds':''} ${liveSel===u.uid?'sel':''}" data-live="${esc(u.uid)}"><div class="nm"><b>${esc(u.name)}</b>${partTag(u.part)}<span class="tag ${RS_C[st]}">${RS_L[st]}</span></div>
+      <div class="meta"><span class="livedot ${x.on?'on':''}"></span>${x.on?'접속 중':x.p.at?`${agoTxt(x.p.at)} 접속`:'접속 기록 없음'}${x.on&&x.p.view&&x.p.view!=='rep'?` · ${esc({pay:'알바급여',mat:'원재료',inv:'계산서'}[x.p.view]||'')} 화면`:''}</div>
+      <div class="meta">${esc(fmtD(x.date))} ${x.secs.length?`보고 · 작성 ${x.filled}/${x.secs.length} 항목`:'· 보고일 아님'}${x.r?.updatedAt?` · 마지막 입력 ${esc(agoTxt(x.r.updatedAt))}`:''}</div>
+      ${x.sec?`<div class="meta">${x.on?'지금':'마지막'} 작성: <b>${esc(secLabel(x.sec))}</b></div>`:''}</button>`;}).join(''):'<div class="empty">승인된 직원이 없어요.</div>';
+  const u=users[liveSel];if(!u){$('#liveDetail').innerHTML='<div class="panel empty">직원을 누르면 그 직원이 지금 쓰고 있는 보고서를 실시간으로 볼 수 있어요.</div>';return;}
+  const x=liveInfo(u);const y=window.scrollY;
+  $('#liveDetail').innerHTML=`<div class="livebar"><span class="livedot ${x.on?'on':''}"></span><b>${esc(u.name)}</b><span class="note">${x.on?'실시간 보는 중':'지금은 접속 안 함 · 마지막 저장 내용'}</span>${x.sec?`<span class="tag acc">${x.on?'지금 작성 중':'마지막 작성'}: ${esc(secLabel(x.sec))}</span>`:''}<span style="flex:1"></span><button type="button" class="secondary" data-openrep="${esc(u.uid)}|${esc(x.date)}">검토 화면으로</button></div>`+reportView(u,x.r,x.date,true);
+  const lab=secLabel(x.sec);if(lab)$$('#liveDetail .vsec').forEach(v=>{if(v.querySelector('.vh b')?.textContent===lab)v.classList.add('livecur');});
+  window.scrollTo(0,y);
+}
+$('#tabLive').addEventListener('click',e=>{const b=e.target.closest('[data-live]');if(!b)return;liveSel=liveSel===b.dataset.live?'':b.dataset.live;renderLive();if(liveSel)$('#liveDetail').scrollIntoView({behavior:'smooth',block:'start'});});
+setInterval(()=>{if(isAdminUser&&!$('#tabLive').hidden&&!$('#tabLive').contains(document.activeElement))renderLive();},15000);
+
+/* ===================== 업무 연계 ===================== */
+let LINKS=[],lkBusy=new Set();
+const LK_L={request:'대표 승인 대기',revise:'보완 요청',hold:'보류',rejected:'거절',wait:'앞 업무 진행 중',handed:'연계 도착 처리 중',active:'연계 완료',canceled:'취소'};
+const LK_C={request:'acc',revise:'bad',hold:'',rejected:'bad',wait:'cs',handed:'acc',active:'ok',canceled:''};
+const LKT={create:'연계 설정',request:'연계 요청',approve:'승인',edit:'수정 후 승인',revise:'보완 요청',hold:'보류',reject:'거절',resend:'다시 요청',handoff:'연계하기',cancel:'요청 취소',arrive:'업무 도착'};
+const lkSched=l=>[l.start?fmtD(l.start)+' 시작':'',l.due?fmtD(l.due)+' 마감':''].filter(Boolean).join(' · ')||'일정 미정';
+function lkDetail(l,extra){
+  return `<div class="lkdet"><dl class="kv" style="margin:0"><dt>보내는 직원</dt><dd>${esc(l.from?.name||'')} ${partTag(l.from?.part)}</dd><dt>받는 직원</dt><dd>${esc(l.to?.name||'')} ${partTag(l.to?.part)}</dd>
+    ${l.src?.title?`<dt>앞 업무</dt><dd>${esc(l.src.title)}${l.src.due?` <span class="note">마감 ${esc(fmtDH(l.src.due))}</span>`:''}${l.src.desc?`<br><span class="note">${esc(l.src.desc)}</span>`:''}</dd>`:''}
+    <dt>연계 업무</dt><dd><b>${esc(l.title)}</b>${l.desc?`<br>${esc(l.desc)}`:''}</dd><dt>일정</dt><dd>${esc(lkSched(l))}</dd>${l.memo?`<dt>메모</dt><dd>${esc(l.memo)}</dd>`:''}${extra||''}</dl>
+    ${(l.thread||[]).length?`<div class="log" style="margin-top:8px">${l.thread.map(e=>`<div class="e"><div class="h"><b>${esc(e.by||'')} · ${esc(LKT[e.kind]||e.kind)}</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}</div>`).join('')}</div>`:''}</div>`;}
+function lkHead(l,dir){return `<summary><b>${esc(l.title)}</b><span class="tag ${LK_C[l.status]||''}">${esc(LK_L[l.status]||l.status)}</span><span class="note">${dir==='in'?`${esc(l.from?.name||'')} → 나`:dir==='out'?`나 → ${esc(l.to?.name||'')}`:`${esc(l.from?.name||'')} → ${esc(l.to?.name||'')}`} · ${esc(lkSched(l))}</span>${l.mode==='admin'?'<span class="tag">대표 지정</span>':''}</summary>`;}
+function linkTaskDoc(l,now){return{title:l.title,desc:`${l.desc||''}${l.desc?'\n\n':''}[연계] ${l.from?.name||''}${l.src?.title?` · 앞 업무: ${l.src.title}`:''}`,startAt:l.start?l.start+'T09:00':'',dueAt:l.due?l.due+'T18:00':'',today:false,status:'todo',linkId:l.id,linkFrom:l.from?.name||'',createdAt:now,updatedAt:now,log:[],imgs:[],files:[]};}
+// 앞 업무 완료 → 연계 / 연계 도착 → 받는 직원 업무 만들기 (관리자 화면이 열려 있을 때)
+async function linkSync(){
+  if(!isAdminUser)return;const now=new Date().toISOString();
+  for(const l of LINKS){if(lkBusy.has(l.id))continue;
+    if(l.status==='wait'&&l.src?.kind==='task'){const t=(tasksBy[l.from?.uid]||[]).find(x=>x.id===l.src.id);
+      if(t&&t.status==='done'){lkBusy.add(l.id);try{await updateDoc(doc(db,'links',l.id),{status:'handed',handedAt:now,updatedAt:now,thread:arrayUnion({at:now,by:'자동',kind:'handoff',text:'앞 업무가 완료돼서 연계했어요'})});}catch(e){}lkBusy.delete(l.id);}}
+    else if(l.status==='handed'&&l.to?.uid&&users[l.to.uid]){lkBusy.add(l.id);const tid='lk_'+l.id;
+      try{const ex=await getDoc(doc(db,'users',l.to.uid,'tasks',tid));if(!ex.exists())await setDoc(doc(db,'users',l.to.uid,'tasks',tid),linkTaskDoc(l,now));
+        await updateDoc(doc(db,'links',l.id),{status:'active',toTask:{uid:l.to.uid,id:tid},arrivedAt:now,updatedAt:now,thread:arrayUnion({at:now,by:'자동',kind:'arrive',text:`${l.to.name} 업무로 넘어갔어요`})});}catch(e){}lkBusy.delete(l.id);}}
+}
+function renderLinkTab(){
+  const req=LINKS.filter(l=>l.status==='request'||l.status==='hold');$('#linkDot').hidden=!req.filter(l=>l.status==='request').length;$('#linkDot').textContent=req.filter(l=>l.status==='request').length;
+  if($('#tabLink').hidden)return;
+  const toTask=l=>l.toTask?(tasksBy[l.toTask.uid]||[]).find(t=>t.id===l.toTask.id):null;
+  const ended=l=>['rejected','canceled'].includes(l.status)||(l.status==='active'&&toTask(l)?.status==='done');
+  const keep={};$$('#tabLink [data-lkf]').forEach(el=>keep[el.dataset.lkf]=el.value);
+  $('#lkReq').innerHTML=req.length?req.map(l=>`<details class="lkcard" open>${lkHead(l)}${lkDetail(l)}
+    <div class="lkform" style="margin-top:10px"><div class="field"><label>업무명</label><input class="inp" data-lkf="${l.id}|title" value="${esc(l.title)}"></div><div class="field"><label>받는 직원</label><input class="inp" value="${esc(l.to?.name||'')}" disabled></div>
+      <div class="field"><label>시작일</label><input type="date" class="inp" data-lkf="${l.id}|start" value="${esc(l.start||'')}"></div><div class="field"><label>마감일</label><input type="date" class="inp" data-lkf="${l.id}|due" value="${esc(l.due||'')}"></div>
+      <div class="field full"><label>내용</label><textarea data-lkf="${l.id}|desc" rows="2">${esc(l.desc||'')}</textarea></div>
+      <div class="field full"><label>대표 의견 (보완·보류·거절 사유)</label><textarea data-lkf="${l.id}|note" rows="2"></textarea></div></div>
+    <div class="btnrow"><button type="button" class="okbtn" data-lkact="${l.id}|approve">승인 (수정 내용 반영)</button><button type="button" class="secondary" data-lkact="${l.id}|revise">보완 요청</button>${l.status!=='hold'?`<button type="button" class="secondary" data-lkact="${l.id}|hold">보류</button>`:''}<span style="flex:1"></span><button type="button" class="danger" data-lkact="${l.id}|reject">거절</button></div></details>`).join(''):'<p class="note" style="margin:0">승인할 연계 요청이 없어요.</p>';
+  const run=LINKS.filter(l=>['wait','handed','revise','active'].includes(l.status)&&!ended(l));
+  $('#lkRun').innerHTML=run.length?run.map(l=>{const t=toTask(l);return `<details class="lkcard">${lkHead(l)}${lkDetail(l,t?`<dt>받은 업무 상태</dt><dd><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${(t.log||[]).length?` <span class="note">${esc(fmtT(t.log[t.log.length-1].at))} ${esc(t.log[t.log.length-1].text||'')}</span>`:''}</dd>`:'')}
+    <div class="btnrow" style="margin-top:8px">${l.status==='wait'?`<button type="button" class="secondary" data-lkact="${l.id}|handoff">지금 연계하기</button>`:''}<span style="flex:1"></span><button type="button" class="linkbtn" data-lkact="${l.id}|delete" style="color:var(--bad)">연계 삭제</button></div></details>`;}).join(''):'<p class="note" style="margin:0">진행 중인 연계가 없어요.</p>';
+  const end=LINKS.filter(ended).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')).slice(0,20);
+  $('#lkEnd').innerHTML=end.length?end.map(l=>`<details class="lkcard">${lkHead(l).replace(LK_L.active,'완료')}${lkDetail(l)}<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lkact="${l.id}|delete" style="color:var(--bad)">삭제</button></div></details>`).join(''):'<p class="note" style="margin:0">아직 없어요.</p>';
+  $$('#tabLink [data-lkf]').forEach(el=>{if(keep[el.dataset.lkf]!=null)el.value=keep[el.dataset.lkf];});
+}
+$('#tabLink').addEventListener('click',async e=>{const b=e.target.closest('[data-lkact]');if(!b)return;const[id,act]=b.dataset.lkact.split('|');const l=LINKS.find(x=>x.id===id);if(!l)return;
+  const v=k=>$(`#tabLink [data-lkf="${id}|${k}"]`)?.value??'';const note=v('note').trim();const now=new Date().toISOString();
+  try{
+    if(act==='approve'){const f={title:v('title').trim()||l.title,desc:v('desc').trim(),start:v('start'),due:v('due')};const edited=f.title!==l.title||f.desc!==(l.desc||'')||f.start!==(l.start||'')||f.due!==(l.due||'');
+      const tid='lk_'+id;await setDoc(doc(db,'users',l.to.uid,'tasks',tid),linkTaskDoc({...l,...f},now));
+      await updateDoc(doc(db,'links',id),{...f,status:'active',toTask:{uid:l.to.uid,id:tid},decidedAt:now,arrivedAt:now,updatedAt:now,thread:arrayUnion({at:now,by:'대표',kind:edited?'edit':'approve',text:note})});toast(`${l.to.name} 업무로 넘겼어요`);}
+    else if(['revise','hold','reject'].includes(act)){if(act!=='hold'&&!note){toast('의견(사유)을 적어주세요');$(`#tabLink [data-lkf="${id}|note"]`)?.focus();return;}
+      await updateDoc(doc(db,'links',id),{status:act==='reject'?'rejected':act,decidedAt:now,updatedAt:now,thread:arrayUnion({at:now,by:'대표',kind:act,text:note})});toast({revise:'보완을 요청했어요',hold:'보류했어요',reject:'거절했어요'}[act]);}
+    else if(act==='handoff'){await updateDoc(doc(db,'links',id),{status:'handed',handedAt:now,updatedAt:now,thread:arrayUnion({at:now,by:'대표',kind:'handoff',text:''})});toast('연계했어요');}
+    else if(act==='delete'){if(!(await ask(`'${l.title}' 연계를 삭제할까요? 이미 넘어간 업무는 받은 직원에게 남아 있어요.`,'삭제')))return;await deleteDoc(doc(db,'links',id));toast('삭제했어요');}
+  }catch(err){toast(authMsg(err));}
+});
+// 업무 지시 폼 연계 칸
+$('#tfLink').addEventListener('change',e=>{$('#tfLinkBox').hidden=!e.target.checked;if(e.target.checked){const cur=$('#tfLkTo').value;$('#tfLkTo').innerHTML='<option value="">직원 선택</option>'+active().map(u=>`<option value="${esc(u.uid)}">${esc(u.name)} (${esc(u.part||'')})</option>`).join('');$('#tfLkTo').value=cur;}});
+
+/* --- 직원 쪽 연계 --- */
+let myLinksIn=[],myLinksOut=[],STAFFDIR=[],lkNew=null;
+function renderMyLinks(){
+  const box=$('#rLink');if(!box||isAdminUser)return;
+  const inn=myLinksIn.filter(l=>['wait','request','hold','handed'].includes(l.status));
+  const out=myLinksOut.filter(l=>!['canceled'].includes(l.status)&&!(l.status==='active'&&(l.updatedAt||'')<DT.addDays(today(),-14))&&!(l.status==='rejected'&&(l.updatedAt||'')<DT.addDays(today(),-14)));
+  const open={};$$('#rLink details[open]').forEach(d=>open[d.dataset.lk]=1);const keep={};$$('#rLink [data-lkv]').forEach(el=>keep[el.dataset.lkv]=el.value);
+  const others=STAFFDIR.filter(x=>x.uid!==meUid);
+  const bases=[...myTasks.filter(t=>t.status!=='done').map(t=>[`task:${t.id}`,`진행중 업무 · ${t.title}`]),...myPlan.filter(p=>p.status!=='done').map(p=>[`plan:${p.id}`,`디자인 업무 · ${p.title}`])];
+  let h=`<section class="panel"><div class="btnrow" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">업무 연계 <span class="s">다른 직원에게 이어지는 업무 · 대표님 승인 후 넘어가요</span></h2>${lkNew?'':'<button type="button" class="secondary" data-lknew="new">+ 연계 보내기</button>'}</div>`;
+  if(lkNew)h+=`<div class="panel" style="background:var(--sunk)"><b style="display:block;margin-bottom:8px">새 연계 요청</b><div class="lkform">
+    <div class="field"><label for="lkTo">받을 직원</label><select id="lkTo" data-lkv="to"><option value="">선택</option>${others.map(x=>`<option value="${esc(x.uid)}">${esc(x.name)} (${esc(x.part||'')})</option>`).join('')}</select></div>
+    <div class="field"><label for="lkBase">이어지는 업무</label><select id="lkBase" data-lkv="base"><option value="new">새 업무로 보내기</option>${bases.map(([k,l])=>`<option value="${esc(k)}" ${lkNew===k?'selected':''}>${esc(l)}</option>`).join('')}</select></div>
+    <div class="field full"><label for="lkTitle">연계 업무명</label><input id="lkTitle" data-lkv="title" maxlength="60" placeholder="받는 직원이 할 일"></div>
+    <div class="field"><label for="lkStart">시작일</label><input type="date" id="lkStart" data-lkv="start"></div><div class="field"><label for="lkDue">마감일</label><input type="date" id="lkDue" data-lkv="due"></div>
+    <div class="field full"><label for="lkDesc">내용</label><textarea id="lkDesc" data-lkv="desc" rows="2" placeholder="넘겨줄 자료, 확인할 점"></textarea></div>
+    <div class="field full"><label for="lkMemo">대표님께 메모 (선택)</label><input id="lkMemo" data-lkv="memo" maxlength="120"></div></div>
+    <div class="btnrow"><button type="button" class="primary" id="lkSend" style="padding:9px 16px;font-size:14px">승인 요청 보내기</button><button type="button" class="secondary" data-lknew="close">취소</button>${others.length?'':'<span class="note">연계할 수 있는 직원 목록을 아직 못 받았어요. 대표님이 관리자 화면을 한 번 열면 생겨요.</span>'}</div></div>`;
+  h+=`<h4 class="subh" style="margin-top:4px">받을 연계 <span class="note">대기 중인 업무 · 넘어오기 전에 미리 준비하세요</span></h4>`+(inn.length?inn.map(l=>`<details class="lkcard" data-lk="${l.id}" ${open[l.id]?'open':''}>${lkHead(l,'in')}${lkDetail(l)}</details>`).join(''):'<p class="note" style="margin:0 0 8px">받을 연계가 없어요.</p>');
+  h+=`<h4 class="subh">보낸 연계</h4>`+(out.length?out.map(l=>{let act='';
+    if(l.status==='wait')act=`<div class="btnrow" style="margin-top:8px"><input class="inp" data-lkv="hand-${l.id}" placeholder="넘겨줄 때 메모 (선택)" style="flex:1;min-width:160px"><button type="button" class="primary" data-lkhand="${l.id}" style="padding:8px 14px;font-size:13.5px">연계하기 → ${esc(l.to?.name||'')}</button></div><p class="note" style="margin:4px 0 0">내 업무가 끝나면 눌러주세요. 대표님이 내 업무를 완료 처리해도 자동으로 넘어가요.</p>`;
+    else if(l.status==='revise')act=`<div class="lkform" style="margin-top:8px"><div class="field full"><label>업무명</label><input class="inp" data-lkv="rv-${l.id}-title" value="${esc(l.title)}"></div><div class="field"><label>시작일</label><input type="date" class="inp" data-lkv="rv-${l.id}-start" value="${esc(l.start||'')}"></div><div class="field"><label>마감일</label><input type="date" class="inp" data-lkv="rv-${l.id}-due" value="${esc(l.due||'')}"></div><div class="field full"><label>내용</label><textarea data-lkv="rv-${l.id}-desc" rows="2">${esc(l.desc||'')}</textarea></div><div class="field full"><label>보완 내용</label><input class="inp" data-lkv="rv-${l.id}-memo"></div></div><div class="btnrow"><button type="button" class="primary" data-lkresend="${l.id}" style="padding:8px 14px;font-size:13.5px">다시 요청</button><button type="button" class="linkbtn" data-lkcancel="${l.id}">요청 취소</button></div>`;
+    else if(l.status==='request'||l.status==='hold')act=`<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lkcancel="${l.id}">요청 취소</button></div>`;
+    return `<details class="lkcard" data-lk="${l.id}" ${open[l.id]||l.status==='revise'||l.status==='wait'?'open':''}>${lkHead(l,'out')}${lkDetail(l)}${act}</details>`;}).join(''):'<p class="note" style="margin:0">보낸 연계가 없어요.</p>');
+  box.innerHTML=h+'</section>';
+  $$('#rLink [data-lkv]').forEach(el=>{if(keep[el.dataset.lkv]!=null&&el.dataset.lkv!=='base')el.value=keep[el.dataset.lkv];});
+}
+// 도착한 연계 → 내 업무 만들기
+async function lkArrive(){const now=new Date().toISOString();
+  for(const l of myLinksIn.filter(x=>x.status==='handed')){if(lkBusy.has(l.id))continue;lkBusy.add(l.id);const tid='lk_'+l.id;
+    try{const ex=await getDoc(doc(db,'users',meUid,'tasks',tid));if(!ex.exists())await setDoc(doc(db,'users',meUid,'tasks',tid),linkTaskDoc(l,now));
+      await updateDoc(doc(db,'links',l.id),{status:'active',toTask:{uid:meUid,id:tid},updatedAt:now,thread:arrayUnion({at:now,by:me?.name||'',kind:'arrive',text:''})});toast(`${l.from?.name||''}님에게서 연계 업무가 도착했어요`);}catch(e){}
+    lkBusy.delete(l.id);}}
+function watchLinks(){
+  unsubs.push(onSnapshot(query(collection(db,'links'),where('to.uid','==',meUid)),q=>{myLinksIn=q.docs.map(x=>({...x.data(),id:x.id}));renderMyLinks();lkArrive();},()=>{}));
+  unsubs.push(onSnapshot(query(collection(db,'links'),where('from.uid','==',meUid)),q=>{myLinksOut=q.docs.map(x=>({...x.data(),id:x.id})).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));renderMyLinks();},()=>{}));
+  unsubs.push(onSnapshot(doc(db,'config','staffdir'),s=>{STAFFDIR=s.exists()?(s.data().list||[]):[];if(lkNew)renderMyLinks();},()=>{}));
+}
+document.addEventListener('click',async e=>{
+  if(isAdminUser)return;
+  const nb=e.target.closest('[data-lknew]');if(nb){const v=nb.dataset.lknew;lkNew=v==='close'?null:v;renderMyLinks();
+    if(lkNew){const bt=lkNew.startsWith('task:')?myTasks.find(t=>'task:'+t.id===lkNew):lkNew.startsWith('plan:')?myPlan.find(p=>'plan:'+p.id===lkNew):null;if(bt&&$('#lkTitle'))$('#lkTitle').placeholder=`예: ${bt.title} 이어서 할 일`;$('#rLink').scrollIntoView({behavior:'smooth',block:'start'});$('#lkTo')?.focus();}return;}
+  const now=new Date().toISOString();
+  if(e.target.id==='lkSend'){const to=STAFFDIR.find(x=>x.uid===$('#lkTo').value);const title=$('#lkTitle').value.trim();if(!to){toast('받을 직원을 골라주세요');return;}if(!title){toast('연계 업무명을 입력해주세요');$('#lkTitle').focus();return;}
+    const base=$('#lkBase').value;let src={kind:'new',id:'',title:'',desc:'',due:''};
+    if(base.startsWith('task:')){const t=myTasks.find(x=>'task:'+x.id===base);if(t)src={kind:'task',id:t.id,title:t.title,desc:t.desc||'',due:t.dueAt||''};}
+    else if(base.startsWith('plan:')){const p=myPlan.find(x=>'plan:'+x.id===base);if(p)src={kind:'plan',id:p.id,title:p.title,desc:p.desc||'',due:p.due||''};}
+    const memo=$('#lkMemo').value.trim();const b=e.target;b.disabled=true;
+    try{await setDoc(doc(db,'links',rid()),{mode:'staff',status:'request',from:{uid:meUid,name:me.name,part:me.part||''},to:{uid:to.uid,name:to.name,part:to.part||''},src,title,desc:$('#lkDesc').value.trim(),start:$('#lkStart').value||'',due:$('#lkDue').value||'',memo,thread:[{at:now,by:me.name,kind:'request',text:memo}],createdAt:now,updatedAt:now});
+      lkNew=null;renderMyLinks();toast('대표님께 연계 승인을 요청했어요');}catch(err){toast(authMsg(err));b.disabled=false;}return;}
+  const h=e.target.closest('[data-lkhand]');if(h){const l=myLinksOut.find(x=>x.id===h.dataset.lkhand);if(!l)return;if(!(await ask(`'${l.title}' 업무를 ${l.to?.name||''}님에게 넘길까요?`,'연계하기')))return;
+    const memo=$(`[data-lkv="hand-${l.id}"]`)?.value.trim()||'';
+    try{await updateDoc(doc(db,'links',l.id),{status:'handed',handedAt:now,updatedAt:now,thread:arrayUnion({at:now,by:me.name,kind:'handoff',text:memo})});toast(`${l.to?.name||''}님에게 연계했어요`);}catch(err){toast(authMsg(err));}return;}
+  const rs=e.target.closest('[data-lkresend]');if(rs){const id=rs.dataset.lkresend;const g=k=>$(`[data-lkv="rv-${id}-${k}"]`)?.value||'';if(!g('title').trim()){toast('업무명을 입력해주세요');return;}
+    try{await updateDoc(doc(db,'links',id),{title:g('title').trim(),desc:g('desc').trim(),start:g('start'),due:g('due'),status:'request',updatedAt:now,thread:arrayUnion({at:now,by:me.name,kind:'resend',text:g('memo').trim()})});toast('다시 요청했어요');}catch(err){toast(authMsg(err));}return;}
+  const cc=e.target.closest('[data-lkcancel]');if(cc){if(!(await ask('연계 요청을 취소할까요?','요청 취소')))return;
+    try{await updateDoc(doc(db,'links',cc.dataset.lkcancel),{status:'canceled',updatedAt:now,thread:arrayUnion({at:now,by:me.name,kind:'cancel',text:''})});toast('취소했어요');}catch(err){toast(authMsg(err));}}
+});
+
+/* --- 접속 상태 (실시간 모니터링용) --- */
+let lastPing=0;
+function pingPresence(force){if(!meUid||isAdminUser||!me)return;const n=Date.now();if(!force&&n-lastPing<10000)return;lastPing=n;
+  setDoc(doc(db,'presence',meUid),{at:new Date().toISOString(),name:me.name||'',date:R?.date||'',sec:R?.curSec||'',view:typeof stTab!=='undefined'?stTab:'rep'},{merge:true}).catch(()=>{});}
+setInterval(()=>{if(document.visibilityState==='visible')pingPresence(true);},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pingPresence(true);});
+document.addEventListener('focusin',e=>{if(isAdminUser||!R)return;const sec=e.target.closest?.('#vStaff .rsec');if(!sec||!sec.id)return;if(R.curSec!==sec.id){R.curSec=sec.id;pingPresence(Date.now()-lastPing>3000);}});
+
+/* --- 직원 등록·삭제 (관리자) --- */
+let regApp=null;
+async function regAuth(){if(!regApp)regApp=initializeApp(firebaseConfig,'staff-register');return getAuth(regApp);}
+$('#stNew').onclick=()=>{['#nwName','#nwId','#nwPw'].forEach(x=>$(x).value='');$('#dlgNew').hidden=false;$('#nwName').focus();};
+$('#nwClose').onclick=()=>{$('#dlgNew').hidden=true;};
+$('#nwForm').addEventListener('submit',async e=>{e.preventDefault();
+  const name=$('#nwName').value.trim(),id=$('#nwId').value.trim().toLowerCase(),pw=$('#nwPw').value,part=$('input[name=nwPart]:checked').value;
+  if(!name){toast('이름을 입력해주세요');$('#nwName').focus();return;}
+  if(!/^[a-z0-9_]{4,20}$/.test(id)||id==='wonsabu'){toast('아이디는 영문 소문자·숫자·밑줄 4~20자로 정해주세요');$('#nwId').focus();return;}
+  if(pw.length<8){toast('임시 비밀번호를 8자 이상으로 정해주세요');$('#nwPw').focus();return;}
+  const b=$('#nwBtn');b.disabled=true;b.textContent='등록 중…';
+  try{const ex=await getDoc(doc(db,'logins',id));if(ex.exists())throw Object.assign(new Error('taken'),{code:'id-taken'});
+    const a2=await regAuth();const cred=await createUserWithEmailAndPassword(a2,idToEmail(id),pw);const nuid=cred.user.uid;await signOut(a2).catch(()=>{});
+    const now=new Date().toISOString();
+    await setDoc(doc(db,'users',nuid),{name,loginId:id,status:'approved',part,sections:PRESET[part],createdAt:now,approvedAt:now,createdBy:'admin'});
+    await setDoc(doc(db,'logins',id),{email:idToEmail(id),uid:nuid,createdAt:now});
+    $('#dlgNew').hidden=true;toast(`${name}님을 등록했어요 · 아이디 ${id}`);}
+  catch(err){toast(/email-already-in-use/.test(err.code||'')?'이미 있는 아이디예요. 다른 아이디를 입력해주세요.':authMsg(err));}
+  finally{b.disabled=false;b.textContent='등록';}
+});
+$('#tabStaff').addEventListener('click',async e=>{const d=e.target.closest('[data-sdel]');if(!d)return;const u=users[d.dataset.sdel];if(!u)return;
+  if(!(await ask(`${u.name}(${u.loginId}) 직원을 삭제할까요?\n업무보고·지시 업무·사진·파일·일정·발주·계산서와 직원 정보가 모두 지워져요.\n\n기록을 남기려면 "사용 중지"를 쓰세요.`,'계속')))return;
+  if(!(await ask(`정말 삭제할까요? 되돌릴 수 없어요.\n\n${u.name} 삭제`,'삭제')))return;
+  try{d.disabled=true;await wipeUser(u.uid);toast(`${u.name}님을 삭제했어요 · 로그인 계정은 Firebase 콘솔에서 지워주세요`);}catch(err){toast(authMsg(err));d.disabled=false;}
+});
+// 직원 명단 (직원끼리 연계 대상 고르기용)
+let dirSig='';
+async function syncStaffDir(){const list=active().map(u=>({uid:u.uid,name:u.name,part:u.part||''})).sort((a,b)=>a.name.localeCompare(b.name));const sig=JSON.stringify(list);if(sig===dirSig)return;dirSig=sig;
+  try{const cur=await getDoc(doc(db,'config','staffdir'));if(!cur.exists()||JSON.stringify(cur.data().list||[])!==sig)await setDoc(doc(db,'config','staffdir'),{list,updatedAt:new Date().toISOString()});}catch(e){dirSig='';}}
 
 /* ---------- 디자인 업무판 탭 ---------- */
 const dsStaff=()=>active().filter(u=>hasDS(u.sections));
@@ -3365,15 +3602,18 @@ $('#dmWipe').addEventListener('click',async()=>{
   if(!(await ask(`${u.name}(${u.loginId}) 직원의 모든 데이터를 삭제할까요?\n업무보고·업무 지시·이미지·파일·일정·발주·계산서와 직원 정보가 모두 지워져요.`,'계속')))return;
   if(!(await ask(`정말 삭제할까요? 되돌릴 수 없어요.\n\n${u.name} 전체 삭제`,'전체 삭제')))return;
   const b=$('#dmWipe');b.disabled=true;b.textContent='삭제 중…';
-  try{
-    [taskSubs,repSubs,thumbSubs,invSubs,planSubs].forEach(m=>{if(m[uid]){try{m[uid]();}catch(e){}delete m[uid];}});
-    for(const c of ['reports','tasks','images','thumbs','files','purchases','agenda','invoices','dplan']){
-      const q=await getDocs(collection(db,'users',uid,c));await delRefs(q.docs.map(d=>doc(db,'users',uid,c,d.id)));}
-    await deleteDoc(doc(db,'users',uid));
-    delete tasksBy[uid];delete repsBy[uid];delete thumbs[uid];delete invBy[uid];
-    toast(`${u.name} 데이터를 모두 삭제했어요`);$('#dmList').innerHTML='';$('#dmBar').hidden=true;
-  }catch(err){toast(authMsg(err));}finally{b.disabled=false;b.textContent='이 직원 데이터 전체 삭제';}
+  try{await wipeUser(uid);toast(`${u.name} 데이터를 모두 삭제했어요`);$('#dmList').innerHTML='';$('#dmBar').hidden=true;}
+  catch(err){toast(authMsg(err));}finally{b.disabled=false;b.textContent='이 직원 데이터 전체 삭제';}
 });
+async function wipeUser(uid){
+  [taskSubs,repSubs,thumbSubs,invSubs,planSubs].forEach(m=>{if(m[uid]){try{m[uid]();}catch(e){}delete m[uid];}});
+  for(const c of ['reports','tasks','images','thumbs','files','purchases','agenda','invoices','dplan']){
+    const q=await getDocs(collection(db,'users',uid,c));await delRefs(q.docs.map(d=>doc(db,'users',uid,c,d.id)));}
+  try{const lq=await getDocs(query(collection(db,'logins'),where('uid','==',uid)));await delRefs(lq.docs.map(d=>doc(db,'logins',d.id)));}catch(e){}
+  await deleteDoc(doc(db,'presence',uid)).catch(()=>{});
+  await deleteDoc(doc(db,'users',uid));
+  delete tasksBy[uid];delete repsBy[uid];delete thumbs[uid];delete invBy[uid];delete users[uid];
+}
 
 /* ---------- 계산서 탭 ---------- */
 let invF='open',invK='';
@@ -3699,12 +3939,12 @@ function sectionView(u,key,d,rv,grp,canReview){
     ${st==='revise'&&rv.note?`<div class="flagnote" style="margin:8px 0 0">보완 요청: ${esc(rv.note)}</div>`:''}
     ${canReview?`<div class="rvbar" data-rvsec="${dk}"><button type="button" class="okbtn" data-rv="ok">✓ 확인</button><input data-rvnote data-k="rv-${dk}" placeholder="보완할 내용" aria-label="${esc(ITEM[key].label)} 보완 내용"><button type="button" class="danger" data-rv="revise">보완 요청</button></div>`:''}</div>`;
 }
-function reportView(u,r,date){
+function reportView(u,r,date,live){
   const head=`<div class="panel"><div class="btnrow" style="justify-content:space-between"><div class="btnrow"><b style="font-size:17px">${esc(u.name)}</b>${partTag(u.part)}<span class="note">${esc(fmtD(date))}(${dayName(date)}) 업무보고</span>${dsOnly(u.sections)?'':`<span class="tag ${KIND_C[r?.kind||CALC.kind(date,CAL,u.uid)]}">${KIND_L[r?.kind||CALC.kind(date,CAL,u.uid)]}</span>`}</div>${r?`<span class="tag ${RS_C[r.status]}">${RS_L[r.status]}</span>`:''}</div>
     ${r?.submittedAt?`<p class="note" style="margin:6px 0 0">${esc(fmtT(r.submittedAt))} 전송${r.reviewedAt?` · ${esc(fmtT(r.reviewedAt))} 검토`:''}</p>`:''}</div>`;
   if(!r)return head+'<div class="panel empty">이 날짜에 작성된 보고서가 없어요.</div>';
-  if(r.status==='draft')return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>'+`<div class="btnrow" style="justify-content:flex-end;margin:4px 0 16px"><button type="button" class="danger" data-repdel="${esc(u.uid)}|${esc(date)}">작성 중인 보고서 삭제</button></div>`;
-  const grp=`rep-${u.uid}-${date}`;const canReview=r.status==='submitted'||r.status==='hold';
+  if(r.status==='draft'&&!live)return head+'<div class="panel empty">직원이 아직 작성 중이에요. 전송하면 여기에서 확인할 수 있어요.</div>'+`<div class="btnrow" style="justify-content:flex-end;margin:4px 0 16px"><button type="button" class="danger" data-repdel="${esc(u.uid)}|${esc(date)}">작성 중인 보고서 삭제</button></div>`;
+  const grp=`rep-${u.uid}-${date}`;const canReview=!live&&(r.status==='submitted'||r.status==='hold');
   const kind=r.kind||CALC.kind(date,CAL,u.uid);u._date=date;u._kind=kind;
   let secs=secsFor(u.sections,kind,{date,uid:u.uid});
   let h=head;
@@ -3812,12 +4052,20 @@ $('#taskForm').addEventListener('submit',async e=>{
   if(!uids.length||!uids[0]){toast('이 파트에 승인된 직원이 없어요');return;}
   const startAt=dhVal($('#tfStartD').value,$('#tfStartH').value),dueAt=dhVal($('#tfDueD').value,$('#tfDueH').value);
   if(startAt&&dueAt&&dueAt<startAt){toast('완료일시가 시작일시보다 빨라요');return;}
-  const now=new Date().toISOString(),gid=rid(),b=writeBatch(db);
+  let lk=null;if($('#tfLink').checked){const to=users[$('#tfLkTo').value];const lt=$('#tfLkTitle').value.trim();
+    if(uids.length!==1){toast('연계 업무는 직원 한 명에게 지시할 때만 넣을 수 있어요');return;}
+    if(!to){toast('연계 받을 직원을 골라주세요');return;}if(to.uid===uids[0]){toast('연계 받을 직원은 업무 받는 직원과 달라야 해요');return;}
+    if(!lt){toast('연계 업무명을 입력해주세요');$('#tfLkTitle').focus();return;}
+    lk={to,title:lt,desc:$('#tfLkDesc').value.trim(),start:$('#tfLkStart').value||'',due:$('#tfLkDue').value||''};}
+  const now=new Date().toISOString(),gid=rid(),b=writeBatch(db);const tids={};
   const btn=$('#tfBtn');btn.disabled=true;btn.textContent=tfFiles.length?'첨부 올리는 중…':'등록 중…';
   try{
     for(const u of uids){const att=tfFiles.length?await uploadTaskAtt(u):{imgs:[],files:[]};
-      b.set(doc(db,'users',u,'tasks',rid()),{title,desc:$('#tfDesc').value.trim(),startAt,dueAt,today:$('#tfToday').checked,status:'todo',groupId:gid,createdAt:now,updatedAt:now,log:[],imgs:att.imgs,files:att.files});}
-    await b.commit();toast(`${uids.length}명에게 업무를 등록했어요`);$('#tfTitle').value='';$('#tfDesc').value='';$('#tfToday').checked=false;tfFiles=[];renderTfAtt();setTaskDefaults();taskFilter='open';syncFilter();}
+      const tid=rid();tids[u]=tid;b.set(doc(db,'users',u,'tasks',tid),{title,desc:$('#tfDesc').value.trim(),startAt,dueAt,today:$('#tfToday').checked,status:'todo',groupId:gid,createdAt:now,updatedAt:now,log:[],imgs:att.imgs,files:att.files,...(lk?{linkTo:lk.to.name}:{})});}
+    await b.commit();
+    if(lk){const A=users[uids[0]];const lid=rid();await setDoc(doc(db,'links',lid),{mode:'admin',status:'wait',from:{uid:A.uid,name:A.name,part:A.part||''},to:{uid:lk.to.uid,name:lk.to.name,part:lk.to.part||''},src:{kind:'task',id:tids[A.uid],title,desc:$('#tfDesc').value.trim(),due:dueAt||''},title:lk.title,desc:lk.desc,start:lk.start,due:lk.due,memo:'',thread:[{at:now,by:'대표',kind:'create',text:''}],createdAt:now,updatedAt:now});
+      await updateDoc(doc(db,'users',A.uid,'tasks',tids[A.uid]),{linkId:lid}).catch(()=>{});
+      $('#tfLink').checked=false;$('#tfLinkBox').hidden=true;['#tfLkTitle','#tfLkDesc','#tfLkStart','#tfLkDue'].forEach(x=>$(x).value='');toast(`업무와 연계 업무(→ ${lk.to.name})를 등록했어요`);}toast(`${uids.length}명에게 업무를 등록했어요`);$('#tfTitle').value='';$('#tfDesc').value='';$('#tfToday').checked=false;tfFiles=[];renderTfAtt();setTaskDefaults();taskFilter='open';syncFilter();}
   catch(err){toast(authMsg(err));}finally{btn.disabled=false;btn.textContent='업무 등록';}
 });
 function syncFilter(){$$('#taskFilter button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===taskFilter)));renderAdminTasks(Object.values(tasksBy).flat());}
@@ -3863,7 +4111,7 @@ function renderStaffGrid(list){
     <div class="nm"><b>${esc(u.name)}</b>${partTag(u.part)}${u.status==='approved'?'<span class="tag ok">사용 중</span>':u.status==='disabled'?'<span class="tag">사용 중지</span>':'<span class="tag bad">반려</span>'}</div>
     <div class="meta">아이디 ${esc(u.loginId)} · 양식 ${(u.sections||[]).length}개 항목</div>
     <div class="meta">가입 ${esc((u.createdAt||'').slice(0,10))}${u.approvedAt?` · 승인 ${esc(u.approvedAt.slice(0,10))}`:''}</div>
-    <div class="btnrow">${u.status==='rejected'?`<button class="secondary" data-approve="${esc(u.uid)}">다시 승인</button>`:`<button class="secondary" data-edit="${esc(u.uid)}">파트·양식 수정</button>`}</div></div>`).join(''):'<div class="empty">승인된 직원이 아직 없어요.</div>';
+    <div class="btnrow">${u.status==='rejected'?`<button class="secondary" data-approve="${esc(u.uid)}">다시 승인</button>`:`<button class="secondary" data-edit="${esc(u.uid)}">정보·양식 수정</button>`}<span style="flex:1"></span><button type="button" class="linkbtn" data-sdel="${esc(u.uid)}" style="color:var(--bad)">삭제</button></div></div>`).join(''):'<div class="empty">승인된 직원이 아직 없어요.</div>';
 }
 $('#vAdmin').addEventListener('click',async e=>{
   const a=e.target.closest('[data-approve]');if(a){openDlg(a.dataset.approve,true);return;}
@@ -3874,7 +4122,7 @@ $('#vAdmin').addEventListener('click',async e=>{
 function tplHtml(sel){return LIB.map(g=>`<div class="tpl-group"><div class="gh"><b>${esc(g.label)}</b><button type="button" class="linkbtn" data-all>전체 선택/해제</button></div><div class="tpl-items">${g.items.map(([k,l,d])=>`<label class="opt"><input type="checkbox" value="${k}" ${sel.includes(k)?'checked':''}><span>${esc(l)}${d?`<small>${esc(d)}</small>`:''}</span></label>`).join('')}</div></div>`).join('');}
 function openDlg(uid,approving){
   const u=users[uid];if(!u)return;dlgUid=uid;
-  $('#dsTitle').textContent=approving?`${u.name} 승인`:`${u.name} 파트·양식 수정`;$('#dsSub').textContent=`아이디 ${u.loginId}`;
+  $('#dsTitle').textContent=approving?`${u.name} 승인`:`${u.name} 정보·양식 수정`;$('#dsSub').textContent=`아이디 ${u.loginId} · 비밀번호는 직원이 내 정보에서 바꿔요`;$('#dsName').value=u.name||'';
   const part=u.part||'CS';$$('input[name=dsPart]').forEach(r=>r.checked=r.value===part);
   $('#dsTpl').innerHTML=tplHtml(u.sections&&u.sections.length?u.sections:PRESET[part]);
   $('#dsSave').textContent=approving?'승인':'저장';$('#dsSave').dataset.mode=approving?'approve':'edit';
@@ -3887,7 +4135,8 @@ $('#dsCancel').onclick=()=>{$('#dlgStaff').hidden=true;dlgUid=null;};
 $('#dsSave').onclick=async()=>{
   const u=users[dlgUid];if(!u)return;const sections=$$('#dsTpl input:checked').map(c=>c.value);if(!sections.length){toast('양식 항목을 하나 이상 선택해주세요');return;}
   const part=$('input[name=dsPart]:checked').value;const approving=$('#dsSave').dataset.mode==='approve';const b=$('#dsSave');b.disabled=true;
-  try{const patch={part,sections,updatedAt:new Date().toISOString()};if(approving){patch.status='approved';patch.approvedAt=new Date().toISOString();}
+  const nm=$('#dsName').value.trim();if(!nm){toast('이름을 입력해주세요');b.disabled=false;return;}
+  try{const patch={part,sections,updatedAt:new Date().toISOString()};if(nm!==u.name)patch.name=nm;if(approving){patch.status='approved';patch.approvedAt=new Date().toISOString();}
     await updateDoc(doc(db,'users',u.uid),patch);toast(approving?`${u.name}님을 승인했어요`:'저장했어요');$('#dlgStaff').hidden=true;dlgUid=null;}catch(e){toast(authMsg(e));}finally{b.disabled=false;}
 };
 $('#dsToggle').onclick=async()=>{
