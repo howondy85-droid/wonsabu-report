@@ -336,6 +336,17 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .inp{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
 #galDel{border-color:var(--bad)!important;color:#ffb4a6!important}
 .tbl td.num{white-space:nowrap}
+.tbl td.num.bad{color:var(--bad);font-weight:700}
+.sumgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.sumgrid{grid-template-columns:1fr}}
+.sumcol{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--sunk);min-width:0}
+.sumrow2{border-top:1px dashed var(--line);padding:8px 0}
+.sumrow2:first-of-type{border-top:0}
+.sumlist{margin:4px 0 0;padding-left:18px;font-size:12.5px}
+.chart .bar.b1{fill:var(--cs)}.chart .bar.b2{fill:var(--ok)}
+.legend{gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.legend .sw.b1{background:var(--cs)}.legend .sw.b2{background:var(--ok)}
 /* 접고 펼치기 */
 .rsec>.rh[data-fold]{cursor:pointer;margin-bottom:10px;user-select:none}
 .rsec>.rh .secst{margin-left:auto;order:2}
@@ -415,10 +426,11 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-15</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-16</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
+    <button data-tab="stat" aria-pressed="false">통계</button>
     <button data-tab="task" aria-pressed="false">업무 지시<span class="dot" id="taskDot" hidden></span></button>
     <button data-tab="dsg" aria-pressed="false">디자인 업무판<span class="dot" id="dsgDot" hidden></span></button>
     <button data-tab="req" aria-pressed="false">가입 승인<span class="dot" id="reqDot" hidden></span></button>
@@ -502,6 +514,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   <section id="tabHome">
     <div class="kpis" id="kpis"></div>
     <div class="panel" id="homeDue" hidden></div>
+    <div class="panel" id="homeSum"></div>
     <div class="panel">
       <h2>오늘 업무보고 <span class="s" id="homeDate"></span></h2>
       <div class="staff-grid" id="homeStatus"></div>
@@ -553,6 +566,26 @@ tr.off td{opacity:.45;text-decoration:line-through}
       </div>
       <div id="adminTasks"></div>
     </div>
+  </section>
+
+  <section id="tabStat" hidden>
+    <div class="panel">
+      <div class="btnrow" style="justify-content:space-between">
+        <h2 style="margin:0">업무보고 통계 <span class="s">보고 제출률 · 업무 완료율 · 진행상황</span></h2>
+        <div class="btnrow">
+          <div class="tfilter" id="stUnit" style="margin:0"><button data-u="day" aria-pressed="false">일</button><button data-u="week" aria-pressed="true">주</button><button data-u="month" aria-pressed="false">월</button></div>
+          <input type="date" id="stDate" class="inp" aria-label="기준 날짜">
+          <select id="stWho" class="inp" aria-label="직원"></select>
+          <button class="secondary" id="stReload" type="button">새로고침</button>
+        </div>
+      </div>
+      <p class="note" id="stRange" style="margin:8px 0 0"></p>
+    </div>
+    <div class="kpis" id="stKpis"></div>
+    <div class="panel"><h2>일별 추이 <span class="s">제출한 보고서 · 완료한 업무</span></h2><div id="stChart"></div></div>
+    <div class="panel"><h2>직원별 <span class="s">이름을 누르면 그 직원만 보여요</span></h2><div id="stTable"></div></div>
+    <div class="panel"><h2>진행상황 <span class="s">기간 안에 마감인 지시 업무</span></h2><div id="stProg"></div></div>
+    <div class="panel" id="stDay" hidden></div>
   </section>
 
   <section id="tabDsg" hidden>
@@ -1324,11 +1357,12 @@ $('#logoutBtn').onclick=logout;$('#waitLogout').onclick=logout;
 let unsubs=[],isAdminUser=false,meUid=null;
 let users={},thumbs={},thumbSubs={},taskSubs={},tasksBy={},repSubs={},repsBy={},usersSig='';
 let me=null,myTasks=[],R=null,repUnsub=null,saveT=null,myPurch=[],myAgenda=[];
+let agBy={},agSubs={},puBy={},puSubs={};
 let invBy={},invSubs={},prices={},myPlan=[],planBy={},planSubs={};
 function cleanup(){
   if(typeof INQ!=='undefined'){$('#rInq').innerHTML='';$('#aInq').innerHTML='';$('#rReel').innerHTML='';$('#aReel').innerHTML='';reelDrafts=[];}
   unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
-  [thumbSubs,taskSubs,repSubs,invSubs,planSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));planSubs={};planBy={};myPlan=[];
+  [thumbSubs,taskSubs,repSubs,invSubs,planSubs,agSubs,puSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));agSubs={};puSubs={};agBy={};puBy={};statCache={};planSubs={};planBy={};myPlan=[];
   thumbSubs={};thumbs={};taskSubs={};tasksBy={};repSubs={};repsBy={};usersSig='';users={};invSubs={};invBy={};prices={};payCache={};
   if(repUnsub){repUnsub();repUnsub=null;}clearTimeout(saveT);R=null;me=null;myTasks=[];myPurch=[];myAgenda=[];myInv=[];
 }
@@ -2620,6 +2654,8 @@ function startAdmin(){
       if(!taskSubs[u.uid])taskSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'tasks'),orderBy('createdAt','desc'),limit(200)),s=>{tasksBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
       if(!repSubs[u.uid])repSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'reports'),orderBy('date','desc'),limit(62)),s=>{repsBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
       if(hasDS(u.sections)&&!planSubs[u.uid])planSubs[u.uid]=onSnapshot(collection(db,'users',u.uid,'dplan'),s=>{planBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
+      if(!agSubs[u.uid])agSubs[u.uid]=onSnapshot(collection(db,'users',u.uid,'agenda'),s=>{agBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id}));queueRender();},()=>{});
+      if(!puSubs[u.uid])puSubs[u.uid]=onSnapshot(collection(db,'users',u.uid,'purchases'),s=>{puBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id}));queueRender();},()=>{});
       if(!invSubs[u.uid])invSubs[u.uid]=onSnapshot(collection(db,'users',u.uid,'invoices'),s=>{invBy[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
       if(!thumbSubs[u.uid])thumbSubs[u.uid]=onSnapshot(query(collection(db,'users',u.uid,'thumbs'),orderBy('createdAt','desc'),limit(24)),s=>{thumbs[u.uid]=s.docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));queueRender();},()=>{});
     });
@@ -2627,7 +2663,7 @@ function startAdmin(){
   },e=>toast(authMsg(e)+' (보안 규칙 적용 여부를 확인해주세요)')));
 }
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','task','dsg','req','staff','cal','pay','mat','inv','data'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();if(t==='data')dmInit();}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','stat','task','dsg','req','staff','cal','pay','mat','inv','data'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -2655,7 +2691,7 @@ function renderAdmin(){
   const allT=Object.values(thumbs).flat().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,24);
   $('#allThumbs').innerHTML=allT.length?allT.map(t=>`<span class="thw"><button type="button" class="th" data-gal="home" data-full="${esc(t.uid)}|${esc(t.id)}" data-cap="${esc(users[t.uid]?.name||'직원')} · ${esc(fmtT(t.createdAt))}"><img src="${esc(t.thumb)}" alt="" loading="lazy"><span>${esc(users[t.uid]?.name||'')} ${esc(fmtT(t.createdAt))}</span></button><button type="button" class="x" data-delimg="${esc(t.uid)}|${esc(t.id)}" aria-label="이미지 삭제">×</button></span>`).join(''):'<p class="note" style="grid-column:1/-1;margin:0">아직 업로드된 이미지가 없어요.</p>';
   renderRepTab(subR);renderTarget(act);renderAdminTasks(allTasks);renderReq(pend);renderStaffGrid(list);renderCal(act);
-  renderInvTab();renderMatTab();renderDsg();if(!$('#tabData').hidden)dmInit();
+  renderInvTab();renderMatTab();renderDsg();renderHomeSum();if(!$('#tabStat').hidden)renderStats(true);if(!$('#tabData').hidden)dmInit();
 }
 function statusCard(u,date,sel){
   const r=repOf(u.uid,date);const st=r?r.status:'none';
@@ -2669,6 +2705,128 @@ $('#arDate').addEventListener('change',()=>{if(arSel)arSel.date=$('#arDate').val
 
 
 
+
+
+/* ---------- 홈: 전일 · 오늘 · 내일 요약 ---------- */
+function workdayFrom(ds,dir){let d=ds;for(let i=0;i<14;i++){d=DT.addDays(d,dir);if(!CALC.off(d,CAL,null))return d;}return DT.addDays(ds,dir);}
+const isDue=(u,d)=>dsOnly(u.sections)?!!CALC.dsDay(d,CAL,u.uid):!CALC.off(d,CAL,u.uid);
+// 보고서에서 눈여겨볼 것만 뽑기
+function repHighlights(u,r){
+  const d=r?.data||{};const out=[];
+  const n=(x,l,c)=>{if(x)out.push({t:`${l} ${x}`,c});};
+  const sh=d.cs_ship?.result?.counts;if(sh){n(sh.unshipped,'미발송','bad');n(sh.partial,'발송 확인필요','acc');}
+  n((d.cs_claim?.rows||[]).length,'클레임','bad');
+  n((d.cs_bulk?.rows||[]).length,'대량문의','acc');
+  n((d.cs_consult?.rows||[]).filter(x=>x.state!=='done').length,'진행중 상담','');
+  if(d.cs_prevday?.allDone==='no')out.push({t:'전일출고 미완료 있음',c:'bad'});
+  const ord=d.cs_order;if(ord){const k=CHS.filter(([c])=>ord[c]?.done).length;if(k<CHS.length)out.push({t:`주문접수 ${k}/${CHS.length}`,c:'acc'});}
+  const res=d.ds_result?.items;if(res&&d.ds_result?.snap?.length){const dn=d.ds_result.snap.filter(it=>res[it.id]?.st==='done').length;out.push({t:`이번주 완료 ${dn}/${d.ds_result.snap.length}`,c:dn===d.ds_result.snap.length?'ok':'acc'});}
+  const rv=Object.values(r?.review||{}).filter(v=>v?.state==='revise').length;if(rv&&r?.status!=='approved')out.push({t:`보완 ${rv}`,c:'bad'});
+  return out;
+}
+function sumCol(title,date,mode){
+  const act=active();const f=`${fmtD(date)}(${dayName(date)})`;
+  const rows=act.map(u=>{const r=repOf(u.uid,date);const due=isDue(u,date);
+    if(mode!=='next'&&!due&&!r)return '';
+    const st=r?r.status:'none';const hl=mode==='next'?[]:repHighlights(u,r);
+    const tk=(tasksBy[u.uid]||[]).filter(t=>t.status!=='done'&&(t.dueAt||'').slice(0,10)===date);
+    const ts=(tasksBy[u.uid]||[]).filter(t=>t.status!=='done'&&(t.startAt||'').slice(0,10)===date&&(t.dueAt||'').slice(0,10)!==date);
+    const ag=(agBy[u.uid]||[]).filter(a=>a.date===date&&!a.done);
+    const pu=(puBy[u.uid]||[]).filter(p=>p.eta===date&&!p.received);
+    const dp=(planBy[u.uid]||[]).filter(it=>it.due===date&&it.status!=='done');
+    const items=[...tk.map(t=>`마감: ${t.title}`),...ts.map(t=>`시작: ${t.title}`),...dp.map(it=>`디자인 마감: ${it.title}`),...ag.map(a=>`일정: ${a.title}`),...pu.map(p=>`입고 예정: ${p.item}`)];
+    if(mode==='next'&&!items.length&&!due)return '';
+    return `<div class="sumrow2"><div class="btnrow"><b>${esc(u.name)}</b>${partTag(u.part)}${mode==='next'?(due?'':'<span class="tag">보고일 아님</span>'):(due||r?`<span class="tag ${RS_C[st]}">${RS_L[st]}</span>`:'')}${hl.map(x=>`<span class="tag ${x.c}">${esc(x.t)}</span>`).join('')}</div>
+      ${items.length?`<ul class="sumlist">${items.slice(0,6).map(x=>`<li>${esc(x)}</li>`).join('')}${items.length>6?`<li class="note">외 ${items.length-6}건</li>`:''}</ul>`:''}</div>`;}).join('');
+  let extra='';
+  if(mode==='today'){const open=typeof INQ!=='undefined'?INQ.filter(x=>x.status!=='done').length:0;if(open)extra+=`<span class="tag bad">CS 문의 미처리 ${open}</span>`;}
+  const ups=typeof REELS!=='undefined'?REELS.filter(r=>reelSched(r).ups.includes(date)):[];
+  if(ups.length)extra+=ups.map(r=>`<span class="tag ds">릴스 업로드 · ${esc(r.docTitle||fmtD(r.week)+' 기획안')}${r.choice?' '+esc(r.choice):''}</span>`).join('');
+  return `<div class="sumcol"><div class="btnrow" style="justify-content:space-between"><b>${title}</b><span class="note">${f}</span></div>${extra?`<div class="btnrow" style="margin:6px 0">${extra}</div>`:''}${rows||'<p class="note">해당 없음</p>'}</div>`;
+}
+function renderHomeSum(){
+  const box=$('#homeSum');if(!box)return;const td=today();const pv=workdayFrom(td,-1),nx=workdayFrom(td,1);
+  box.innerHTML=`<h2>업무 요약 <span class="s">CS·디자인 · 전 근무일 / 오늘 / 다음 근무일</span></h2><div class="sumgrid">${sumCol('전일',pv,'prev')}${sumCol('오늘',td,'today')}${sumCol('내일',nx,'next')}</div>`;
+}
+
+/* ---------- 통계 탭 ---------- */
+let statCache={},statV={unit:'week',date:'',who:'all'},statBusy=false;
+function statRange(unit,date){if(unit==='day')return[date,date];if(unit==='week'){const m=CALC.mon(date);return[m,DT.addDays(m,6)];}const ym=date.slice(0,7);const last=new Date(+ym.slice(0,4),+ym.slice(5),0).getDate();return[ym+'-01',`${ym}-${String(last).padStart(2,'0')}`];}
+function dayList(a,b){const o=[];for(let d=a;d<=b&&o.length<62;d=DT.addDays(d,1))o.push(d);return o;}
+async function loadStatReps(from,to,force){const key=from+'|'+to;if(statCache[key]&&!force)return statCache[key];const out={};
+  for(const u of Object.values(users).filter(u=>u.status==='approved'||u.status==='disabled')){try{out[u.uid]=(await getDocs(query(collection(db,'users',u.uid,'reports'),where('date','>=',from),where('date','<=',to)))).docs.map(x=>({...x.data(),id:x.id,uid:u.uid}));}catch(e){out[u.uid]=[];}}
+  return statCache[key]=out;}
+const locISO=iso=>{if(!iso)return '';const d=new Date(iso);if(isNaN(d))return '';return `${CALC.ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;};
+// 완료 시각 (한국 시간 기준 'YYYY-MM-DDTHH:MM')
+const doneAtOf=t=>t.status==='done'?locISO((t.log||[]).filter(e=>e.kind==='done').map(e=>e.at).sort().pop()||t.updatedAt||''):'';
+function staffStat(u,reps,from,to){
+  const td=today();const end=to<td?to:td;
+  const due=from<=end?dayList(from,end).filter(d=>isDue(u,d)):[];
+  const sub=reps.filter(r=>r.status&&r.status!=='draft');const appr=sub.filter(r=>r.status==='approved');
+  const fills=sub.map(r=>{const secs=secsFor(u.sections,r.kind||CALC.kind(r.date,CAL,u.uid),{date:r.date,uid:u.uid});return secs.length?secs.filter(k=>hasVal(r.data?.[DK(k)])).length/secs.length:null;}).filter(x=>x!=null);
+  const tks=(tasksBy[u.uid]||[]).filter(t=>{const k=(t.dueAt||t.createdAt||'').slice(0,10);return k>=from&&k<=to;});
+  const done=tks.filter(t=>t.status==='done');const ontime=done.filter(t=>!t.dueAt||doneAtOf(t)<=t.dueAt.slice(0,16)||(t.dueAt.slice(11,13)>='18'&&doneAtOf(t).slice(0,10)===t.dueAt.slice(0,10)));
+  const prog=tks.filter(t=>['submitted','next','revise','done'].includes(t.status));
+  const late=tks.filter(isLate);
+  const sum=(f)=>sub.reduce((a,r)=>a+f(r.data||{}),0);
+  const inq=typeof INQ!=='undefined'?INQ.filter(x=>x.status==='done'&&x.doneBy?.uid===u.uid&&x.doneDate>=from&&x.doneDate<=to).length:0;
+  let dsT=0,dsD=0;sub.forEach(r=>{const sn=r.data?.ds_result?.snap||[];const it=r.data?.ds_result?.items||{};dsT+=sn.length;dsD+=sn.filter(x=>it[x.id]?.st==='done').length;});
+  const reels=typeof REELS!=='undefined'?REELS.filter(r=>r.prod?.done&&r.prod.report>=from&&r.prod.report<=to&&r.chosenBy?.uid===u.uid).length:0;
+  return{u,due:due.length,sub:sub.length,appr:appr.length,resub:sub.filter(r=>r.resubmit).length,hold:reps.filter(r=>r.status==='hold').length,
+    fill:fills.length?fills.reduce((a,b)=>a+b,0)/fills.length:null,tasks:tks.length,done:done.length,ontime:ontime.length,prog:prog.length,late:late.length,
+    claim:sum(d=>(d.cs_claim?.rows||[]).length),bulk:sum(d=>(d.cs_bulk?.rows||[]).length),unship:sum(d=>d.cs_ship?.result?.counts?.unshipped||0),inq,dsT,dsD,reels,reps:sub};
+}
+const pct=(a,b)=>b?Math.round(a/b*100):null;
+const pctTxt=(a,b)=>{const p=pct(a,b);return p==null?'-':`${p}%`;};
+function barChart(days,series){
+  const W=Math.max(340,Math.min(980,($('#stChart').clientWidth||800)-4)),H=200,L=34,Rr=10,T=14,B=30;
+  const mx=Math.max(1,...days.flatMap(d=>series.map(s=>d[s.k]||0)));const n=days.length;const gw=(W-L-Rr)/n;const bw=Math.max(3,Math.min(18,(gw-6)/series.length));
+  const Y=v=>T+(H-T-B)*(1-v/mx);const ticks=[0,Math.ceil(mx/2),mx];const step=n>16?Math.ceil(n/12):1;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="일별 추이">${ticks.map(t=>`<line class="gr" x1="${L}" x2="${W-Rr}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}"/><text class="ax" x="${L-6}" y="${(Y(t)+4).toFixed(1)}" text-anchor="end">${t}</text>`).join('')}
+    ${days.map((d,i)=>{const x0=L+i*gw+(gw-bw*series.length)/2;return series.map((s,j)=>{const v=d[s.k]||0;return v?`<rect class="bar ${s.c}" x="${(x0+j*bw).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(H-B-Y(v)).toFixed(1)}" rx="2"><title>${esc(d.label)} ${s.l} ${v}</title></rect>`:'';}).join('')+(i%step===0?`<text class="ax" x="${(L+i*gw+gw/2).toFixed(1)}" y="${H-10}" text-anchor="middle">${esc(d.label)}</text>`:'');}).join('')}
+  </svg><div class="btnrow legend">${series.map(s=>`<span><i class="sw ${s.c}"></i>${s.l}</span>`).join('')}</div>`;
+}
+async function renderStats(soft){
+  if(!statV.date){statV.date=today();$('#stDate').value=statV.date;}
+  const sel=$('#stWho');const opts=`<option value="all">전체 직원</option><option value="part:CS">CS 파트</option><option value="part:디자인">디자인 파트</option>`+Object.values(users).filter(u=>u.status==='approved'||u.status==='disabled').map(u=>`<option value="${esc(u.uid)}">${esc(u.name)}</option>`).join('');
+  if(sel.dataset.sig!==opts){sel.dataset.sig=opts;sel.innerHTML=opts;sel.value=statV.who;}
+  $$('#stUnit button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.u===statV.unit)));
+  const[from,to]=statRange(statV.unit,statV.date);
+  $('#stRange').textContent=`${fmtD(from)}(${dayName(from)}) ~ ${fmtD(to)}(${dayName(to)})${to>today()?' · 오늘 이후 날짜는 예정 보고일에서 빠져요':''}`;
+  if(soft&&!statCache[from+'|'+to])return;
+  if(statBusy)return;statBusy=true;if(!statCache[from+'|'+to])$('#stTable').innerHTML='<p class="note">불러오는 중…</p>';
+  let reps;try{reps=await loadStatReps(from,to);}finally{statBusy=false;}
+  const w=statV.who;const us=Object.values(users).filter(u=>(u.status==='approved'||u.status==='disabled')&&(w==='all'||(w.startsWith('part:')?u.part===w.slice(5):u.uid===w)));
+  const st=us.map(u=>staffStat(u,reps[u.uid]||[],from,to));
+  const T=k=>st.reduce((a,x)=>a+(x[k]||0),0);
+  $('#stKpis').innerHTML=`<div class="kpi"><div class="l">보고 제출률</div><div class="v">${pctTxt(Math.min(T('sub'),T('due')),T('due'))}<small> ${T('sub')}/${T('due')}</small></div></div>
+    <div class="kpi"><div class="l">업무 완료율</div><div class="v">${pctTxt(T('done'),T('tasks'))}<small> ${T('done')}/${T('tasks')}</small></div></div>
+    <div class="kpi"><div class="l">업무 진행률</div><div class="v">${pctTxt(T('prog'),T('tasks'))}<small> 기한 내 완료 ${pctTxt(T('ontime'),T('done'))}</small></div></div>
+    <div class="kpi ${T('resub')+T('hold')?'alert':''}"><div class="l">보완 요청</div><div class="v">${T('resub')+T('hold')}<small> 건</small></div></div>`;
+  // 일별 추이
+  const days=dayList(statV.unit==='day'?CALC.mon(statV.date):from,statV.unit==='day'?DT.addDays(CALC.mon(statV.date),6):to).map(d=>({label:statV.unit==='month'?String(+d.slice(8)):`${fmtD(d)}`,
+    sub:st.reduce((a,x)=>a+x.reps.filter(r=>r.date===d).length,0),
+    done:us.reduce((a,u)=>a+(tasksBy[u.uid]||[]).filter(t=>doneAtOf(t).slice(0,10)===d).length,0)}));
+  if(statV.unit==='day'){const ex=await loadStatReps(CALC.mon(statV.date),DT.addDays(CALC.mon(statV.date),6));days.forEach((x,i)=>{const d=DT.addDays(CALC.mon(statV.date),i);x.sub=us.reduce((a,u)=>a+(ex[u.uid]||[]).filter(r=>r.date===d&&r.status!=='draft').length,0);});}
+  $('#stChart').innerHTML=barChart(days,[{k:'sub',l:'제출한 보고서',c:'b1'},{k:'done',l:'완료한 업무',c:'b2'}]);
+  // 직원별
+  $('#stTable').innerHTML=st.length?`<div class="tbl" style="margin-top:0"><table><thead><tr><th>직원</th><th>보고 제출</th><th>승인</th><th>보완</th><th>항목 작성률</th><th>지시 업무 완료</th><th>기한 내</th><th>지연</th><th>CS 클레임·대량·문의처리</th><th>디자인 이번주 완료·릴스</th></tr></thead><tbody>${st.map(x=>`<tr class="matrow" data-stwho="${esc(x.u.uid)}"><td><b>${esc(x.u.name)}</b> ${partTag(x.u.part)}</td>
+      <td class="num">${x.sub}/${x.due} <span class="note">${pctTxt(Math.min(x.sub,x.due),x.due)}</span></td><td class="num">${x.appr}</td><td class="num ${x.resub+x.hold?'bad':''}">${x.resub+x.hold}</td>
+      <td class="num">${x.fill==null?'-':Math.round(x.fill*100)+'%'}</td><td class="num">${x.done}/${x.tasks} <span class="note">${pctTxt(x.done,x.tasks)}</span></td><td class="num">${pctTxt(x.ontime,x.done)}</td><td class="num ${x.late?'bad':''}">${x.late}</td>
+      <td class="num">${x.u.part==='CS'?`${x.claim} · ${x.bulk} · ${x.inq}${x.unship?` <span class="tag bad">미발송 ${x.unship}</span>`:''}`:'-'}</td><td class="num">${x.dsT?`${pctTxt(x.dsD,x.dsT)} (${x.dsD}/${x.dsT})`:'-'}${x.reels?` · 릴스 ${x.reels}`:''}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">직원이 없어요.</div>';
+  // 진행상황
+  const tk=us.flatMap(u=>(tasksBy[u.uid]||[]).filter(t=>{const k=(t.dueAt||t.createdAt||'').slice(0,10);return k>=from&&k<=to;}).map(t=>({...t,who:u.name}))).sort(sortTasks);
+  $('#stProg').innerHTML=tk.length?`<div class="tbl" style="margin-top:0"><table><thead><tr><th>업무</th><th>담당</th><th>상태</th><th>마감</th><th>최근 기록</th></tr></thead><tbody>${tk.map(t=>{const last=(t.log||[]).slice().sort((a,b)=>(a.at||'').localeCompare(b.at||'')).pop();return `<tr class="${isLate(t)?'warnrow':''}"><td><b>${esc(t.title)}</b></td><td>${esc(t.who)}</td><td><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span></td><td class="num">${esc(fmtDH(t.dueAt))}${isLate(t)?' · 지남':''}</td><td>${last?`${esc(fmtT(last.at))} ${esc((last.text||'').slice(0,60))}`:'<span class="note">기록 없음</span>'}</td></tr>`;}).join('')}</tbody></table></div>`:'<p class="note" style="margin:0">기간 안에 마감인 지시 업무가 없어요.</p>';
+  // 하루 보기: 그날 보고 요약
+  const dayBox=$('#stDay');dayBox.hidden=statV.unit!=='day';
+  if(statV.unit==='day')dayBox.innerHTML=`<h2>${esc(fmtD(statV.date))}(${dayName(statV.date)}) 보고 요약 <span class="s">직원을 누르면 보고서로 이동</span></h2>${us.map(u=>{const r=(reps[u.uid]||[]).find(x=>x.date===statV.date);const due=isDue(u,statV.date);if(!r&&!due)return '';const hl=repHighlights(u,r);
+    return `<div class="sumrow2" data-openrep="${esc(u.uid)}|${esc(statV.date)}" role="button" tabindex="0" style="cursor:pointer"><div class="btnrow"><b>${esc(u.name)}</b>${partTag(u.part)}<span class="tag ${RS_C[r?r.status:'none']}">${RS_L[r?r.status:'none']}</span>${r?.submittedAt?`<span class="note">${esc(fmtT(r.submittedAt))} 전송</span>`:''}${hl.map(x=>`<span class="tag ${x.c}">${esc(x.t)}</span>`).join('')}</div></div>`;}).join('')||'<p class="note">보고 대상이 없어요.</p>'}`;
+}
+$('#stUnit').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b)return;statV.unit=b.dataset.u;renderStats();});
+$('#stDate').addEventListener('change',e=>{if(e.target.value){statV.date=e.target.value;renderStats();}});
+$('#stWho').addEventListener('change',e=>{statV.who=e.target.value;renderStats();});
+$('#stReload').addEventListener('click',()=>{statCache={};renderStats();});
+$('#stTable').addEventListener('click',e=>{const r=e.target.closest('[data-stwho]');if(!r)return;statV.who=statV.who===r.dataset.stwho?'all':r.dataset.stwho;$('#stWho').value=statV.who;renderStats();});
 
 /* ---------- 디자인 업무판 탭 ---------- */
 const dsStaff=()=>active().filter(u=>hasDS(u.sections));
