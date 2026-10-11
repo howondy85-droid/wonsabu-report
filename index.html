@@ -50,6 +50,22 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 .wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:16px 120px}
 .wrap.wide{max-width:1080px}
+.wrap.xwide{max-width:1320px}
+.slay{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+.sside{position:sticky;top:76px;max-height:calc(100vh - 160px);overflow:auto;padding-bottom:8px;scrollbar-width:thin}
+.sside .panel{margin-bottom:10px}
+.sside .banner{flex-direction:column;align-items:flex-start;gap:4px}
+.sside .ixgrid{grid-template-columns:1fr;gap:4px}
+.ixh{font-size:11.5px;color:var(--muted);font-weight:700;margin:8px 0 2px;padding-left:2px}
+.ixh:first-child{margin-top:0}
+.sgrp{margin-bottom:6px}
+.sgh{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em;margin:14px 2px 8px;display:flex;align-items:center;gap:8px}
+.sgh::after{content:"";flex:1;height:1px;background:var(--line)}
+.sgrp:first-child .sgh{margin-top:0}
+@media (max-width:980px){.slay{grid-template-columns:1fr}.sside{position:static;max-height:none;overflow:visible}.sside .ixgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+.tchk{margin:0 6px 8px 0}
+.tchk.on{border-color:var(--ok);background:var(--ok-soft)}
+.tchk input:disabled+span{opacity:.6}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
 .panel h2{font-size:15px;margin:0 0 12px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;text-wrap:balance}
 .panel h2 .s{font-size:12px;font-weight:400;color:var(--muted)}
@@ -171,7 +187,7 @@ fieldset:disabled .fchip .fname{pointer-events:auto}
 .banner.hold{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad)}
 .banner b{font-size:14.5px}
 .sendbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
-.sendbar .in{max-width:820px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.sendbar .in{max-width:1320px;margin:0 auto;display:flex;gap:10px;align-items:center}
 .sendbar .meta{font-size:12px;color:var(--muted);flex:1;min-width:0}
 
 /* tasks */
@@ -437,26 +453,27 @@ tr.off td{opacity:.45;text-decoration:line-through}
 </main>
 
 <!-- 직원: 일일 업무보고 -->
-<main class="wrap" id="vStaff" hidden>
-  <div class="panel">
-    <div class="btnrow" style="justify-content:space-between">
+<main class="wrap xwide" id="vStaff" hidden>
+ <div class="slay">
+  <aside class="sside" aria-label="보고 정보">
+    <div class="panel sinfo">
       <div class="btnrow"><b style="font-size:17px" id="stName"></b><span class="tag" id="stPart"></span></div>
-      <div id="rKind" style="flex-basis:100%"></div>
-      <div class="field" style="margin:0;min-width:160px"><label for="rDate" class="lb">보고 날짜</label><input type="date" id="rDate"></div>
+      <div id="rKind"></div>
+      <div class="field" style="margin:10px 0 0"><label for="rDate" class="lb">보고 날짜</label><input type="date" id="rDate"></div>
     </div>
+    <div id="rBanner"></div>
+    <div id="rIndex"></div>
+  </aside>
+  <div class="smain">
+    <div id="rDue"></div>
+    <div id="rInq"></div>
+    <form id="rForm" novalidate><fieldset id="rSet">
+      <div id="rSections"></div>
+      <div id="rAgenda"></div>
+    </fieldset></form>
+    <div class="panel" id="rLater" hidden></div>
   </div>
-  <div id="rBanner"></div>
-  <div id="rDue"></div>
-  <div id="rInq"></div>
-  <div id="rIndex"></div>
-  <form id="rForm" novalidate><fieldset id="rSet">
-    <div id="rToday"></div>
-    <div id="rTasks"></div>
-    <div id="rIncoming"></div>
-    <div id="rSections"></div>
-    <div id="rAgenda"></div>
-  </fieldset></form>
-  <div class="panel" id="rLater" hidden></div>
+ </div>
 </main>
 <div class="sendbar" id="sendBar" hidden>
   <div class="in"><div class="meta" id="saveMeta">작성 내용은 자동 저장돼요</div><button class="primary" id="sendBtn">전송</button></div>
@@ -710,7 +727,7 @@ const CONSULT_DONE='완료 기준: 담당자 마지막 메시지가 "네네! 또
 const SCHEMA={
  'cs.order':{type:'channels',hint:'업무보고 마지막 단계예요. 17:25 이후 채널별 화면을 전체화면으로 캡쳐해 올리면, 화면 오른쪽 위 시계를 읽어 오늘·17:25 이후인지 확인한 뒤 접수 완료를 켤 수 있어요',fields:[['done','check','접수 완료'],['imgs','imgs','전체화면 캡쳐']]},
  'cs.ship':{type:'ship',hint:'한진 송장 엑셀(재출력_세부내역)과 네이버 주문내역 엑셀(전체주문발주발송관리)을 함께 올리면, 이미 송장이 나간 주문(중복)과 미발송 주문을 찾아줘요'},
- 'cs.prevday':{type:'group',hint:'한진택배 세부내역 캡쳐로 전체 배송완료 확인',fields:[['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
+ 'cs.prevday':{type:'group',hint:'출근 후 · 점심 · 퇴근 전 세 번 한진택배 세부내역으로 배송완료를 확인하고 체크하세요',fields:[['chkAm','tcheck','출근 후 확인','',{from:''}],['chkNoon','tcheck','점심 확인','',{from:'11:30'}],['chkPm','tcheck','퇴근 전 확인','',{from:'17:00'}],['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
    list:{label:'미완료 건',showIf:['allDone','no'],fields:[['name','text','주문자명'],['invoice','text','송장번호'],['note','text','배송완료시각 또는 통화내역']]}},
  'cs.quick':{type:'group',hint:'포장완료 후 매장·픽업대에 올라간 사진. 없으면 비워두세요',fields:[['imgs','imgs','출고완료 사진']],
    list:{label:'퀵/방문 건',fields:[['name','text','주문자명'],['date','date','출고일'],['hour','hour','시간'],['kq','check','카카오퀵 배차 완료'],['notice','check','톡톡·문자 안내 발송 완료'],['note','text','내용 및 특이사항']]}},
@@ -719,7 +736,7 @@ const SCHEMA={
  'cs.consult':{type:'list',table:true,label:'상담',hint:CONSULT_DONE,fields:[['ch','select','채널','',{opts:[['talktalk','네이버 톡톡'],['kakao','카카오채널'],['insta','인스타DM']]}],['id','text','아이디'],['content','text','내용'],['state','radio','상태','',{opts:[['ing','진행중'],['done','완료']]}]]},
  'cs.purchase':{type:'list',label:'발주',hint:'예상입고일이 되면 그날 보고서에 "입고 내역"이 자동으로 생겨요. 입고 수량과 정리 사진을 올려 발주 내역과 비교해요',fields:[['item','text','발주 품목'],['qty','text','수량'],['eta','date','예상입고일'],['imgs','imgs','발주 캡쳐']]},
  'cs.notes':{type:'group',fields:[['text','textarea','공유할 내용']]},
- 'cs.adcharge':{type:'group',hint:'충전한 날만 입력하세요',fields:[['amount','text','충전금액'],['imgs','imgs','충전화면 캡쳐']]},
+ 'cs.adcharge':{type:'group',hint:'출근하자마자 · 퇴근 전 광고비 잔액을 확인하고 체크하세요. 충전한 날만 금액·캡쳐를 넣어요',fields:[['chkAm','tcheck','출근 후 잔액 확인','',{from:''}],['chkPm','tcheck','퇴근 전 잔액 확인','',{from:'17:00'}],['amount','text','충전금액 (충전한 날만)'],['imgs','imgs','충전화면 캡쳐']]},
  // ----- 주간 -----
  'cs.sticker':{type:'fixedrows',hint:'로스가 난 종류만 수량과 사유를 적어주세요',rows:[['heart','하트'],['star','별'],['ribbon','리본'],['balloon','풍선'],['flower','꽃'],['plain','무지'],['circle','원형']],cols:[['qty','num','수량'],['why','text','발생 사유']]},
  'cs.satinv':{type:'ship',hint:'토요일 출고분 한진 송장 엑셀과 네이버 주문내역 엑셀을 올려주세요. 방식은 발송처리 내역과 같아요'},
@@ -1339,12 +1356,30 @@ function renderKind(){
   if(hasDS(secs)){const dd=CALC.dsDay(R.date,CAL,meUid);h+=`<span class="tag ds">${dd?DS_L[dd]:'디자인 보고일 아님'}</span><span class="note">디자인 보고일 ${f(CALC.weekFirst(R.date,CAL,meUid))} · ${f(wl)}</span>`;}
   $('#rKind').innerHTML=`<div class="btnrow" style="margin-top:8px">${h}</div>`;
 }
+// CS 화면 배치: 상단(출근 후 확인) · 중간(문의·클레임·발주) · 하단(출고·상담·마감) · 주간/월간 · 최하단(의견)
+const LAYOUT=[
+  {id:'top',l:'상단 · 출근 후 확인',keys:['@today','cs.prevday','cs.adcharge']},
+  {id:'mid',l:'중간 · 문의·클레임·발주',keys:['cs.bulk','cs.claim','cs.purchase','@incoming']},
+  {id:'low',l:'하단 · 업무·출고·상담·마감',keys:['@tasks','cs.ship','cs.quick','cs.consult','cs.order']},
+  {id:'per',l:'주간·월간 업무',keys:['*']},
+  {id:'end',l:'최하단',keys:['cs.notes']}
+];
+const SLOT={'@today':'<div id="rToday"></div>','@incoming':'<div id="rIncoming"></div>','@tasks':'<div id="rTasks"></div>'};
+function layoutHtml(shown){
+  const placed=new Set(LAYOUT.flatMap(g=>g.keys.filter(k=>!k.startsWith('@')&&k!=='*')));
+  const groups=LAYOUT.map(g=>{const ks=g.keys.flatMap(k=>k==='*'?shown.filter(x=>!placed.has(x)):[k]);
+    const body=ks.map(k=>k.startsWith('@')?SLOT[k]:(shown.includes(k)?sectionHtml(k):'')).join('');
+    const real=ks.some(k=>!k.startsWith('@')&&shown.includes(k));return{g,body,real};});
+  const multi=groups.filter(x=>x.real).length>1;
+  return groups.map(({g,body,real})=>`<div class="sgrp" data-grp="${g.id}" ${!real&&!body.includes('id="r')?'hidden':''}>${multi&&real?`<div class="sgh">${esc(g.l)}</div>`:''}${body}</div>`).join('');
+}
 function renderReport(){
-  if(!R||!me)return;renderBanner();renderToday();renderTasksBlock();renderIncoming();renderDue();
+  if(!R||!me)return;renderBanner();
   R.kind=CALC.kind(R.date,CAL,meUid);renderKind();
   const secs=mySections();const shown=secsFor(secs,R.kind,{date:R.date,uid:meUid});
   const f=x=>x?`${fmtD(x)}(${dayName(x)})`:'없음';
-  $('#rSections').innerHTML=shown.length?shown.map(k=>sectionHtml(k)).join(''):(hasDS(secs)?`<div class="panel empty">오늘은 디자인 업무보고일이 아니에요.<br>이번 주 보고일: ${f(CALC.weekFirst(R.date,CAL,meUid))} · ${f(CALC.weekLast(R.date,CAL,meUid))}<br><span class="note">지시받은 업무 진행상황은 위에 적어 전송할 수 있어요.</span></div>`:'<div class="panel empty">작성할 양식 항목이 없어요.</div>');
+  $('#rSections').innerHTML=shown.length?layoutHtml(shown):(hasDS(secs)?`<div class="panel empty">오늘은 디자인 업무보고일이 아니에요.<br>이번 주 보고일: ${f(CALC.weekFirst(R.date,CAL,meUid))} · ${f(CALC.weekLast(R.date,CAL,meUid))}<br><span class="note">지시받은 업무 진행상황은 아래에 적어 전송할 수 있어요.</span></div><div id="rToday"></div><div id="rTasks"></div><div id="rIncoming"></div>`:'<div id="rToday"></div><div id="rTasks"></div><div id="rIncoming"></div><div class="panel empty">작성할 양식 항목이 없어요.</div>');
+  renderToday();renderTasksBlock();renderIncoming();renderDue();
   const later=secs.filter(k=>!SCHEMA[k]&&k!=='cs.tasks');
   $('#rLater').hidden=!later.length;
   $('#rLater').innerHTML=later.length?`<h2>준비 중인 항목</h2><p class="note" style="margin:0">${later.map(k=>esc(ITEM[k].label)).join(' · ')}</p>`:'';
@@ -1401,6 +1436,8 @@ function secState(id){
   if(id==='sec-incoming'){const l=Object.values(R.data.incoming||{});const n=l.filter(v=>v.ok).length;return{t:`${n}/${$$('#rIncoming .row').length} 확인`,c:''};}
   const dk=id.slice(4);const key=KD(dk);const S=SCHEMA[key];if(!S)return{t:'',c:''};const d=R.data[dk];const rv=R.review?.[dk];
   if(rv?.state==='revise')return{t:'보완 요청',c:'bad'};
+  const tf=(S.fields||[]).filter(f=>f[1]==='tcheck');
+  if(tf.length){const n=tf.filter(f=>d?.[f[0]]).length;const extra=hasVal(Object.fromEntries(Object.entries(d||{}).filter(([k])=>!tf.some(f=>f[0]===k))));return{t:`확인 ${n}/${tf.length}${extra?' · 작성':''}`,c:n===tf.length?'ok':n?'acc':''};}
   if(S.type==='channels'){const n=CHS.filter(([c])=>d?.[c]?.done).length;return{t:`${n}/${CHS.length} 완료`,c:n===CHS.length?'ok':'acc'};}
   if(S.type==='dplan'){const n=DSP.items(myPlan,S.bucket,R.date).length;return{t:`${n}건`,c:''};}
   if(S.type==='dresult'){const its=DSP.items(myPlan,'this',R.date);const n=its.filter(it=>d?.items?.[it.id]?.st).length;return{t:`${n}/${its.length} 선택`,c:n===its.length?'ok':'acc'};}
@@ -1420,16 +1457,19 @@ function applyFold(){
 }
 function renderIndex(){
   const box=$('#rIndex');if(!box||!R)return;
-  const secs=$$('#rForm .rsec').filter(s=>s.id&&s.id!=='sec-agenda');
-  if(secs.length<3){box.innerHTML='';return;}
-  box.innerHTML=`<div class="panel rindex"><div class="btnrow" style="justify-content:space-between;margin-bottom:8px"><b>오늘 업무 한눈에 보기 <span class="note">누르면 해당 업무가 펼쳐져요</span></b><div class="btnrow"><button type="button" class="linkbtn" data-foldall="1">모두 펼치기</button><button type="button" class="linkbtn" data-foldall="0">모두 접기</button></div></div>
-    <div class="ixgrid">${secs.map(s=>{const st=secState(s.id);const lab=SEC_L[s.id]||ITEM[KD(s.id.slice(4))]?.label||s.querySelector('.rh b')?.textContent||'';return `<button type="button" class="ix ${st.c||''} ${s.classList.contains('flag')?'bad':''}" data-goto="${esc(s.id)}"><span>${esc(lab)}</span><b>${esc(st.t)}</b></button>`;}).join('')}</div></div>`;
+  const grps=$$('#rSections .sgrp').filter(g=>!g.hidden);
+  const item=sec=>{const st=secState(sec.id);const lab=SEC_L[sec.id]||ITEM[KD(sec.id.slice(4))]?.label||sec.querySelector('.rh b')?.textContent||'';return `<button type="button" class="ix ${st.c||''} ${sec.classList.contains('flag')?'bad':''}" data-goto="${esc(sec.id)}"><span>${esc(lab)}</span><b>${esc(st.t)}</b></button>`;};
+  const inqOpen=typeof INQ!=='undefined'&&$('#rInq')?.innerHTML?INQ.filter(x=>x.status!=='done').length:null;
+  let h=inqOpen!=null?`<button type="button" class="ix ${inqOpen?'bad':'ok'}" data-goto="rInq"><span>CS 문의건</span><b>${inqOpen?`미처리 ${inqOpen}`:'완료'}</b></button>`:'';
+  if(grps.length)h+=grps.map(g=>{const ss=$$('.rsec',g).filter(x=>x.id&&x.id!=='sec-agenda');if(!ss.length)return '';const t=g.querySelector('.sgh')?.textContent||'';return `${t?`<div class="ixh">${esc(t)}</div>`:''}${ss.map(item).join('')}`;}).join('');
+  else h+=$$('#rForm .rsec').filter(x=>x.id&&x.id!=='sec-agenda').map(item).join('');
+  box.innerHTML=`<div class="panel rindex"><div class="btnrow" style="justify-content:space-between;margin-bottom:8px"><b>오늘 업무 한눈에 보기</b><div class="btnrow"><button type="button" class="linkbtn" data-foldall="1">모두 펼치기</button><button type="button" class="linkbtn" data-foldall="0">모두 접기</button></div></div><div class="ixgrid">${h}</div><p class="note" style="margin:8px 0 0">누르면 해당 업무로 이동해서 펼쳐져요</p></div>`;
 }
 let ixT=null;function refreshIndexSoon(){clearTimeout(ixT);ixT=setTimeout(()=>{if(!R)return;$$('#rForm .rsec').forEach(sec=>{const el=sec.querySelector(':scope>.rh .secst');if(!el)return;const st=secState(sec.id);el.className='secst tag '+(st.c||'');el.textContent=st.t;el.hidden=!st.t;});renderIndex();},500);}
 document.addEventListener('click',e=>{
   const rh=e.target.closest('#rForm .rsec>.rh[data-fold]');
   if(rh&&!e.target.closest('input,button,a,label,select,textarea')){const id=rh.dataset.fold;const sec=$('#'+id);const open=sec.classList.contains('fold');if(open)openSecs.add(id);else openSecs.delete(id);saveFold();sec.classList.toggle('fold',!open);rh.setAttribute('aria-expanded',String(open));return;}
-  const g=e.target.closest('[data-goto]');if(g){const id=g.dataset.goto;openSecs.add(id);saveFold();const sec=$('#'+id);if(sec){sec.classList.remove('fold');sec.scrollIntoView({behavior:'smooth',block:'start'});}return;}
+  const g=e.target.closest('[data-goto]');if(g){const id=g.dataset.goto;if(id==='rInq'){if(INQV.rInq.fold){INQV.rInq.fold=false;renderInq('rInq');}$('#rInq').scrollIntoView({behavior:'smooth',block:'start'});return;}openSecs.add(id);saveFold();const sec=$('#'+id);if(sec){sec.classList.remove('fold');sec.scrollIntoView({behavior:'smooth',block:'start'});}return;}
   const fa=e.target.closest('[data-foldall]');if(fa){const on=fa.dataset.foldall==='1';$$('#rForm .rsec').forEach(s=>{if(!s.id||s.id==='sec-agenda')return;if(on)openSecs.add(s.id);else openSecs.delete(s.id);});saveFold();applyFold();}
 });
 document.addEventListener('keydown',e=>{const rh=e.target.closest?.('#rForm .rsec>.rh[data-fold]');if(rh&&e.target===rh&&(e.key==='Enter'||e.key===' ')){e.preventDefault();rh.click();}});
@@ -1440,6 +1480,7 @@ function fieldHtml(path,f,val){
   const lab=`${esc(label)}${o.required?' <span class="req-star">*</span>':''}`;
   const wrapIf=o.showIf?` data-showif="${esc(path.split('|').slice(0,-1).concat(o.showIf[0]).join('|'))}" data-showval="${esc(String(o.showIf[1]))}"`:'';
   switch(type){
+    case 'tcheck':{const lock=tLocked(o.from);return `<label class="opt tchk ${val?'on':''}"${wrapIf}><input type="checkbox" data-p="${p}" data-tcheck="${esc(o.from||'')}" ${val?'checked':''} ${!val&&lock?'disabled':''}><span>${lab}<small>${val?`✓ ${esc(val)} 확인`:lock?`${esc(o.from)}부터 체크할 수 있어요`:'확인하면 체크 · 시각이 기록돼요'}</small></span></label>`;}
     case 'check':return `<label class="opt"${wrapIf}><input type="checkbox" data-p="${p}" ${val?'checked':''}><span>${lab}</span></label>`;
     case 'textarea':return `<div class="field"${wrapIf}><label for="${id}">${lab}</label><textarea id="${id}" data-p="${p}" placeholder="${esc(ph||'')}">${esc(val)}</textarea></div>`;
     case 'radio':return `<div class="field"${wrapIf}><span class="lb">${lab}</span><div class="choice">${o.opts.map(([v,l])=>`<label><input type="radio" name="${p}" value="${esc(v)}" data-p="${p}" ${val===v?'checked':''}>${esc(l)}</label>`).join('')}</div></div>`;
@@ -1468,6 +1509,9 @@ function rowsHtml(dk,list,rows){
     +`<button type="button" class="add" data-addrow="${dk}|rows">+ ${esc(list.label)} 추가</button>`;
 }
 const won=n=>Math.round(+n||0).toLocaleString('ko-KR')+'원';
+// 시각 확인 체크: 오늘 보고서에서만 정해진 시각 전에는 막음
+function tLocked(from){if(!from||!R||R.date!==today())return false;const t=new Date();return `${pad(t.getHours())}:${pad(t.getMinutes())}`<from;}
+setInterval(()=>{$$('#rForm [data-tcheck]').forEach(el=>{if(el.checked)return;const lock=tLocked(el.dataset.tcheck);if(el.disabled!==lock&&editable()){el.disabled=lock;const sm=el.closest('.tchk')?.querySelector('small');if(sm)sm.textContent=lock?`${el.dataset.tcheck}부터 체크할 수 있어요`:'확인하면 체크 · 시각이 기록돼요';}});},30000);
 const fmtH=h=>{const m=Math.round((+h||0)*60);return `${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`;};
 // 표 형식 목록 (한 줄에 한 건)
 function cellHtml(path,f,val){
@@ -1667,6 +1711,7 @@ function onField(e){
   const el=e.target;const p=el.dataset.p;if(!p||!editable())return;
   let v;
   if(el.dataset.dh){const box=el.closest('.dh');const d=box.querySelector('[data-dh=d]').value,h=box.querySelector('[data-dh=h]').value;v=d?`${d}T${h||'09'}:00`:'';}
+  else if(el.dataset.tcheck!=null){const t=new Date();v=el.checked?`${pad(t.getHours())}:${pad(t.getMinutes())}`:'';const lb=el.closest('.tchk');if(lb){lb.classList.toggle('on',!!v);const sm=lb.querySelector('small');if(sm)sm.textContent=v?`✓ ${v} 확인`:'확인하면 체크 · 시각이 기록돼요';}}
   else if(el.type==='checkbox')v=el.checked;else v=el.value;
   const ps=p.split('|');setP(R.data,ps,v);
   if(el.type==='radio'||el.type==='checkbox')applyShowIf();
@@ -1785,7 +1830,7 @@ function paintCh(c){const el=$('#ch-'+c);if(!el)return;const ch=CHS.find(x=>x[0]
 let INQ=[],inqUnsub=null;const INQV={rInq:{batch:'',i:0},aInq:{batch:'',i:0}};const inqFull={};const inqDirty={};
 function watchInq(){
   if(inqUnsub)return;
-  inqUnsub=onSnapshot(query(collection(db,'csinq'),orderBy('createdAt','desc'),limit(400)),q=>{INQ=q.docs.map(x=>({...x.data(),id:x.id}));['rInq','aInq'].forEach(paintInq);},e=>{const m=authMsg(e);['rInq','aInq'].forEach(b=>{const el=$('#'+b);if(el&&!el.hidden&&el.offsetParent)el.innerHTML=`<div class="panel"><p class="note" style="margin:0">CS 문의건을 불러오지 못했어요: ${esc(m)} (보안 규칙을 확인해주세요)</p></div>`;});});
+  inqUnsub=onSnapshot(query(collection(db,'csinq'),orderBy('createdAt','desc'),limit(400)),q=>{INQ=q.docs.map(x=>({...x.data(),id:x.id}));['rInq','aInq'].forEach(paintInq);if(R)renderIndex();},e=>{const m=authMsg(e);['rInq','aInq'].forEach(b=>{const el=$('#'+b);if(el&&!el.hidden&&el.offsetParent)el.innerHTML=`<div class="panel"><p class="note" style="margin:0">CS 문의건을 불러오지 못했어요: ${esc(m)} (보안 규칙을 확인해주세요)</p></div>`;});});
   unsubs.push(()=>{try{inqUnsub();}catch(e){}inqUnsub=null;INQ=[];});
 }
 function paintInq(boxId){const box=$('#'+boxId);if(!box)return;
@@ -2208,7 +2253,7 @@ function taskLog(t,group){
   return log.length?`<div class="log">${log.map(e=>`<div class="e ${esc(e.kind)}"><div class="h"><b>${esc(LOG_L[e.kind]||'')}</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}${(e.imgs||[]).length?`<div class="gthumbs">${e.imgs.map(im=>galThumb(t.uid,im,t.title,group||('t-'+t.id))).join('')}</div>`:''}</div>`).join('')}</div>`:'';
 }
 function renderTasksBlock(){
-  if(!R)return;
+  if(!R||!$('#rTasks'))return;
   const started=t=>!t.startAt||t.startAt.slice(0,10)<=R.date;
   const open=myTasks.filter(t=>t.status!=='done'&&started(t)).sort(sortTasks);
   const upcoming=myTasks.filter(t=>t.status!=='done'&&!started(t)).length;
@@ -2227,7 +2272,7 @@ const qtyNum=v=>{const m=String(v??'').replace(/,/g,'').match(/\d+(\.\d+)?/);ret
 function inCompare(ordQty,inQty){const a=qtyNum(ordQty),b=qtyNum(inQty);if(a==null||b==null||inQty==='')return{t:'',c:''};return a===b?{t:'수량 일치',c:'ok'}:b<a?{t:`${a-b} 부족`,c:'bad'}:{t:`${b-a} 초과`,c:'acc'};}
 const IN_ST=[['ok','정상'],['short','수량 부족'],['bad','파손·불량'],['late','미입고 (지연)']];
 function renderIncoming(){
-  if(!R)return;const rp=R.data.incoming||{};
+  if(!R||!$('#rIncoming'))return;const rp=R.data.incoming||{};
   const due=myPurch.filter(p=>p.eta&&p.eta<=R.date&&(!p.received||p.receivedDate===R.date||rp[p.id])).sort((a,b)=>(a.eta||'').localeCompare(b.eta||''));
   if(!due.length){$('#rIncoming').innerHTML='';return;}
   $('#rIncoming').innerHTML=`<section class="rsec" id="sec-incoming"><div class="rh"><b>입고 내역</b><span class="note">발주내역의 예상입고일이 된 품목이에요. 입고 수량과 정리 사진을 올리면 발주 수량과 비교해요</span></div>${
@@ -2257,6 +2302,8 @@ ${none.map(x=>x.title).join(', ')}
 
 그래도 전송할까요? (고르지 않은 업무는 다음 주로 넘어가요)`,'그래도 전송'))){$('#sec-ds_result')?.scrollIntoView({behavior:'smooth',block:'center'});return;}}
   if(miss.length){toast(`필수 항목이 비어 있어요: ${miss.join(', ')}`);$('#sec-'+firstMiss)?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const tmiss=[];for(const k of secs){const S=SCHEMA[k];if(S.type!=='group')continue;S.fields.filter(f=>f[1]==='tcheck').forEach(f=>{if(!R.data[DK(k)]?.[f[0]])tmiss.push(`${ITEM[k].label} · ${f[2]}`);});}
+  if(tmiss.length&&!(await ask(`확인 체크가 빠졌어요:\n${tmiss.join('\n')}\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-'+DK(secs.find(k=>tmiss.some(t=>t.startsWith(ITEM[k].label)))))?.scrollIntoView({behavior:'smooth',block:'center'});return;}
   if(secs.includes('cs.order')){
     const notDone=CHS.filter(([c])=>!R.data.cs_order?.[c]?.done).map(x=>x[1]);
     if(notDone.length&&!(await ask(`주문접수 완료가 체크되지 않은 채널이 있어요:\n${notDone.join(', ')}\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_order')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
@@ -2757,6 +2804,7 @@ function renderRepTab(subR){
 function valText(f,v){
   const[k,type,label,ph,o={}]=f;
   if(type==='check')return v?'예':'';
+  if(type==='tcheck')return v?`✓ ${v}`:'미확인';
   if(type==='radio'||type==='select')return (o.opts.find(x=>x[0]===v)||[])[1]||'';
   if(type==='datehour')return fmtDH(v);
   if(type==='date')return fmtD(v);
