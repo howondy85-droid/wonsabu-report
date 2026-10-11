@@ -6,7 +6,11 @@
 <meta name="theme-color" content="#191512">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="원사부 업무보고">
+<meta name="apple-mobile-web-app-title" content="원사부 업무">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="theme-color" content="#191512">
 <title>원사부 업무보고</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -449,7 +453,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-20</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-21</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -467,6 +471,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <button data-tab="data" aria-pressed="false">데이터 관리</button>
     <button data-tab="ops" aria-pressed="false">운영 점검<span class="dot" id="opsDot" hidden></span></button>
   </div>
+  <button class="ghost" id="installBtn" hidden>앱 설치</button>
   <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
 </header>
 <div class="toast" id="toast" role="status"></div>
@@ -3098,7 +3103,7 @@ const HELP={
   '<b>조회 탭</b> — 화면 위 알바급여·원재료·계산서 탭에서 정리된 결과를 볼 수 있어요. 계산서 기한은 작성월 다음 달 10일이에요.',
   '<b>내 정보</b> — 아이디와 비밀번호를 바꿀 수 있어요. 비밀번호를 잊으면 대표님께 말씀해주세요.',
   '<b>업무 연계</b> — 다른 직원에게 이어질 업무는 "업무 연계 → + 연계 보내기"(또는 진행중 업무의 "이 업무 연계 보내기")로 보내요. 대표님이 승인하면 그 직원의 업무로 넘어가요. 받을 연계는 넘어오기 전부터 "받을 연계"에서 내용·일정을 볼 수 있어요.',
-  '<b>휴대폰</b> — 브라우저 메뉴에서 "홈 화면에 추가"를 하면 앱처럼 열 수 있어요.']},
+  '<b>앱으로 설치</b> — 화면 위 "앱 설치"를 누르면 PC·안드로이드에 아이콘이 생겨요. 아이폰은 사파리 아래 공유 버튼 → "홈 화면에 추가"를 눌러요. 설치해도 업데이트는 자동이에요.']},
  ds:{t:'디자인 직원 사용 안내',items:[
   '<b>보고는 월·금</b> — 월요일과 금요일에만 보고서가 열려요. 휴무면 자동으로 앞뒤 근무일로 옮겨져요.',
   '<b>월요일: 이번주 업무 확인</b> — "이번주 업무를 확인했어요"를 체크하면 일반 업무는 진행중 업무로, 채널 업무는 각 채널 항목으로, 마감이 다음 주 이후인 업무는 차주로 옮겨져요.',
@@ -3108,7 +3113,7 @@ const HELP={
   '<b>릴스 기획안</b> — 수요일에 올라온 기획안에서 A/B 중 하나를 고르고, 대표님 보완 요청에 답장해요. 화·목 업로드 후 금요일 보고에 제작 완료와 링크를 적어요.',
   '<b>업무 연계</b> — 다른 직원에게 이어질 업무는 "업무 연계 → + 연계 보내기"로 보내요. 대표님 승인 후 넘어가요. 대표님이 지정한 연계는 내 업무가 끝나면 "연계하기"를 눌러주세요.',
   '<b>내 정보</b> — 아이디와 비밀번호를 바꿀 수 있어요.',
-  '<b>휴대폰</b> — 브라우저 메뉴에서 "홈 화면에 추가"를 하면 앱처럼 열 수 있어요.']},
+  '<b>앱으로 설치</b> — 화면 위 "앱 설치"를 누르면 PC·안드로이드에 아이콘이 생겨요. 아이폰은 사파리 아래 공유 버튼 → "홈 화면에 추가"를 눌러요. 설치해도 업데이트는 자동이에요.']},
  admin:{t:'대표님용 사용 안내',items:[
   '<b>매일 아침</b> — 홈에서 전일·오늘·내일 요약을 보고, 업무보고 탭에서 항목마다 확인/보완 요청을 누른 뒤 승인 또는 보류해요.',
   '<b>업무 지시</b> — 업무 지시 탭에서 사진·파일과 함께 지시해요. 디자인은 디자인 업무판에서 이번주·차주·대기와 채널을 정해 넣어요.',
@@ -3119,6 +3124,7 @@ const HELP={
   '<b>계산서</b> — 기한(익월 10일) 5일 전부터 홈과 계산서 탭에 알림이 떠요.',
   '<b>한 달에 한 번</b> — 운영 점검 탭에서 엑셀 백업을 내려받아요. 사진 원본은 데이터 관리 탭의 자동 정리 설정에 따라 지워져요(클레임 증빙은 보관).',
   '<b>직원 비밀번호 분실</b> — Firebase 콘솔 → Authentication에서 해당 계정의 비밀번호를 재설정하거나, 계정을 지우고 다시 가입하게 해요.',
+  '<b>앱 설치</b> — 화면 위 "앱 설치"로 대표님 PC·휴대폰에도 설치할 수 있어요. 새 버전을 올리면 설치한 앱도 다음에 열 때 자동으로 바뀌어요.',
   '<b>새 버전 받으면</b> — GitHub에 index.html을 올리고 Ctrl+Shift+R로 새로고침해요. firestore.rules가 바뀐 버전이면 Firebase 콘솔 → Firestore → 규칙에도 게시해요.']}
 };
 function openHelp(k){const keys=isAdminUser?['admin','cs','ds']:[me?.part==='디자인'?'ds':'cs'];if(!keys.includes(k))k=keys[0];
@@ -3139,7 +3145,7 @@ const OPS_MANUAL=[
  ['domain','Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 GitHub Pages 주소가 있어요'],
  ['admin','관리자 계정(wonsabu)으로 로그인해서 이 화면이 보여요'],
  ['staffjoin','직원에게 사이트 주소를 보내고, 가입 → 승인 → 첫 보고 전송까지 한 번 해봤어요'],
- ['phone','직원 휴대폰에서 사이트를 열어 "홈 화면에 추가"를 했어요'],
+ ['phone','직원 PC·휴대폰에 "앱 설치"를 했어요 (아이폰은 사파리 → 홈 화면에 추가)'],
  ['photo','데이터 관리 탭에서 사진 원본 자동 정리 방식을 정했어요'],
  ['budget','Firebase 콘솔 → 사용량 및 결제에서 무료 한도(Spark 요금제)를 확인했어요']];
 function opsItems(){
@@ -3236,6 +3242,23 @@ async function bkRun(kind){
 }
 $('#bkXlsx').onclick=()=>bkRun('xlsx');$('#bkJson').onclick=()=>bkRun('json');
 
+
+
+/* ---------- 설치형 앱 (PWA) ---------- */
+let installEvt=null;
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function showInstall(){$('#installBtn').hidden=isStandalone()||!(installEvt||isIOS());}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;showInstall();});
+window.addEventListener('appinstalled',()=>{installEvt=null;showInstall();toast('앱을 설치했어요. 바탕화면·홈 화면의 원사부 아이콘으로 열 수 있어요');});
+$('#installBtn').onclick=async()=>{
+  if(installEvt){installEvt.prompt();try{await installEvt.userChoice;}catch(e){}installEvt=null;showInstall();return;}
+  if(isIOS())popup('아이폰·아이패드에 설치하기','① 사파리로 이 사이트를 열고 ② 아래(아이패드는 위) 공유 버튼을 누른 뒤 ③ "홈 화면에 추가" → "추가"를 누르세요. 크롬·네이버 앱에서는 설치가 안 돼요.');
+};
+showInstall();
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.update().catch(()=>{});}).catch(()=>{});});}
+function netBanner(){let b=document.getElementById('netOff');if(navigator.onLine){if(b)b.remove();return;}if(!b){b=document.createElement('div');b.id='netOff';b.className='banner';b.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:90;background:var(--bad);color:#fff;border:0;justify-content:center';b.textContent='인터넷 연결이 끊겼어요. 다시 연결될 때까지 창을 닫지 말아주세요 (입력 내용은 연결되면 저장돼요).';document.body.appendChild(b);}}
+window.addEventListener('online',netBanner);window.addEventListener('offline',netBanner);netBanner();
 
 /* ===================== 실시간 모니터링 ===================== */
 let PRES={},liveSel='';

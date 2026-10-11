@@ -1,0 +1,170 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    // 관리자: 콘솔에서 만든 wonsabu 계정 하나
+    function isAdmin() { return signedIn() && request.auth.token.email == 'wonsabu@wonsabu-report.app'; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function isApproved(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.status == 'approved';
+    }
+    function activeSelf(uid) { return isSelf(uid) && isApproved(uid); }
+
+    match /users/{uid} {
+      // 본인과 관리자만 읽기
+      allow read: if isAdmin() || isSelf(uid);
+      // 가입: 본인 문서를 '승인대기' 상태로만 만들 수 있음
+      // 관리자는 직원을 직접 등록할 수 있음
+      allow create: if isAdmin() || isSelf(uid)
+        && request.resource.data.keys().hasOnly(['name', 'loginId', 'status', 'createdAt'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 20;
+      // 승인·파트·양식 변경·중지는 관리자만 · 직원은 자기 아이디(loginId)만 바꿀 수 있음
+      allow update: if isAdmin()
+        || (isSelf(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['loginId', 'authEmail', 'loginIdAt']));
+      allow delete: if isAdmin();
+
+      // 사진 원본·썸네일
+      match /images/{id} { allow read, write: if isAdmin() || activeSelf(uid); }
+      match /thumbs/{id} { allow read, write: if isAdmin() || activeSelf(uid); }
+
+      // 첨부 파일 (엑셀·CSV)
+      match /files/{id} { allow read, write: if isAdmin() || activeSelf(uid); }
+
+      // 발주내역 (입고확인용)
+      match /purchases/{id} { allow read, write: if isAdmin() || activeSelf(uid); }
+
+      // 자동 일정 (보고서 글 속 날짜에서 생성)
+      match /agenda/{id} { allow read, write: if isAdmin() || activeSelf(uid); }
+
+      // 계산서 (국세청 엑셀 정리 · 대금지급 체크)
+      match /invoices/{id} { allow read, write: if isAdmin() || activeSelf(uid); }
+
+      // 디자인 업무판: 관리자가 만들고, 직원은 확인(진행중·채널 업무·차주 이동)·진행상황·완료 결과만 반영
+      match /dplan/{id} {
+        allow read: if isAdmin() || activeSelf(uid);
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin()
+          || (activeSelf(uid)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'note', 'reportDate', 'updatedAt', 'week', 'log', 'chAck']));
+      }
+
+      // 업무 지시: 관리자가 만들고, 직원은 진행상황 전송만 가능
+      match /tasks/{tid} {
+        allow read: if isAdmin() || activeSelf(uid);
+        // 직원은 자기에게 도착한 연계 업무(lk_연계ID)만 직접 만들 수 있음
+        allow create: if isAdmin()
+          || (activeSelf(uid)
+              && tid == 'lk_' + request.resource.data.linkId
+              && request.resource.data.status == 'todo'
+              && get(/databases/$(database)/documents/links/$(request.resource.data.linkId)).data.to.uid == uid
+              && get(/databases/$(database)/documents/links/$(request.resource.data.linkId)).data.status == 'handed');
+        allow delete: if isAdmin();
+        allow update: if isAdmin()
+          || (activeSelf(uid)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['log', 'status', 'updatedAt'])
+              && request.resource.data.status == 'submitted');
+      }
+
+      // 일일 업무보고 (문서 id = 날짜)
+      // 직원: 작성중(draft)·보류(hold) 상태에서만 수정 가능, 전송(submitted)까지만 가능
+      // 검토(review)·승인은 관리자만
+      match /reports/{rid} {
+        allow read: if isAdmin() || activeSelf(uid);
+        allow create: if isAdmin()
+          || (activeSelf(uid)
+              && request.resource.data.status in ['draft', 'submitted']
+              && !('review' in request.resource.data));
+        allow update: if isAdmin()
+          || (activeSelf(uid)
+              && resource.data.status in ['draft', 'hold']
+              && request.resource.data.status in ['draft', 'hold', 'submitted']
+              && request.resource.data.get('review', null) == resource.data.get('review', null)
+              && request.resource.data.get('reviewNote', null) == resource.data.get('reviewNote', null));
+        allow delete: if isAdmin();
+      }
+    }
+
+    // 휴무일·연차 (보고일 계산용): 로그인한 사람은 읽기, 관리자만 수정
+    match /config/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // CS 문의건 (주말·업무시간 외 문의 캡쳐): 대표님과 CS 파트 직원이 함께 보고 고침
+    function meDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isCS() { return signedIn() && meDoc().status == 'approved' && meDoc().part == 'CS'; }
+    match /csinq/{id} {
+      allow read, create, update: if isAdmin() || isCS();
+      allow delete: if isAdmin() || (isCS() && resource.data.by.uid == request.auth.uid);
+    }
+    match /csinqImg/{id} {
+      allow read, create, delete: if isAdmin() || isCS();
+    }
+
+    // 릴스 기획안: 대표님이 올리고, 디자인 파트가 주제 선택·답장·제작 완료만 반영
+    function isDS() { return signedIn() && meDoc().status == 'approved' && meDoc().part == '디자인'; }
+    match /reels/{id} {
+      allow read: if isAdmin() || isDS();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isDS() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['choice', 'chosenBy', 'chosenAt', 'status', 'thread', 'prod', 'updatedAt']));
+    }
+    match /reelFile/{id} {
+      allow read: if isAdmin() || isDS();
+      allow write: if isAdmin();
+    }
+
+    // 아이디 → 로그인 계정 연결표 (아이디 변경용). 로그인 전에 읽어야 해서 읽기는 열어둠 (비밀번호는 없음)
+    match /logins/{id} {
+      allow read: if true;
+      allow create: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.email == request.auth.token.email);
+      allow update: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid && request.resource.data.email == request.auth.token.email);
+      allow delete: if isAdmin();
+    }
+
+    // 원재료 월별 납품가: 직원은 지난달 목록 불러오기용으로 읽기만, 저장은 관리자(승인 시)만
+    match /prices/{month} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // 업무 연계: 보내는 직원·받는 직원·관리자만 봄
+    // 직원 요청은 '승인 대기'로만 만들 수 있고, 승인·보완·보류·거절은 관리자만
+    match /links/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && (resource.data.from.uid == request.auth.uid || resource.data.to.uid == request.auth.uid));
+      allow create: if isAdmin()
+        || (signedIn() && isApproved(request.auth.uid)
+            && request.resource.data.from.uid == request.auth.uid
+            && request.resource.data.status == 'request'
+            && request.resource.data.mode == 'staff');
+      allow update: if isAdmin()
+        // 보내는 직원: 대표 지정 연계 넘기기 / 보완 후 다시 요청 / 요청 취소
+        || (signedIn() && resource.data.from.uid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'desc', 'start', 'due', 'status', 'thread', 'updatedAt', 'handedAt'])
+            && ((resource.data.status == 'wait' && request.resource.data.status == 'handed')
+                || (resource.data.status == 'revise' && request.resource.data.status == 'request')
+                || (resource.data.status in ['request', 'hold', 'revise'] && request.resource.data.status == 'canceled')))
+        // 받는 직원: 도착한 연계를 내 업무로 받기
+        || (signedIn() && resource.data.to.uid == request.auth.uid
+            && resource.data.status == 'handed' && request.resource.data.status == 'active'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'toTask', 'updatedAt', 'thread']));
+      allow delete: if isAdmin();
+    }
+
+    // 접속 상태 (실시간 모니터링): 직원은 자기 것만 쓰고, 관리자만 봄
+    match /presence/{uid} {
+      allow read: if isAdmin();
+      allow write: if isSelf(uid);
+    }
+
+    // 그 외 모든 경로는 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
