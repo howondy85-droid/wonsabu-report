@@ -371,6 +371,9 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .rindex{position:relative}
 .ixgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .ixgrid .ixh{grid-column:1/-1}
+.pocr{border:1px dashed var(--cs);border-radius:10px;padding:10px 12px;margin-bottom:12px;background:var(--sunk)}
+.pocr table input{width:100%;min-width:60px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font:inherit}
+.pocr td.ck{width:28px}.pocr .raw{white-space:pre-wrap;font-size:12px;max-height:160px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin:6px 0 0}
 .livedot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:4px;vertical-align:middle}.livedot.on{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
 .livebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-radius:10px;background:var(--sunk);border:1px solid var(--line);margin-bottom:12px}
 .livebox .vsec.livecur{outline:2px solid var(--accent);outline-offset:4px;border-radius:6px}
@@ -453,7 +456,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-21</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-22</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -869,7 +872,7 @@ const LIB=[
   ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
   ['cs.bulk','대량주문 문의','일시·내용·견적서'],['cs.claim','클레임 발생내역','캡쳐 필수'],
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
-  ['cs.purchase','발주내역','품목·수량·예상입고일'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 6개 채널 캡쳐 17:25 이후']]},
+  ['cs.purchase','발주내역','품목·수량·금액·예상입고일 · 캡쳐 자동 인식'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 6개 채널 캡쳐 17:25 이후']]},
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
   ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 발송처리 내역','한진 송장 × 네이버 주문 대조 (토요일 출고분)'],
   ['cs.supplies','부자재 체크','발주 여부'],
@@ -897,7 +900,7 @@ const SCHEMA={
  'cs.bulk':{type:'list',label:'문의',hint:'회사·관공서·단체 문의 (유선 포함). 없으면 비워두세요',fields:[['at','datehour','문의일시'],['talk','text','톡톡 아이디'],['phone','tel','유선문의 번호'],['content','textarea','문의내용'],['imgs','imgs','견적서 (사진·캡쳐)']]},
  'cs.claim':{type:'list',label:'클레임',hint:'문의·리뷰·톡·전화 / 오해로 인한 건 제외 / 캡쳐 필수',fields:[['who','text','아이디 또는 주문자명'],['at','datehour','발생일시'],['phone','tel','유선문의 번호'],['content','textarea','클레임 내용'],['action','textarea','처리 & 대응 내용'],['imgs','imgs','캡쳐','',{required:true}]]},
  'cs.consult':{type:'list',table:true,label:'상담',hint:CONSULT_DONE,fields:[['ch','select','채널','',{opts:[['talktalk','네이버 톡톡'],['kakao','카카오채널'],['insta','인스타DM']]}],['id','text','아이디'],['content','text','내용'],['state','radio','상태','',{opts:[['ing','진행중'],['done','완료']]}]]},
- 'cs.purchase':{type:'list',label:'발주',hint:'예상입고일이 되면 그날 보고서에 "입고 내역"이 자동으로 생겨요. 입고 수량과 정리 사진을 올려 발주 내역과 비교해요',fields:[['item','text','발주 품목'],['qty','text','수량'],['eta','date','예상입고일'],['imgs','imgs','발주 캡쳐']]},
+ 'cs.purchase':{type:'list',label:'발주',hint:'발주 캡쳐를 올리면 품목·수량·금액을 읽어 채워줘요. 예상입고일이 되면 그날 보고서에 "입고 내역"이 자동으로 생겨요',fields:[['item','text','발주 품목'],['qty','text','수량'],['price','num','금액 (원)'],['eta','date','예상입고일'],['imgs','imgs','발주 캡쳐']]},
  'cs.notes':{type:'group',fields:[['text','textarea','공유할 내용']]},
  'cs.adcharge':{type:'group',hint:'출근하자마자 · 퇴근 전 광고비 잔액을 확인하고 체크하세요. 충전한 날만 금액·캡쳐를 넣어요',fields:[['chkAm','tcheck','출근 후 잔액 확인','',{from:''}],['chkPm','tcheck','퇴근 전 잔액 확인','',{from:'17:00'}],['amount','text','충전금액 (충전한 날만)'],['imgs','imgs','충전화면 캡쳐']]},
  // ----- 주간 -----
@@ -1052,6 +1055,67 @@ const DSP={
   items(list,b,base){return (list||[]).filter(it=>DSP.bucket(it,base)===b).map(it=>({...it,carried:!!it.week&&it.week<CALC.mon(base)})).sort((a,b2)=>(b2.carried-a.carried)||(a.due||'9').localeCompare(b2.due||'9')||(a.createdAt||'').localeCompare(b2.createdAt||''));}
 };
 /*DSP-LOGIC-END*/
+/*PO-LOGIC-START*/
+// 발주 캡쳐 글자 → 품목·수량·금액 (순수 함수)
+const PO={
+  SKIP:/(합\s*계|총\s*(액|금액|결제|주문|상품|수량)|결제\s*(금액|수단|예정)|배송비|택배비|할인|쿠폰|적립|포인트|부가세|공급가|세액|주문\s*번호|주문\s*일|배송지|주소|연락처|전화|휴대폰|받는\s*분|수령인|계좌|입금|카드|영수증|사업자|대표자|페이지|이전|다음|장바구니|바로구매|리뷰|문의|고객센터|무료배송|도착\s*예정|배송\s*(중|완료|준비)|구매\s*확정|상품\s*정보|주문\s*상세)/,
+  HEAD:/^(품\s*목|상\s*품\s*명?|품\s*명|수\s*량|단\s*가|금\s*액|규\s*격|비\s*고|no\.?|번호)(\s|$)/i,
+  UNIT:'개|박스|box|BOX|Box|ea|EA|Ea|봉지|봉|팩|롤|장|세트|set|SET|통|병|매|묶음|타|판|포대|포|캔|줄|권|켤레|입|매입|bag|pack|PK|pk',
+  norm(s){return String(s||'').replace(/[|｜¦]/g,' ').replace(/[，]/g,',').replace(/[：]/g,':').replace(/[Ｘｘ×✕]/g,'x').replace(/\s+/g,' ').trim();},
+  num(s){const n=+String(s).replace(/[^\d]/g,'');return isFinite(n)?n:0;},
+  money(line){
+    // 12,000원 / 12000원 / ₩12,000 / 12,000 (콤마 있는 3자리 이상)
+    const out=[];let m;const re=/(₩|\\)?\s*(\d{1,3}(?:[,.]\d{3})+|\d{3,9})\s*(원)?/g;
+    while((m=re.exec(line))){const raw=m[0];const hasWon=!!m[3]||!!m[1];const hasComma=/[,.]\d{3}/.test(m[2]);const v=PO.num(m[2]);
+      // 날짜·전화번호처럼 보이는 건 제외
+      const di=m.index+raw.indexOf(m[2]),de=di+m[2].length;const after=line.slice(de,de+3),adj=line[di-1]||'';
+      if(!hasWon&&new RegExp('^\\s*(g|kg|ml|l|L|mm|cm|%|시|분|일|월|년|'+PO.UNIT+')','i').test(after))continue;
+      if(!hasWon&&(/[-/.:xX]/.test(adj)||/^[-/:xX]\d/.test(after)))continue;
+      if(hasWon&&/[-.:]/.test(adj)&&/\d/.test(line[di-2]||''))continue;
+      if(hasWon||hasComma)out.push({v,i:m.index,len:raw.length,won:hasWon});}
+    return out;},
+  qty(line){
+    const U=PO.UNIT;let m;
+    const N='(\\d{1,3}(?:,\\d{3})+|\\d{1,5})';
+    if((m=line.match(new RegExp('수\\s*량\\s*[:=]?\\s*'+N)))){const u=line.slice(m.index+m[0].length).match(new RegExp('^\\s*('+U+')'));return{q:m[1].replace(/,/g,'')+(u?.[1]||''),s:m.index,e:m.index+m[0].length+(u?u[0].length:0)};}
+    if((m=line.match(/(?:^|\s)[xX]\s*(\d{1,5})(?!\d)/)))return{q:m[1],s:m.index,e:m.index+m[0].length};
+    if((m=line.match(/(\d{1,5})\s*[xX](?:\s|$)/))&&!/\d\s*[xX]\s*\d/.test(line))return{q:m[1],s:m.index,e:m.index+m[0].length};
+    const re=new RegExp('(?<![\\d,])'+N+'\\s*('+U+')(?![a-zA-Z가-힣])','g');const all=[...line.matchAll(re)];
+    if(all.length){const a=all[all.length-1];return{q:a[1].replace(/,/g,'')+a[2],s:a.index,e:a.index+a[0].length};}
+    return null;},
+  clean(s){return s.replace(/^\s*\[[^\]]{1,8}\]\s*/,'').replace(/(^|\s)(상품명|품명|품목|상품|제품명?|옵션)\s*[:：]?\s*/g,' ').replace(/[\[\]{}<>«»"'`~^_=+*#@$;]/g,' ').replace(/\s*[-·•:]\s*$/,'').replace(/^\s*[-·•:\d.)]+\s*/,'').replace(/\s+/g,' ').trim();},
+  parse(text){
+    const lines=String(text||'').split(/\r?\n/).map(PO.norm).filter(Boolean);
+    const items=[];let total=0,pending='';
+    for(let i=0;i<lines.length;i++){
+      let L=lines[i];
+      const ms=PO.money(L);
+      if(PO.SKIP.test(L)){if(/(합\s*계|총\s*(액|금액|결제)|결제\s*금액)/.test(L)&&ms.length)total=Math.max(total,ms[ms.length-1].v);pending='';continue;}
+      if(PO.HEAD.test(L)&&!ms.length){pending='';continue;}
+      const q=PO.qty(L);
+      if(!ms.length&&!q){const t=PO.clean(L);pending=(/[가-힣a-zA-Z]{2,}/.test(t)&&t.length<=60&&!/(다|요|세요|니다|니ㄷ|[.!?~ㄷ-])$/.test(t)&&!/(사장님|안녕|요청|부탁|감사|드립|주세요|입니다)/.test(t))?t:'';continue;}
+      // 금액: 줄의 마지막 금액 (단가·금액이 같이 있으면 마지막이 합계 금액)
+      const price=ms.length?ms[ms.length-1].v:0;const unit=ms.length>1?ms[0].v:0;
+      let rest=L;const cut=[...ms.map(x=>[x.i,x.i+x.len]),...(q?[[q.s,q.e]]:[])].sort((a,b)=>b[0]-a[0]);
+      for(const[a,b] of cut)rest=rest.slice(0,a)+' '+rest.slice(b);
+      let name=PO.clean(rest.replace(/수\s*량|단\s*가|금\s*액|가\s*격|판매가/g,' ').replace(/[:|]/g,' '));
+      let unitN=0;const tm=name.match(/\s(\d{1,6})\s*원?$/);if(tm&&(ms.length||q)){unitN=+tm[1];name=name.slice(0,tm.index).trim();}
+      if(!/[가-힣a-zA-Z]{2,}/.test(name)){if(pending)name=pending;else{
+          // 앞 품목 줄의 수량·금액이 다음 줄에 나온 경우
+          const last=items[items.length-1];if(last&&!last._q&&q){last.qty=q.q;last._q=1;if(price&&!last.price)last.price=price;continue;}
+          if(last&&!last.price&&price){last.price=price;continue;}
+          continue;}}
+      pending='';
+      if(price&&price<50&&!q)continue;
+      items.push({item:name.slice(0,60),qty:q?q.q:'',price:price||'',unit:(unit&&unit!==price?unit:'')||unitN||'',_q:q?1:0});
+    }
+    // 같은 품목명 중복 합치기 (같은 캡쳐가 겹칠 때)
+    const seen=new Set();const out=items.filter(x=>{const k=x.item+'|'+x.qty+'|'+x.price;if(seen.has(k))return false;seen.add(k);return true;}).map(({_q,...x})=>x);
+    const sum=out.reduce((a,x)=>a+(+x.price||0),0);
+    return{items:out,total,sum};
+  }
+};
+/*PO-LOGIC-END*/
 const DCH=[['smartstore','스마트스토어','ds.smartstore'],['mall','자사몰','ds.mall'],['openmarket','오픈마켓','ds.openmarket'],['sns','SNS','ds.sns']];
 const DCH_L=Object.fromEntries(DCH.map(([k,l])=>[k,l]));
 const CH_OF=Object.fromEntries(DCH.map(([k,l,s])=>[s,k]));
@@ -1926,6 +1990,7 @@ function sectionHtml(key){
   if(flag&&rv.note)h+=`<div class="flagnote">대표님: ${esc(rv.note)}</div>`;
   if(key==='cs.health')h+=healthWarn(d.rows,R.date);
   if(key==='ds.sns')h+=reelReportHtml(dk,d);
+  if(key==='cs.purchase')h+=pocrHtml(d);
   if(CH_OF[key])h+=chPlanHtml(key,dk,d);
   if(key==='ds.sns'&&!d.rows&&editable()&&!reelUpFor(R.date)){const m=CALC.mon(R.date);const day=n=>{const x=new Date(m+'T00:00');x.setDate(x.getDate()+n);return CALC.ymd(x);};d.rows=[{date:day(1)},{date:day(3)}];setP(R.data,[dk],d);}
   if(key==='cs.bestreview'&&(d.rows||[]).some(r=>r.picked))h+=`<div class="banner ok" style="margin-bottom:10px"><b>선정됨</b><span>${(d.rows||[]).filter(r=>r.picked).map(r=>esc(r.who||'아이디 없음')).join(', ')} · 다음날 회신 업무로 등록됐어요</span></div>`;
@@ -2071,6 +2136,68 @@ $('#rForm').addEventListener('change',async e=>{
   const box=$(`[data-files="${CSS.escape(path)}"]`);if(box)box.innerHTML=filesInner(path,arr,box.dataset.accept);
   R.dirty=true;
   if(isShip){await PARSE[ps[0]]();rerenderSection(ps[0]);}else saveDraft();
+});
+
+
+/* ---------- 발주 캡쳐 → 품목·수량·금액 자동 인식 ---------- */
+let POCR={busy:'',caps:[]};   // caps: [{img,cands:[{item,qty,price,on}],total,sum,text,err}]
+let ocrPoW=null,ocrPoLoading=null;
+async function getOcrPo(){if(ocrPoW)return ocrPoW;
+  if(!ocrPoLoading)ocrPoLoading=(async()=>{if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js');const w=await Tesseract.createWorker('kor+eng',1);await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});return w;})().catch(e=>{ocrPoLoading=null;throw e;});
+  ocrPoW=await ocrPoLoading;return ocrPoW;}
+async function poCanvas(file){const img=await loadImg(file);const W0=img.naturalWidth,H0=img.naturalHeight;const sc=Math.min(2.5,Math.max(1,1500/W0));
+  const c=document.createElement('canvas');const W=c.width=Math.round(W0*sc),H=c.height=Math.round(H0*sc);const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,0,0,W,H);
+  const id=x.getImageData(0,0,W,H);const a=id.data;const g=new Uint8ClampedArray(W*H);let sum=0;
+  for(let i=0,j=0;j<g.length;i+=4,j++){g[j]=a[i]*.299+a[i+1]*.587+a[i+2]*.114;sum+=g[j];}
+  if(sum/g.length<110)for(let j=0;j<g.length;j++)g[j]=255-g[j];   // 다크모드 캡쳐는 반전
+  // 표 테두리(긴 가로·세로 선) 지우기: 선이 있으면 글자를 못 읽어요
+  const kill=new Uint8Array(W*H);const minH=Math.max(40,W/12|0),minV=Math.max(40,H/12|0);
+  for(let y=0;y<H;y++){let run=0;for(let x2=0;x2<=W;x2++){const d=x2<W&&g[y*W+x2]<160;if(d)run++;else{if(run>=minH)for(let k=x2-run;k<x2;k++)kill[y*W+k]=1;run=0;}}}
+  for(let x2=0;x2<W;x2++){let run=0;for(let y=0;y<=H;y++){const d=y<H&&g[y*W+x2]<160;if(d)run++;else{if(run>=minV)for(let k=y-run;k<y;k++)kill[k*W+x2]=1;run=0;}}}
+  for(let y=1;y<H-1;y++)for(let x2=1;x2<W-1;x2++){const j=y*W+x2;if(kill[j]||kill[j-1]||kill[j+1]||kill[j-W]||kill[j+W])a[j*4]=255;else a[j*4]=g[j];}
+  for(let j=0;j<g.length;j++){const v=(j%W===0||j%W===W-1||j<W||j>=W*(H-1))?g[j]:a[j*4];a[j*4]=a[j*4+1]=a[j*4+2]=v;a[j*4+3]=255;}
+  x.putImageData(id,0,0);return c;}
+const won0=v=>v===''||v==null?'':(+v).toLocaleString('ko-KR')+'원';
+function pocrHtml(d){
+  const caps=d.caps||[];const ed=editable();
+  let h=`<div class="pocr"><div class="btnrow" style="margin-bottom:6px"><b>발주 캡쳐로 자동 입력</b><span class="note">주문내역·거래명세서·발주 메시지 캡쳐를 여러 장 올리면 품목·수량·금액을 읽어요</span></div>
+    ${ed?`<div class="btnrow"><label class="attach ${POCR.busy?'busy':''}"><input type="file" accept="image/*" multiple data-pocr ${POCR.busy?'disabled':''}>＋ 발주 캡쳐 올리기 (여러 장)</label>${POCR.busy?`<span class="note">${esc(POCR.busy)}</span>`:''}</div>`:''}
+    ${caps.length?`<div class="field" style="margin:8px 0 0"><span class="lb">올린 발주 캡쳐 ${caps.length}장</span><div class="imgs" data-imgs="cs_purchase|caps">${imgsInner('cs_purchase|caps',caps)}</div></div>`:''}`;
+  const live=POCR.caps;
+  if(live.length){const n=live.reduce((a,c)=>a+c.cands.filter(x=>x.on).length,0);
+    h+=`<div style="margin-top:10px"><b style="font-size:13.5px">읽은 결과 확인</b> <span class="note">틀린 글자는 고치고, 발주가 아닌 줄은 체크를 풀어주세요</span>`;
+    live.forEach((c,ci)=>{const ok=c.cands.filter(x=>x.on);const s=ok.reduce((a,x)=>a+(+x.price||0),0);
+      h+=`<div class="tbl" style="margin-top:6px"><table><thead><tr><th class="ck"></th><th>품목 <span class="note">캡쳐 ${ci+1}</span></th><th style="width:110px">수량</th><th style="width:130px">금액(원)</th></tr></thead><tbody>${c.cands.length?c.cands.map((x,i)=>`<tr><td class="ck"><input type="checkbox" data-pock="${ci}|${i}" ${x.on?'checked':''} aria-label="추가"></td><td><input data-pof="${ci}|${i}|item" value="${esc(x.item)}"></td><td><input data-pof="${ci}|${i}|qty" value="${esc(x.qty)}"></td><td><input type="number" min="0" data-pof="${ci}|${i}|price" value="${esc(x.price)}"></td></tr>`).join(''):`<tr><td colspan="4" class="note">${esc(c.err||'품목을 찾지 못했어요. 아래 읽은 글자를 보고 직접 입력해주세요.')}</td></tr>`}</tbody></table></div>
+        <div class="btnrow" style="margin-top:4px"><span class="note">선택 합계 ${won0(s)}${c.total?` · 캡쳐 속 합계 ${won0(c.total)}${c.total!==s?' <b style="color:var(--bad)">(차이 '+won0(Math.abs(c.total-s))+' · 배송비·할인 확인)</b>':' ✓'}`:''}</span><span style="flex:1"></span><button type="button" class="linkbtn" data-poraw="${ci}">읽은 글자 보기</button></div>${c.showRaw?`<div class="raw">${esc(c.text||'')}</div>`:''}`;});
+    h+=`<div class="btnrow" style="margin-top:8px"><button type="button" class="primary" data-poadd style="padding:8px 14px;font-size:13.5px">선택한 ${n}개를 발주 목록에 넣기</button><button type="button" class="secondary" data-poclear>결과 닫기</button></div></div>`;}
+  return h+'</div>';
+}
+function rerenderPocr(){if(R&&$('#sec-cs_purchase'))rerenderSection('cs_purchase');}
+$('#rForm').addEventListener('change',async e=>{
+  const inp=e.target.closest('[data-pocr]');if(inp){if(!editable())return;const files=[...inp.files];inp.value='';if(!files.length)return;
+    const caps=(R.data.cs_purchase?.caps||[]).slice();
+    try{
+      for(let i=0;i<files.length;i++){const f=files[i];
+        POCR.busy=`캡쳐 ${i+1}/${files.length} 올리는 중…`;rerenderPocr();
+        let img=null;try{img=await uploadImg(meUid,f,{section:'cs_purchase',report:R.date});caps.push(img);setP(R.data,['cs_purchase','caps'],caps);}catch(err){toast('사진을 올리지 못했어요: '+f.name);continue;}
+        POCR.busy=`캡쳐 ${i+1}/${files.length} 글자 읽는 중… (처음엔 30초쯤 걸려요)`;rerenderPocr();
+        try{const w=await getOcrPo();const cv=await poCanvas(f);const{data}=await w.recognize(cv);const r=PO.parse(data.text||'');
+          POCR.caps.push({img,cands:r.items.map(x=>({...x,on:true})),total:r.total,sum:r.sum,text:data.text||''});}
+        catch(err){POCR.caps.push({img,cands:[],text:'',err:'글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 올려주세요.'});}
+      }
+    }finally{POCR.busy='';R.dirty=true;saveDraft();rerenderPocr();}
+    const n=POCR.caps.reduce((a,c)=>a+c.cands.length,0);toast(n?`품목 ${n}개를 읽었어요. 확인 후 "발주 목록에 넣기"를 눌러주세요`:'품목을 찾지 못했어요. 직접 입력해주세요');return;}
+  const ck=e.target.closest('[data-pock]');if(ck){const[ci,i]=ck.dataset.pock.split('|').map(Number);POCR.caps[ci].cands[i].on=ck.checked;rerenderPocr();return;}
+},true);
+$('#rForm').addEventListener('input',e=>{const f=e.target.closest('[data-pof]');if(!f)return;e.stopPropagation();const[ci,i,k]=f.dataset.pof.split('|');const c=POCR.caps[+ci]?.cands[+i];if(c)c[k]=k==='price'?(f.value===''?'':+f.value):f.value;},true);
+$('#rForm').addEventListener('click',e=>{
+  const raw=e.target.closest('[data-poraw]');if(raw){const c=POCR.caps[+raw.dataset.poraw];c.showRaw=!c.showRaw;rerenderPocr();return;}
+  if(e.target.closest('[data-poclear]')){POCR.caps=[];rerenderPocr();return;}
+  if(e.target.closest('[data-poadd]')){if(!editable())return;const add=POCR.caps.flatMap(c=>c.cands.filter(x=>x.on&&String(x.item).trim()));if(!add.length){toast('넣을 품목을 골라주세요');return;}
+    const rows=(R.data.cs_purchase?.rows||[]).filter(r=>hasVal(r));
+    add.forEach(x=>rows.push({item:String(x.item).trim(),qty:String(x.qty||''),price:x.price===''?'':+x.price,eta:''}));
+    setP(R.data,['cs_purchase','rows'],rows);POCR.caps=[];R.dirty=true;saveDraft();rerenderPocr();
+    toast(`발주 ${add.length}건을 넣었어요. 예상입고일을 채워주세요`);}
 });
 
 /* ---------- 주문접수 완료: 캡쳐 시각 확인 ---------- */
@@ -2789,7 +2916,7 @@ ${none.map(x=>x.title).join(', ')}
     }
     // 발주 → 입고확인 목록 등록
     for(const r of (R.data.cs_purchase?.rows||[])){if(r.pid||!r.item)continue;const pid=rid();r.pid=pid;
-      await setDoc(doc(db,'users',meUid,'purchases',pid),{item:r.item,qty:r.qty||'',eta:r.eta||'',imgs:r.imgs||[],received:false,reportDate:R.date,createdAt:now});}
+      await setDoc(doc(db,'users',meUid,'purchases',pid),{item:r.item,qty:r.qty||'',price:r.price||'',eta:r.eta||'',imgs:r.imgs||[],received:false,reportDate:R.date,createdAt:now});}
     // 입고 내역: 발주 정보를 함께 남기고, 확인 완료한 건은 발주 문서에 반영
     for(const[pid,v] of Object.entries(R.data.incoming||{})){const pu=myPurch.find(x=>x.id===pid);if(pu){v.item=pu.item||'';v.ordQty=pu.qty||'';v.eta=pu.eta||'';v.ordImgs=pu.imgs||[];}
       if(v?.ok)await updateDoc(doc(db,'users',meUid,'purchases',pid),{received:true,receivedDate:R.date,inQty:v.inQty||'',state:v.state||'',note:v.note||'',imgs:v.imgs||[]}).catch(()=>{});}
@@ -3952,6 +4079,7 @@ function sectionView(u,key,d,rv,grp,canReview){
     const rows=d?.rows||[];const best=key==='cs.bestreview';
     body+=rows.length?rows.map((r,i)=>`<div class="vrow" ${i===0?'style="border-top:0;padding-top:0;margin-top:0"':''}><div class="btnrow"><b style="font-size:12.5px">${esc(S.label)} ${i+1}</b>${best&&r.picked?'<span class="tag ok">선정</span>':''}${best?`<button type="button" class="${r.picked?'secondary':'okbtn'}" data-best="${i}" style="padding:5px 10px;font-size:12px">${r.picked?'선정 취소':'선정'}</button>`:''}</div>${kvHtml(u.uid,S.fields,r,grp)}</div>`).join(''):'';
     if(key==='cs.health')body+=healthWarn(rows,u._date||today());
+    if(key==='cs.purchase'){const t=rows.reduce((a,r)=>a+(+r.price||0),0);if(t)body+=`<p class="note" style="margin:8px 0 0">발주 금액 합계 <b class="num">${won(t)}</b></p>`;if((d?.caps||[]).length)body+=`<h4 class="subh">발주 캡쳐 원본 ${d.caps.length}장</h4><div class="gthumbs">${d.caps.map(im=>galThumb(u.uid,im,'발주 캡쳐',grp)).join('')}</div>`;}
   }
   if(CH_OF[key]&&d?.plan&&Object.keys(d.plan).length){const pl=Object.entries(d.plan).filter(([id,v])=>v);
     body=`<h4 class="subh" style="margin-top:0">대표님 지시 업무</h4><div class="tbl" style="margin-top:0"><table><thead><tr><th>업무명</th><th>결과</th><th>진행상황·비고</th><th>캡쳐</th></tr></thead><tbody>${pl.map(([id,v])=>{const t=v.title||(planBy[u.uid]||[]).find(x=>x.id===id)?.title||'(삭제된 업무)';
