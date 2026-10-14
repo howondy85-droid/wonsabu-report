@@ -456,7 +456,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-23</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-24</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -534,6 +534,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <div id="rLink"></div>
     <div id="rReel"></div>
     <div id="rInq"></div>
+    <div id="rTaskX"></div>
     <form id="rForm" novalidate><fieldset id="rSet">
       <div id="rSections"></div>
       <div id="rAgenda"></div>
@@ -615,7 +616,8 @@ tr.off td{opacity:.45;text-decoration:line-through}
       </form>
     </div>
     <div class="panel">
-      <h2>지시한 업무</h2>
+      <h2>지시한 업무 <span class="s">직원이 개별 전송하면 바로 여기 반영돼요 · 줄을 누르면 해당 업무로 이동</span></h2>
+      <div id="taskProg"></div>
       <div class="tfilter" id="taskFilter">
         <button data-f="submitted" aria-pressed="true">확인요청</button>
         <button data-f="open" aria-pressed="false">진행중</button>
@@ -2164,6 +2166,44 @@ $('#rForm').addEventListener('change',async e=>{
 });
 
 
+
+/* ---------- 지시 업무 개별 전송 ---------- */
+function renderTaskX(open){const box=$('#rTaskX');if(!box)return;if(!R||editable()||!open.length){box.innerHTML='';return;}
+  const keep={};$$('#rTaskX textarea').forEach(el=>keep[el.dataset.tkx]=el.value);
+  box.innerHTML=`<section class="panel"><h2>전송 후 업무 수정·보완 <span class="s">오늘 보고서는 전송됐지만, 지시 업무는 계속 고쳐서 보낼 수 있어요</span></h2>${open.map(t=>`<div class="task s-${esc(t.status)}" style="margin-bottom:8px"><div class="th1"><b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span></div>${dueLeft(t)}
+    <div class="field" style="margin:8px 0 6px"><label for="tkx-${esc(t.id)}" class="lb">수정·보완 내용</label><textarea id="tkx-${esc(t.id)}" data-tkx="${esc(t.id)}" rows="2"></textarea></div><div class="btnrow"><button type="button" class="primary" data-tsendx="${esc(t.id)}" style="padding:8px 14px;font-size:13.5px">수정 내용 전송</button></div></div>`).join('')}</section>`;
+  $$('#rTaskX textarea').forEach(el=>{if(keep[el.dataset.tkx])el.value=keep[el.dataset.tkx];});}
+const tkSig=d=>JSON.stringify([String(d?.text||'').trim(),(d?.imgs||[]).map(x=>x.id)]);
+const tkDirty=d=>!!d&&(!d.sentAt||tkSig(d)!==d.sentSig);
+function dueLeft(t){if(!t.dueAt||t.status==='done')return '';const ms=new Date(t.dueAt).getTime()-Date.now();
+  if(ms<0)return `<p class="note" style="margin:4px 0 0;color:var(--bad)">마감 ${esc(fmtDH(t.dueAt))} 지남 · 늦어도 전송은 할 수 있어요 (마감 후 전송으로 표시돼요)</p>`;
+  const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000);return `<p class="note" style="margin:4px 0 0">마감까지 <b>${h>=24?`${Math.floor(h/24)}일 ${h%24}시간`:`${h}시간 ${m}분`}</b> 남았어요 (${esc(fmtDH(t.dueAt))})</p>`;}
+async function sendTask(id,opt={}){
+  const t=myTasks.find(x=>x.id===id);if(!t||!R)return false;const d=R.data.tasks?.[id]||{};
+  if(!String(d.text||'').trim()&&!(d.imgs||[]).length){toast('진행상황이나 캡쳐를 먼저 넣어주세요');return false;}
+  if(d.sentAt&&!tkDirty(d)){if(!opt.quiet)toast('전송한 내용과 같아요. 고친 뒤 다시 전송해주세요');return false;}
+  const now=new Date().toISOString();const late=!!(t.dueAt&&Date.now()>new Date(t.dueAt).getTime());
+  await updateDoc(doc(db,'users',meUid,'tasks',id),{log:arrayUnion({kind:d.sentAt||t.status==='submitted'?'edit':'update',at:now,text:d.text||'',imgs:d.imgs||[],report:R.date,solo:!opt.final,late}),status:'submitted',updatedAt:now});
+  setP(R.data,['tasks',id,'sentAt'],now);setP(R.data,['tasks',id,'sentSig'],tkSig(d));setP(R.data,['tasks',id,'title'],t.title);
+  if(!opt.final){R.dirty=true;await saveDraft();}
+  return true;
+}
+$('#vStaff').addEventListener('click',async e=>{const b=e.target.closest('[data-tsend]');if(!b||!editable())return;const t=myTasks.find(x=>x.id===b.dataset.tsend);
+  b.disabled=true;try{if(await sendTask(b.dataset.tsend))toast(`'${t?.title||''}' 업무를 전송했어요. 고칠 내용이 생기면 다시 전송할 수 있어요`);}catch(err){toast(authMsg(err));}finally{b.disabled=false;}});
+$('#vStaff').addEventListener('click',async e=>{const b=e.target.closest('[data-tsendx]');if(!b)return;const id=b.dataset.tsendx;const t=myTasks.find(x=>x.id===id);const ta=$(`[data-tkx="${CSS.escape(id)}"]`);const text=ta?.value.trim();
+  if(!t||!text){toast('고칠 내용을 적어주세요');ta?.focus();return;}const now=new Date().toISOString();b.disabled=true;
+  try{await updateDoc(doc(db,'users',meUid,'tasks',id),{log:arrayUnion({kind:'edit',at:now,text,imgs:[],report:R?.date||today(),solo:true,late:!!(t.dueAt&&Date.now()>new Date(t.dueAt).getTime())}),status:'submitted',updatedAt:now});ta.value='';toast('수정 내용을 전송했어요');}catch(err){toast(authMsg(err));}finally{b.disabled=false;}});
+$('#vStaff').addEventListener('input',e=>{const p=e.target.dataset?.p;if(!p||!p.startsWith('tasks|'))return;const id=p.split('|')[1];const st=$(`[data-tkst="${CSS.escape(id)}"]`);const d=R?.data.tasks?.[id];if(st&&d?.sentAt)st.textContent=tkDirty(d)?'전송 후 고친 내용이 있어요 · 다시 전송해주세요':'전송한 내용 그대로예요';});
+// 관리자: 업무별 진행상황 표
+function taskProgHtml(all){
+  const open=all.filter(t=>t.status!=='done').sort((a,b)=>(a.dueAt||'9').localeCompare(b.dueAt||'9'));if(!open.length)return '';
+  const row=t=>{const u=users[t.uid];const sends=(t.log||[]).filter(e=>e.kind==='update'||e.kind==='edit');const last=sends[sends.length-1];const lateNow=isLate(t)&&!last;
+    return `<tr class="${lateNow||last?.late?'warnrow':''}" data-tgo="${esc(t.uid)}|${esc(t.id)}" style="cursor:pointer"><td>${esc(u?.name||'')}</td><td><b>${esc(t.title)}</b>${t.linkTo?` <span class="tag ds">연계 → ${esc(t.linkTo)}</span>`:''}</td><td class="num">${esc(fmtDH(t.dueAt||''))||'-'}</td><td><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span></td>
+      <td>${last?`${esc(fmtT(last.at))} ${last.late?'<span class="tag bad">마감 후</span>':'<span class="tag ok">기한 내</span>'}${sends.length>1?` <span class="note">· ${sends.length}회 전송(수정 ${sends.length-1})</span>`:''}`:lateNow?'<span class="tag bad">미전송 · 마감 지남</span>':'<span class="note">아직 전송 전</span>'}</td>
+      <td class="note">${last?.text?esc(String(last.text).slice(0,40))+(String(last.text).length>40?'…':''):''}</td></tr>`;};
+  return `<div class="tbl" style="margin:0 0 12px"><table><thead><tr><th>직원</th><th>업무</th><th>마감</th><th>상태</th><th>마지막 전송</th><th>최근 내용</th></tr></thead><tbody>${open.map(row).join('')}</tbody></table></div>`;
+}
+
 /* ---------- 발주 캡쳐 → 품목·수량·금액 자동 인식 ---------- */
 let POCR={busy:'',caps:[]};   // caps: [{img,cands:[{item,qty,price,on}],total,sum,text,err}]
 let ocrPoW=null,ocrPoLoading=null;
@@ -2851,7 +2891,7 @@ $('#rForm').addEventListener('click',async e=>{
 /* ---------- 진행중 업무 (보고서 안) ---------- */
 const ST_L={todo:'대기',submitted:'확인요청',revise:'보완요청',next:'다음업무',done:'완료'};
 const ST_C={todo:'',submitted:'acc',revise:'bad',next:'cs',done:'ok'};
-const LOG_L={update:'진행상황',revise:'보완사항',next:'다음업무지시',done:'완료 처리'};
+const LOG_L={update:'진행상황',edit:'수정·보완 재전송',revise:'보완사항',next:'다음업무지시',done:'완료 처리'};
 const ORDER={revise:0,submitted:1,next:2,todo:3,done:4};
 function isLate(t){if(t.status==='done')return false;if(t.dueAt)return Date.now()>new Date(t.dueAt).getTime();if(t.today&&t.createdAt){const d=new Date(t.createdAt);d.setHours(23,59,59,0);return Date.now()>d.getTime();}return false;}
 function sortTasks(a,b){return((ORDER[a.status]??9)-(ORDER[b.status]??9))||((a.dueAt||'9999').localeCompare(b.dueAt||'9999'));}
@@ -2864,7 +2904,7 @@ function taskHead(t,who){
 }
 function taskLog(t,group){
   const log=(t.log||[]).slice().sort((a,b)=>(a.at||'').localeCompare(b.at||''));
-  return log.length?`<div class="log">${log.map(e=>`<div class="e ${esc(e.kind)}"><div class="h"><b>${esc(LOG_L[e.kind]||'')}</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}${(e.imgs||[]).length?`<div class="gthumbs">${e.imgs.map(im=>galThumb(t.uid,im,t.title,group||('t-'+t.id))).join('')}</div>`:''}</div>`).join('')}</div>`:'';
+  return log.length?`<div class="log">${log.map(e=>`<div class="e ${esc(e.kind==='edit'?'update':e.kind)}"><div class="h"><b>${esc(LOG_L[e.kind]||'')}${e.solo?' <span class="tag" style="font-weight:500">개별 전송</span>':''}${e.late?' <span class="tag bad" style="font-weight:500">마감 후</span>':e.solo?' <span class="tag ok" style="font-weight:500">기한 내</span>':''}</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}${(e.imgs||[]).length?`<div class="gthumbs">${e.imgs.map(im=>galThumb(t.uid,im,t.title,group||('t-'+t.id))).join('')}</div>`:''}</div>`).join('')}</div>`:'';
 }
 function renderTasksBlock(){
   if(!R||!$('#rTasks'))return;
@@ -2875,15 +2915,17 @@ function renderTasksBlock(){
   if(!open.length&&!upcoming&&!doing.length&&!mySections().includes('cs.tasks')){$('#rTasks').innerHTML='';return;}
   const keep={};$$('#rTasks [data-p]').forEach(el=>{if(el.tagName==='TEXTAREA')keep[el.dataset.p]=el.value;});
   $('#rTasks').innerHTML=`<section class="rsec" id="sec-tasks"><div class="rh"><b>진행중 업무</b><span class="note">대표님이 지시한 업무 · 진행상황과 캡쳐를 적고 보고서와 함께 전송돼요</span></div>${
-    open.length?open.map(t=>{const p=`tasks|${t.id}`;const d=R.data.tasks?.[t.id]||{};
-      return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}">${taskHead(t)}${taskLog(t)}<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lknew="task:${esc(t.id)}">이 업무 연계 보내기 →</button></div>${
-        t.status==='submitted'?'<p class="note" style="margin:10px 0 0">대표님 확인을 기다리는 중이에요.</p>'
-        :`<div class="inbox">${fieldHtml(p+'|text',['text','textarea',t.status==='revise'?'보완한 내용':'진행상황',''],d.text)}${fieldHtml(p+'|imgs',['imgs','imgs','진행 캡쳐'],d.imgs)}</div>`}</div>`;}).join('')
+    open.length?open.map(t=>{const p=`tasks|${t.id}`;const d=R.data.tasks?.[t.id]||{};const sent=t.status==='submitted';const dirty=tkDirty(d);
+      return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}" id="tk-${esc(t.id)}">${taskHead(t)}${dueLeft(t)}${taskLog(t)}<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lknew="task:${esc(t.id)}">이 업무 연계 보내기 →</button></div>
+        ${sent?`<p class="note" style="margin:10px 0 4px">${d.sentAt?`${esc(fmtT(d.sentAt))}에 전송했어요 · `:''}대표님 확인을 기다리는 중이에요. 고칠 내용이 있으면 아래에 적고 <b>다시 전송</b>하세요.</p>`:''}
+        <div class="inbox">${fieldHtml(p+'|text',['text','textarea',sent?'수정·보완 내용':t.status==='revise'?'보완한 내용':'진행상황',''],d.text)}${fieldHtml(p+'|imgs',['imgs','imgs','진행 캡쳐'],d.imgs)}
+        ${editable()?`<div class="btnrow" style="margin-top:6px"><button type="button" class="primary" data-tsend="${esc(t.id)}" style="padding:8px 14px;font-size:13.5px">${sent||d.sentAt?'수정 내용 다시 전송':'이 업무 전송'}</button><span class="note" data-tkst="${esc(t.id)}">${d.sentAt?(dirty?'전송 후 고친 내용이 있어요':'전송한 내용 그대로예요'):'보고서 최종 전송 전에 이 업무만 먼저 보낼 수 있어요'}</span></div>`:'<p class="note" style="margin:6px 0 0">오늘 보고서는 전송됐어요. 이 업무를 더 고치려면 위의 <b>“전송 후 업무 수정·보완”</b> 칸을 써주세요.</p>'}</div></div>`;}).join('')
     :(doing.length?'':'<div class="empty">오늘 할 지시 업무가 없어요.</div>')}${doing.map(it=>{const p=`dprog|${it.id}`;const d=R.data.dprog?.[it.id]||{};
       return `<div class="task s-next"><div class="th1"><b>${esc(it.title)}</b><span class="tag cs">이번주 업무 · 진행중</span>${it.due?`<span class="tag ${it.due<R.date?'bad':''}">마감 ${esc(fmtD(it.due))}</span>`:''}</div>${it.desc?`<p class="desc">${esc(it.desc)}</p>`:''}
         ${(it.log||[]).length?`<div class="log">${it.log.slice(-3).map(e=>`<div class="e update"><div class="h"><b>진행상황</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}</div>`).join('')}</div>`:''}
         <div class="inbox">${fieldHtml(p+'|text',['text','textarea','오늘 진행상황',''],d.text)}${fieldHtml(p+'|imgs',['imgs','imgs','진행 캡쳐'],d.imgs)}</div></div>`;}).join('')}${upcoming?`<p class="note" style="margin:8px 0 0">시작일이 아직 안 된 업무 ${upcoming}건은 그날 보고서에 나타나요.</p>`:''}</section>`;
   $$('#rTasks textarea[data-p]').forEach(el=>{if(keep[el.dataset.p]!=null&&R.dirty)el.value=keep[el.dataset.p];});
+  renderTaskX(open);
   applyFold();
 }
 const qtyNum=v=>{const m=String(v??'').replace(/,/g,'').match(/\d+(\.\d+)?/);return m?+m[0]:null;};
@@ -2938,9 +2980,10 @@ ${none.map(x=>x.title).join(', ')}
     const revised=wasHold?Object.entries(R.review||{}).filter(([k,v])=>v&&v.state==='revise').map(([k])=>k):[];
     const revisedTasks=wasHold?myTasks.filter(t=>t.status==='revise').map(t=>t.id):[];
     // 진행중 업무 → 업무 카드에 기록
-    for(const t of myTasks.filter(t=>t.status!=='done'&&t.status!=='submitted')){
-      const d=R.data.tasks?.[t.id];if(!d||(!d.text&&!(d.imgs||[]).length))continue;
-      await updateDoc(doc(db,'users',meUid,'tasks',t.id),{log:arrayUnion({kind:'update',at:now,text:d.text||'',imgs:d.imgs||[],report:R.date}),status:'submitted',updatedAt:now});
+    for(const t of myTasks.filter(t=>t.status!=='done')){
+      const d=R.data.tasks?.[t.id];if(!d||(!String(d.text||'').trim()&&!(d.imgs||[]).length))continue;
+      if(d.sentAt&&!tkDirty(d))continue;   // 개별 전송한 내용 그대로면 기록은 이미 있음 (보고서에는 함께 표시)
+      await sendTask(t.id,{final:true,quiet:true});
     }
     // 발주 → 입고확인 목록 등록
     for(const r of (R.data.cs_purchase?.rows||[])){if(r.pid||!r.item)continue;const pid=rid();r.pid=pid;
@@ -4247,9 +4290,11 @@ $('#taskForm').addEventListener('submit',async e=>{
       $('#tfLink').checked=false;$('#tfLinkBox').hidden=true;['#tfLkTitle','#tfLkDesc','#tfLkStart','#tfLkDue'].forEach(x=>$(x).value='');toast(`업무와 연계 업무(→ ${lk.to.name})를 등록했어요`);}toast(`${uids.length}명에게 업무를 등록했어요`);$('#tfTitle').value='';$('#tfDesc').value='';$('#tfToday').checked=false;tfFiles=[];renderTfAtt();setTaskDefaults();taskFilter='open';syncFilter();}
   catch(err){toast(authMsg(err));}finally{btn.disabled=false;btn.textContent='업무 등록';}
 });
+$('#taskProg').addEventListener('click',e=>{const r=e.target.closest('[data-tgo]');if(!r)return;taskFilter='all';syncFilter();setTimeout(()=>{const el=document.querySelector(`#adminTasks [data-task="${CSS.escape(r.dataset.tgo)}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='2px solid var(--accent)';setTimeout(()=>el.style.outline='',2000);}},150);});
 function syncFilter(){$$('#taskFilter button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===taskFilter)));renderAdminTasks(Object.values(tasksBy).flat());}
 $$('#taskFilter button').forEach(b=>b.onclick=()=>{taskFilter=b.dataset.f;syncFilter();});
 function renderAdminTasks(all){
+  {const tp=$('#taskProg');if(tp)tp.innerHTML=taskProgHtml(all);}
   const sub=all.filter(t=>t.status==='submitted');$('#taskDot').hidden=!sub.length;$('#taskDot').textContent=sub.length;
   const isOpen=t=>['todo','next','revise'].includes(t.status);
   const cnt={submitted:sub.length,open:all.filter(isOpen).length,done:all.filter(t=>t.status==='done').length,all:all.length};
