@@ -456,7 +456,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-24</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-25</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -874,7 +874,7 @@ const LIB=[
   ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
   ['cs.bulk','대량주문 문의','일시·내용·견적서'],['cs.claim','클레임 발생내역','캡쳐 필수'],
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
-  ['cs.purchase','발주내역','품목·수량·금액·예상입고일 · 캡쳐 자동 인식'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 6개 채널 캡쳐 17:25 이후']]},
+  ['cs.purchase','발주내역','품목·수량·금액·예상입고일 · 캡쳐 자동 인식'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 5개 채널 캡쳐 17:25 이후']]},
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
   ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 발송처리 내역','한진 송장 × 네이버 주문 대조 (토요일 출고분)'],
   ['cs.supplies','부자재 체크','발주 여부'],
@@ -889,7 +889,7 @@ const LIB=[
 ];
 const ITEM={};LIB.forEach(g=>g.items.forEach(([k,l,d])=>ITEM[k]={label:l,desc:d,g:g.g}));
 const PRESET={CS:LIB.filter(g=>g.g.startsWith('cs')).flatMap(g=>g.items.map(i=>i[0])),'디자인':LIB.filter(g=>g.g.startsWith('ds')).flatMap(g=>g.items.map(i=>i[0]))};
-const CHS=[['naver','스마트스토어','N','lg-naver'],['mall','자사몰 (카페24)','몰','lg-mall'],['kakao','카카오 톡체크아웃','K','lg-kakao'],['toss','토스쇼핑','toss','lg-toss'],['kch','카카오채널','Ch','lg-kch'],['npay','네이버페이센터','pay','lg-npay']];
+const CHS=[['naver','스마트스토어','N','lg-naver'],['mall','자사몰 (카페24)','몰','lg-mall'],['kakao','카카오 톡체크아웃','K','lg-kakao'],['kch','카카오채널','Ch','lg-kch'],['npay','네이버페이센터','pay','lg-npay']];
 const CONSULT_DONE='완료 기준: 담당자 마지막 메시지가 "네네! 또 궁금하신점 있으시면 톡톡하기 남겨주세요 ෆ", "네네! 좋은 선물 되실수 있도록 잘 준비해서 보내드리도록 하겠습니다! 감사합니다:)", "감사합니다"로 끝난 경우. 그 외는 진행중.';
 // field: [key, type, label, options]
 const SCHEMA={
@@ -1417,13 +1417,13 @@ const CLOCK={
   CUT:17*60+25,   // 17:25 이후 캡쳐만 통과
   p2:n=>String(n).padStart(2,'0'),
   parse(text){
-    const s=String(text||'').replace(/\s+/g,'');
+    const s=String(text||'').split(/\n+/).map(l=>l.replace(/\s+/g,'')).filter(Boolean).join('|').replace(/[모요오0O][후亨호]/g,'오후').replace(/[모요0O]전/g,'오전').replace(/(PM|pm|P\.M\.)/g,'오후').replace(/(AM|am|A\.M\.)/g,'오전');
     const out={mo:null,da:null,H:null,M:null,amb:false};
     const md=s.match(/(\d{1,2})[월윌원](\d{1,2})(?!\d)/);   // '일'이 '임·인'으로 읽혀도 숫자만으로 판단
     const full=s.match(/(20\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
     if(md){out.mo=+md[1];out.da=+md[2];}else if(full){out.mo=+full[2];out.da=+full[3];}
     if(out.mo!=null&&!(out.mo>=1&&out.mo<=12&&out.da>=1&&out.da<=31)){out.mo=out.da=null;}
-    const tm=s.match(/(오전|오후)([\d:;.,]{3,6})/);
+    let tm=s.match(/(오전|오후)([\d:;.,]{3,6})/);if(!tm){const b=s.match(/([\d:;.,]{3,6})(오전|오후)/);if(b)tm=[b[0],b[2],b[1]];}
     if(tm){
       const raw=tm[2];const d=raw.replace(/\D/g,'');let H=null,M=null;
       if(/[:;.,]/.test(raw)){const[a,b]=raw.split(/[:;.,]/);H=+a.replace(/\D/g,'');M=+String(b||'').replace(/\D/g,'').slice(0,2);if(String(b||'').replace(/\D/g,'').length<2)H=null;}
@@ -1440,7 +1440,7 @@ const CLOCK={
   },
   judge(p,rd){
     const[y,m,d]=rd.split('-').map(Number);
-    if(p.mo==null)return{state:'check',why:'화면 시계를 읽지 못했어요'};
+    if(p.mo==null)return{state:'check',why:'화면 시계를 읽지 못했어요 · 화면 위(맥)나 아래(윈도우) 시계가 보이게 전체화면으로 캡쳐해주세요'};
     const tl=p.H!=null?` ${CLOCK.p2(p.H)}:${CLOCK.p2(p.M)}`:'';const read=`${p.mo}/${p.da}${tl}`;
     if(p.mo!==m||p.da!==d)return{state:'date',why:`캡쳐 날짜(${p.mo}/${p.da})가 보고 날짜(${m}/${d})와 달라요`,read};
     if(p.H==null)return{state:'check',why:'시간을 읽지 못했어요',read};
@@ -2280,13 +2280,12 @@ async function getOcr(){
   ocrWorker=await ocrLoading;return ocrWorker;
 }
 // 화면 시계 위치만 잘라서 흑백으로 또렷하게: top = 맥 메뉴바 오른쪽, bottom = 윈도우 작업표시줄 오른쪽
-function clockStrip(img,where){
-  const W=img.naturalWidth,H=img.naturalHeight;let x0,y0,w,h;
-  if(where==='top'){h=Math.max(14,Math.round(W*0.0112));x0=Math.round(W*0.80);y0=0;}
-  else{h=Math.max(28,Math.round(H*0.05));x0=Math.round(W*0.82);y0=H-h;}
-  w=W-x0;const sc=Math.max(2,Math.round(90/h));const pad=20;
+// 화면 시계 부분만 잘라 흑백으로 또렷하게. o = {top|bottom, 높이 비율, 시작 x 비율}
+function clockStrip(img,o){
+  const W=img.naturalWidth,H=img.naturalHeight;let h=Math.max(12,Math.round(o.hr*(o.where==='top'?W:H)));h=Math.min(h,Math.round(H*0.2));
+  const x0=Math.round(W*o.x),y0=o.where==='top'?0:H-h,w=W-x0;const sc=Math.max(2,Math.min(8,Math.round(110/h)));const pad=20;
   const c=document.createElement('canvas');c.width=w*sc+pad*2;c.height=h*sc+pad*2;
-  const x=c.getContext('2d');x.drawImage(img,x0,y0,w,h,pad,pad,w*sc,h*sc);
+  const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,x0,y0,w,h,pad,pad,w*sc,h*sc);
   const id=x.getImageData(pad,pad,w*sc,h*sc);const a=id.data;const g=new Float32Array(a.length/4);
   let sum=0,mx=0,mn=255;for(let i=0;i<g.length;i++){const v=a[i*4]*.299+a[i*4+1]*.587+a[i*4+2]*.114;g[i]=v;sum+=v;if(v>mx)mx=v;if(v<mn)mn=v;}
   const mean=sum/g.length;const light=(mx-mean)>(mean-mn);const thr=light?mean+(mx-mean)*.45:mean-(mean-mn)*.45;
@@ -2294,15 +2293,20 @@ function clockStrip(img,where){
   x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.putImageData(id,pad,pad);
   return c;
 }
+// 맥(위 메뉴바: 일반·레티나·노치 맥북) → 윈도우(아래 작업표시줄: 100%·125%·150%) 순서로 시도
+const CLOCK_TRY=[
+  {where:'top',hr:0.0112,x:0.80,psm:'7'},{where:'top',hr:0.017,x:0.78,psm:'7'},{where:'top',hr:0.025,x:0.75,psm:'7'},
+  {where:'bottom',hr:0.05,x:0.82,psm:'6'},{where:'bottom',hr:0.046,x:0.90,psm:'6'},{where:'bottom',hr:0.07,x:0.88,psm:'6'},{where:'top',hr:0.0112,x:0.62,psm:'7'}];
 async function readCaptureClock(file){
-  const img=await loadImg(file);const w=await getOcr();let last={parsed:{mo:null},src:'',text:''};
-  for(const where of ['top','bottom']){
-    await w.setParameters({tessedit_pageseg_mode:where==='top'?'7':'6'});
-    const{data:{text}}=await w.recognize(clockStrip(img,where));
-    const parsed=CLOCK.parse(text);last={parsed,src:where,text};
-    if(parsed.mo!=null)break;
+  const img=await loadImg(file);const w=await getOcr();let best=null;
+  for(const o of CLOCK_TRY){
+    await w.setParameters({tessedit_pageseg_mode:o.psm});
+    const{data:{text}}=await w.recognize(clockStrip(img,o));
+    const parsed=CLOCK.parse(text);const r={parsed,src:o.where,text};
+    if(parsed.mo!=null&&parsed.H!=null)return r;
+    if(!best||(parsed.mo!=null&&best.parsed.mo==null))best=r;
   }
-  return last;
+  return best;
 }
 async function checkCapture(c,file){
   setP(R.data,['cs_order',c,'ocr'],{state:'pending'});paintCh(c);
@@ -3295,7 +3299,7 @@ const HELP={
   '<b>시간 확인 체크</b> — 전일출고분은 출근·점심(11:30)·퇴근(17:00), 스스 광고비는 출근·퇴근 때 체크해요. 체크한 시각이 기록돼요.',
   '<b>발송처리</b> — 한진 송장 엑셀과 네이버 주문내역 엑셀을 함께 올리면 중복·미발송을 자동으로 찾아줘요.',
   '<b>CS 문의건</b> — 주말·업무시간 외 문의 캡쳐를 올리면 고객 아이디와 요청이 정리돼요. 처리하면 "완료"를 눌러주세요. 대표님도 같은 화면을 봐요.',
-  '<b>주문접수 완료는 마지막</b> — 17:25 이후 6개 채널 화면을 전체화면으로 캡쳐해 올려요. 이전 시각 캡쳐는 인정되지 않아요.',
+  '<b>주문접수 완료는 마지막</b> — 17:25 이후 5개 채널 화면을 전체화면으로 캡쳐해 올려요. 이전 시각 캡쳐는 인정되지 않아요.',
   '<b>전송</b> — 다 쓰면 아래 "전송"을 눌러요. 대표님이 보완을 요청하면 빨갛게 표시된 항목만 고쳐서 다시 전송해요.',
   '<b>주간·월간 보고</b> — 한 주 마지막 근무일과 말일에는 항목이 더 나와요(알바 출퇴근, 원재료, 계산서 등). 휴무일은 자동으로 반영돼요.',
   '<b>조회 탭</b> — 화면 위 알바급여·원재료·계산서 탭에서 정리된 결과를 볼 수 있어요. 계산서 기한은 작성월 다음 달 10일이에요.',
