@@ -456,7 +456,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-25</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-26</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -878,11 +878,11 @@ const LIB=[
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
   ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 발송처리 내역','한진 송장 × 네이버 주문 대조 (토요일 출고분)'],
   ['cs.supplies','부자재 체크','발주 여부'],
-  ['cs.store','매장 관리품목 훼손여부','사진'],['cs.callfwd','전화 착신전환','퇴근 전 확인']]},
+  ['cs.store','매장 관리품목 훼손여부','사진'],['cs.callfwd','전화 착신전환','퇴근 전 확인'],['cs.carrot','당근알바 출퇴근 기록부·급여','금요일(주간)·말일 보고 · 근무기록 입력과 급여 자료 업로드']]},
  {g:'cs-monthly',label:'CS · 월간업무 (말일)',items:[
-  ['cs.carrot','당근알바 출퇴근 기록부',''],['cs.payslip','고정알바 급여명세서 전달',''],['cs.bestreview','베스트리뷰 선정',''],
+  ['cs.payslip','고정알바 급여명세서 전달',''],['cs.bestreview','베스트리뷰 선정',''],
   ['cs.ordercount','주문서 카운팅','상품별 판매수량'],['cs.material','원재료 납품가 정리',''],['cs.health','직원 보건증 체크',''],
-  ['cs.taxinv','계산서 조회 (매출/매입)','국세청 엑셀 → 목록·기한 관리'],['cs.vendorpay','거래처 대금지급 확인','익월 10일까지']]},
+  ['cs.taxinv','계산서 조회 (매출/매입)','국세청 엑셀 → 목록·기한 관리'],['cs.vendorpay','거래처 대금지급 확인','말일 + 매월 10일(대금지급일) 보고']]},
  {g:'ds-weekly',label:'디자인 · 월·금 보고',items:[
   ['ds.waiting','대기업무','관리자 작성'],['ds.thisweek','이번주 업무','관리자 작성'],['ds.nextweek','차주 업무','관리자 작성'],
   ['ds.result','이번주 완료 / 미완료 업무',''],['ds.smartstore','스마트스토어',''],['ds.mall','자사몰',''],['ds.openmarket','오픈마켓',''],['ds.sns','SNS 업무','']]}
@@ -1404,6 +1404,7 @@ const CALC={
     for(let i=4;i>=0;i--){const x=new Date(mon);x.setDate(mon.getDate()+i);const s=CALC.ymd(x);if(!CALC.off(s,cal,uid))return s;}return null;},
   monthLast(ds,cal,uid){const d=new Date(ds+'T00:00');const n=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
     for(let i=n;i>=1;i--){const s=CALC.ymd(new Date(d.getFullYear(),d.getMonth(),i));if(!CALC.off(s,cal,uid))return s;}return null;},
+  payDay(ds,cal,uid){let d=ds.slice(0,8)+'10';while(CALC.off(d,cal,uid)&&d.slice(8)>'01')d=DT.addDays(d,-1);return d;},
   kind(ds,cal,uid){if(CALC.monthLast(ds,cal,uid)===ds)return 'monthly';if(CALC.weekLast(ds,cal,uid)===ds)return 'weekly';return 'daily';},
   // 디자인 보고일: 그 주의 첫 근무일(보통 월) · 마지막 근무일(보통 금)
   mon(ds){const d=new Date(ds+'T00:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return CALC.ymd(d);},
@@ -1698,8 +1699,11 @@ let CAL={holidays:[],leave:{}};
 const byLib=(a,b)=>LIB_ORDER.indexOf(a)-LIB_ORDER.indexOf(b);
 function mySections(){return (me.sections||[]).filter(k=>ITEM[k]).sort(byLib);}
 const DS_DAY={mon:['ds.waiting','ds.thisweek','ds.nextweek','ds.smartstore','ds.mall','ds.openmarket'],fri:['ds.waiting','ds.thisweek','ds.nextweek','ds.result','ds.smartstore','ds.mall','ds.openmarket','ds.sns']};
+// 보고 종류와 상관없이 특정 날에 더 나오는 항목 (매월 10일 대금지급)
+const isPayDay=ctx=>!!ctx&&CALC.payDay(ctx.date,CAL,ctx.uid)===ctx.date;
+const EXTRA_DAY={'cs.vendorpay':isPayDay};
 function secsFor(sections,kind,ctx){const dd=ctx?CALC.dsDay(ctx.date,CAL,ctx.uid):'';
-  return (sections||[]).filter(k=>SCHEMA[k]&&ITEM[k]&&(ITEM[k].g==='ds-weekly'?!!dd&&DS_DAY[dd].includes(k):KIND_G[kind].includes(ITEM[k].g))).sort(byLib);}
+  return (sections||[]).filter(k=>SCHEMA[k]&&ITEM[k]&&(ITEM[k].g==='ds-weekly'?!!dd&&DS_DAY[dd].includes(k):(KIND_G[kind].includes(ITEM[k].g)||!!EXTRA_DAY[k]?.(ctx)))).sort(byLib);}
 const hasDS=secs=>(secs||[]).some(k=>ITEM[k]?.g==='ds-weekly');
 const dsOnly=secs=>(secs||[]).length>0&&(secs||[]).every(k=>!ITEM[k]||ITEM[k].g==='ds-weekly');
 const DS_L={mon:'디자인 주초 보고',fri:'디자인 주말 보고'};
@@ -1720,7 +1724,7 @@ function renderBanner(){
 function renderKind(){
   const k=R.kind,wl=CALC.weekLast(R.date,CAL,meUid),ml=CALC.monthLast(R.date,CAL,meUid);
   const f=x=>x?`${fmtD(x)}(${dayName(x)})`:'없음';const secs=mySections();let h='';
-  if(!dsOnly(secs))h+=`<span class="tag ${KIND_C[k]}">${KIND_L[k]}</span><span class="note">이번 주 주간보고 ${f(wl)} · 이번 달 월간보고 ${f(ml)}</span>`;
+  if(!dsOnly(secs))h+=`<span class="tag ${KIND_C[k]}">${KIND_L[k]}</span>${(me.sections||[]).includes('cs.vendorpay')&&isPayDay({date:R.date,uid:meUid})?'<span class="tag bad">대금지급일</span>':''}<span class="note">이번 주 주간보고 ${f(wl)} · 이번 달 월간보고 ${f(ml)}${(me.sections||[]).includes('cs.vendorpay')?` · 대금지급 ${f(CALC.payDay(R.date,CAL,meUid))}`:''}</span>`;
   if(hasDS(secs)){const dd=CALC.dsDay(R.date,CAL,meUid);h+=`<span class="tag ds">${dd?DS_L[dd]:'디자인 보고일 아님'}</span><span class="note">디자인 보고일 ${f(CALC.weekFirst(R.date,CAL,meUid))} · ${f(wl)}</span>`;}
   $('#rKind').innerHTML=`<div class="btnrow" style="margin-top:8px">${h}</div>`;
 }
@@ -2053,8 +2057,10 @@ function sectionHtml(key){
     h+=importBtn(dk,S);
     h+=S.table?tableListHtml(dk,S,d.rows,R.date):rowsHtml(dk,{label:S.label,fields:S.fields},d.rows);
   }else if(S.type==='carrot'){
+    if(editable()&&!(d.workers||[]).length)h+=`<div class="btnrow" style="margin-bottom:8px"><button type="button" class="secondary" data-carrotprev>지난 보고의 알바 불러오기</button><span class="note">이름·주민번호·연락처·계좌·시급을 그대로 가져오고, 근무일만 새로 넣으면 돼요</span></div>`;
     h+=(d.workers||[]).map((w,i)=>carrotWorkerHtml(dk,i,w)).join('')+`<button type="button" class="add" data-addworker>+ 알바 추가</button>`
-      +fieldsHtml(dk,[['files','files','출퇴근 기록부 원본 (선택)','',{accept:'.xlsx,.xls,.csv,.pdf'}]],d);
+      +fieldsHtml(dk,[['files','files','급여 자료 업로드 (출퇴근 기록부·급여 정산 엑셀·PDF)','',{accept:'.xlsx,.xls,.csv,.pdf'}],['imgs','imgs','급여 지급 캡쳐 (이체 내역·당근 정산 화면)']],d)
+      +`<p class="note" style="margin:6px 0 0">금요일(주간) 보고마다 그 주 근무일을 넣어주세요. 알바급여 탭에서는 한 달 치가 날짜별로 합쳐져 계산돼요.</p>`;
   }else if(S.type==='taxinv'){
     const p=`${dk}|files`;const res=d.result;
     h+=`${fieldHtml(dk+'|kindSel',['kindSel','radio','파일 구분','',{opts:[['auto','자동 구분'],['매출','매출'],['매입','매입']]}],d.kindSel||'auto')}
@@ -2872,6 +2878,11 @@ $('#rForm').addEventListener('click',async e=>{
   if(ags){const sk={...(R.data.agendaSkip||{})};if(ags.checked)delete sk[ags.dataset.agskip];else sk[ags.dataset.agskip]=true;R.data.agendaSkip=sk;ags.closest('tr')?.classList.toggle('off',!ags.checked);scheduleSave();return;}
   // 당근알바
   const ws=()=>{const d=R.data.cs_carrot=R.data.cs_carrot||{};d.workers=d.workers||[];return d.workers;};
+  if(e.target.closest('[data-carrotprev]')){const b=e.target.closest('[data-carrotprev]');b.disabled=true;
+    try{const q=await getDocs(query(collection(db,'users',meUid,'reports'),orderBy('date','desc'),limit(40)));const prev=q.docs.map(x=>x.data()).find(r=>r.date<R.date&&(r.data?.cs_carrot?.workers||[]).length);
+      if(!prev){toast('알바 기록이 있는 지난 보고서가 없어요');b.disabled=false;return;}
+      setP(R.data,['cs_carrot','workers'],prev.data.cs_carrot.workers.map(w=>({name:w.name||'',rrn:w.rrn||'',phone:w.phone||'',bank:w.bank||'',wage:w.wage??'',days:[]})));
+      rerenderSection('cs_carrot');scheduleSave();toast(`${fmtD(prev.date)} 보고의 알바 ${prev.data.cs_carrot.workers.length}명을 불러왔어요`);}catch(err){toast(authMsg(err));b.disabled=false;}return;}
   if(e.target.closest('[data-addworker]')){const w=ws();const prev=w[w.length-1];w.push({name:'',rrn:'',phone:'',bank:'',wage:prev?.wage??'',days:[]});rerenderSection('cs_carrot');scheduleSave();$(`#wk-${w.length-1}`)?.scrollIntoView({behavior:'smooth',block:'center'});return;}
   const ad=e.target.closest('[data-addday]');
   if(ad){const w=ws()[+ad.dataset.addday];if(!w)return;w.days=w.days||[];const last=w.days[w.days.length-1];
@@ -4001,7 +4012,8 @@ async function loadPay(month,force){
     docs.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>(r.data?.cs_carrot?.workers||[]).forEach(w=>{
       const days=(w.days||[]).filter(d=>d.d&&d.d.startsWith(month));if(!days.length)return;
       const key=`${(w.name||'').trim()}|${String(w.rrn||'').replace(/\D/g,'')}`;
-      map[key]={...w,days,by:u.name,uid:u.uid,rep:r.date,status:r.status};}));
+      const prev=map[key];const md={};(prev?.days||[]).forEach(x=>md[x.d]=x);days.forEach(x=>md[x.d]=x);
+      map[key]={...w,days:Object.values(md).sort((a,b)=>a.d.localeCompare(b.d)),by:u.name,uid:u.uid,rep:r.date,status:r.status,reps:[...new Set([...(prev?.reps||[]),r.date])]};}));
   }
   return payCache[month]=Object.values(map).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 }
