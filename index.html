@@ -456,7 +456,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-27</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-28</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -845,6 +845,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </div>
 </div>
 <div class="overlay" id="cf" hidden><div class="dialog"><p id="cfMsg"></p><div class="btnrow"><button class="primary" id="cfYes" style="padding:9px 16px;font-size:14px">확인</button><button class="secondary" id="cfNo">취소</button></div></div></div>
+<div class="overlay" id="pw" hidden><div class="dialog"><b>비밀번호가 걸린 엑셀이에요</b><p id="pwMsg" class="note" style="margin:6px 0 10px"></p><input type="password" id="pwIn" autocomplete="off" placeholder="엑셀 비밀번호" style="width:100%;margin-bottom:8px"><label class="note" style="display:flex;gap:6px;align-items:center;margin-bottom:10px"><input type="checkbox" id="pwKeep" checked> 이 기기에서 기억하기 (다음부터 묻지 않아요)</label><div class="btnrow"><button class="primary" id="pwYes" style="padding:9px 16px;font-size:14px">열기</button><button class="secondary" id="pwNo">취소</button></div></div></div>
 <div class="overlay" id="pop" hidden><div class="dialog big"><b id="popTitle"></b><p id="popMsg" class="note"></p><button class="primary" id="popOk">확인</button></div></div>
 
 <script type="module">
@@ -870,11 +871,11 @@ const idToEmail=id=>`${id}@${ID_DOMAIN}`;
 /* ===================== 양식 정의 ===================== */
 const LIB=[
  {g:'cs-daily',label:'CS · 일일업무',items:[
-  ['cs.ship','발송처리 내역','한진 송장 × 네이버 주문 엑셀 대조'],['cs.dashchk','대시보드·주문서 대조','대시보드 엑셀 × 주문서 엑셀 → 오타·누락·오기재 확인'],
+  ['cs.ship','발송처리 내역','한진 송장 × 네이버 주문 엑셀 대조'],['cs.stickerprint','다음날 스티커 출력 확인','출력물 사진 필수 · 매일'],
   ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
   ['cs.bulk','대량주문 문의','일시·내용·견적서'],['cs.claim','클레임 발생내역','캡쳐 필수'],
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
-  ['cs.purchase','발주내역','품목·수량·금액·예상입고일 · 캡쳐 자동 인식'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 5개 채널 캡쳐 17:25 이후']]},
+  ['cs.purchase','발주내역','품목·수량·금액·예상입고일 · 캡쳐 자동 인식'],['cs.buyinv','계산서 발행 (매입자료)','국세청 엑셀 수시 업로드 → 계산서 탭 반영'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 5개 채널 캡쳐 17:25 이후']]},
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
   ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 발송처리 내역','한진 송장 × 네이버 주문 대조 (토요일 출고분)'],
   ['cs.supplies','부자재 체크','발주 여부'],
@@ -904,6 +905,8 @@ const SCHEMA={
  'cs.consult':{type:'list',table:true,label:'상담',hint:CONSULT_DONE,fields:[['ch','select','채널','',{opts:[['talktalk','네이버 톡톡'],['kakao','카카오채널'],['insta','인스타DM']]}],['id','text','아이디'],['content','text','내용'],['state','radio','상태','',{opts:[['ing','진행중'],['done','완료']]}]]},
  'cs.purchase':{type:'list',label:'발주',hint:'발주 캡쳐를 올리면 품목·수량·금액을 읽어 채워줘요. 예상입고일이 되면 그날 보고서에 "입고 내역"이 자동으로 생겨요',fields:[['item','text','발주 품목'],['qty','text','수량'],['price','num','금액 (원)'],['eta','date','예상입고일'],['imgs','imgs','발주 캡쳐']]},
  'cs.notes':{type:'group',fields:[['text','textarea','공유할 내용']]},
+ 'cs.stickerprint':{type:'group',hint:'내일 출고분 스티커가 빠짐없이 출력됐는지 확인하고, 출력물 사진을 꼭 올려주세요',fields:[['done','check','내일 출고분 스티커 출력 완료','',{required:true}],['imgs','imgs','출력물 사진','',{required:true}],['memo','text','부족·재출력·특이사항']]},
+ 'cs.buyinv':{type:'taxinv',lite:true,hint:'계산서가 들어온 날 홈택스 매입(또는 매출) 목록 엑셀을 올리면 바로 계산서 탭과 거래처 대금지급 목록에 들어가요. 없는 날은 비워두세요'},
  'cs.adcharge':{type:'group',hint:'출근하자마자 · 퇴근 전 광고비 잔액을 확인하고 체크하세요. 충전한 날만 금액·캡쳐를 넣어요',fields:[['chkAm','tcheck','출근 후 잔액 확인','',{from:''}],['chkPm','tcheck','퇴근 전 잔액 확인','',{from:'17:00'}],['amount','text','충전금액 (충전한 날만)'],['imgs','imgs','충전화면 캡쳐']]},
  // ----- 주간 -----
  'cs.sticker':{type:'fixedrows',hint:'로스가 난 종류만 수량과 사유를 적어주세요',rows:[['heart','하트'],['star','별'],['ribbon','리본'],['balloon','풍선'],['flower','꽃'],['plain','무지'],['circle','원형']],cols:[['qty','num','수량'],['why','text','발생 사유']]},
@@ -1256,7 +1259,7 @@ const SHIP={
   zp(v){const d=String(v??'').replace(/\D/g,'');return d?d.padStart(5,'0'):'';},
   ad:v=>String(v??'').replace(/[\s,()\-]/g,''),
   detect(rows){
-    for(const r of rows.slice(0,15)){const c=(r||[]).map(x=>String(x??'').trim());
+    for(const r of rows.slice(0,30)){const c=(r||[]).map(x=>SHIP.nm(x));   // 머리글 띄어쓰기('운송장 번호')도 같은 것으로 봄
       if(c.includes('상품주문번호'))return 'naver';
       if(c.some(x=>x==='운송장번호'||x==='송장번호'))return 'hanjin';}
     return null;
@@ -1267,8 +1270,8 @@ const SHIP={
     return -1;
   },
   parseNaver(rows,file){
-    const hi=rows.findIndex((r,i)=>i<15&&(r||[]).some(x=>String(x??'').trim()==='상품주문번호'));if(hi<0)return[];
-    const H=rows[hi].map(x=>String(x??'').trim());const ix=n=>H.indexOf(n);
+    const hi=rows.findIndex((r,i)=>i<30&&(r||[]).some(x=>SHIP.nm(x)==='상품주문번호'));if(hi<0)return[];
+    const H=rows[hi].map(x=>SHIP.nm(x));const ix=n=>H.indexOf(n);
     const c={po:ix('상품주문번호'),ord:ix('주문번호'),buyer:ix('구매자명'),rcv:ix('수취인명'),tel:ix('수취인연락처1'),zip:ix('우편번호'),prod:ix('상품명'),opt:ix('옵션정보'),kind:ix('상품종류'),qty:ix('수량')};
     let a=ix('통합배송지');if(a<0)a=ix('기본배송지');if(a<0)a=H.findIndex(h=>h.includes('배송지')||h.includes('주소'));const a2=ix('상세배송지');
     const g=(r,i)=>i>=0?SHIP.cell(r[i]):'';
@@ -1276,8 +1279,8 @@ const SHIP={
       addr:g(r,a)+(a2>=0&&a2!==a?' '+g(r,a2):''),prod:g(r,c.prod)+(g(r,c.opt)?` (${g(r,c.opt)})`:''),pname:g(r,c.prod),opt:g(r,c.opt),kind:g(r,c.kind),qty:g(r,c.qty)}));
   },
   parseHanjin(rows,file){
-    const hi=rows.findIndex((r,i)=>i<15&&(r||[]).some(x=>{x=String(x??'').trim();return x==='운송장번호'||x==='송장번호';}));if(hi<0)return[];
-    const top=rows[hi].map(x=>String(x??'').trim());const sub=(rows[hi+1]||[]).map(x=>String(x??'').trim());
+    const hi=rows.findIndex((r,i)=>i<30&&(r||[]).some(x=>{x=SHIP.nm(x);return x==='운송장번호'||x==='송장번호';}));if(hi<0)return[];
+    const top=rows[hi].map(x=>SHIP.nm(x));const sub=(rows[hi+1]||[]).map(x=>SHIP.nm(x));
     const two=sub.some(x=>x==='이름'||x==='연락처'||x==='우편번호');
     const names=[];let last='';
     for(let i=0;i<Math.max(top.length,sub.length);i++){if(top[i])last=top[i];names.push(two&&sub[i]?`${last}_${sub[i]}`:(top[i]||''));}
@@ -1559,6 +1562,8 @@ const kb=n=>n>1048576?(n/1048576).toFixed(1)+'MB':Math.round(n/1024)+'KB';
 function hourOpts(sel){let o=`<option value="">시</option>`;for(let h=0;h<24;h++){const v=pad(h);o+=`<option value="${v}" ${v===sel?'selected':''}>${h}시</option>`;}return o;}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),2800);}
 function ask(msg,yes='확인'){return new Promise(res=>{$('#cfMsg').textContent=msg;$('#cfYes').textContent=yes;$('#cf').hidden=false;const done=v=>{$('#cf').hidden=true;res(v);};$('#cfYes').onclick=()=>done(true);$('#cfNo').onclick=()=>done(false);});}
+function askPw(msg){return new Promise(res=>{$('#pwMsg').textContent=msg;$('#pwIn').value='';$('#pw').hidden=false;setTimeout(()=>$('#pwIn').focus(),30);
+  const done=v=>{$('#pw').hidden=true;$('#pwIn').onkeydown=null;res(v);};$('#pwYes').onclick=()=>done($('#pwIn').value);$('#pwNo').onclick=()=>done(null);$('#pwIn').onkeydown=e=>{if(e.key==='Enter')done($('#pwIn').value);};});}
 function popup(t,m){return new Promise(res=>{$('#popTitle').textContent=t;$('#popMsg').textContent=m;$('#pop').hidden=false;$('#popOk').onclick=()=>{$('#pop').hidden=true;res();};});}
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
 const VIEWS=['vLoading','vLogin','vSignup','vWait','vStaff','vAdmin'];
@@ -1748,7 +1753,7 @@ function startStaff(first){
     unsubs.push(onSnapshot(query(collection(db,'users',meUid,'tasks'),orderBy('createdAt','desc'),limit(100)),q=>{myTasks=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(R)renderTasksBlock();},()=>{}));
     unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};if(R&&R.loaded&&CALC.kind(R.date,CAL,meUid)!==R.kind)renderReport();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'purchases'),q=>{myPurch=q.docs.map(x=>({...x.data(),id:x.id}));if(R)renderIncoming();},()=>{}));
-    unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(stTab==='inv'){invBy={[meUid]:myInv};renderInvTab();}if(R&&R.loaded){renderDue();['cs_taxinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
+    unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(stTab==='inv'){invBy={[meUid]:myInv};renderInvTab();}if(R&&R.loaded){renderDue();['cs_taxinv','cs_buyinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
     watchLinks();pingPresence(true);
     if(me.part==='CS'){watchInq();initStaffTabs();}else $('#rInq').innerHTML='';
     if(me.part==='디자인')watchReels();else $('#rReel').innerHTML='';
@@ -1786,7 +1791,7 @@ const KIND_L={daily:'일일 보고',weekly:'주간 보고일',monthly:'월간 �
 const KIND_C={daily:'',weekly:'acc',monthly:'ok'};
 let CAL={holidays:[],leave:{}};
 const byLib=(a,b)=>LIB_ORDER.indexOf(a)-LIB_ORDER.indexOf(b);
-const AUTO_NEW={CS:['cs.dashchk']};   // 나중에 생긴 항목: 해당 파트 직원 양식에 자동 포함
+const AUTO_NEW={CS:['cs.stickerprint','cs.buyinv']};   // 나중에 생긴 항목: 해당 파트 직원 양식에 자동 포함
 const withNew=u=>{const s=(u?.sections||[]).slice();if(s.length)(AUTO_NEW[u.part]||[]).forEach(k=>{if(!s.includes(k)&&!(u.removedNew||[]).includes(k))s.push(k);});return s;};
 function mySections(){return withNew(me).filter(k=>ITEM[k]).sort(byLib);}
 const DS_DAY={mon:['ds.waiting','ds.thisweek','ds.nextweek','ds.smartstore','ds.mall','ds.openmarket'],fri:['ds.waiting','ds.thisweek','ds.nextweek','ds.result','ds.smartstore','ds.mall','ds.openmarket','ds.sns']};
@@ -1822,8 +1827,8 @@ function renderKind(){
 // CS 화면 배치: 상단(출근 후 확인) · 중간(문의·클레임·발주) · 하단(출고·상담·마감) · 주간/월간 · 최하단(의견)
 const CS_LAYOUT=[
   {id:'top',l:'상단 · 출근 후 확인',keys:['@today','cs.prevday','cs.adcharge']},
-  {id:'mid',l:'중간 · 문의·클레임·발주',keys:['cs.bulk','cs.claim','cs.purchase','@incoming']},
-  {id:'low',l:'하단 · 업무·출고·상담·마감',keys:['@tasks','cs.ship','cs.quick','cs.consult','cs.order']},
+  {id:'mid',l:'중간 · 문의·클레임·발주',keys:['cs.bulk','cs.claim','cs.purchase','@incoming','cs.buyinv']},
+  {id:'low',l:'하단 · 업무·출고·상담·마감',keys:['@tasks','cs.ship','cs.quick','cs.consult','cs.stickerprint','cs.order']},
   {id:'per',l:'주간·월간 업무',keys:['*']},
   {id:'end',l:'최하단',keys:['cs.notes']}
 ];
@@ -2101,7 +2106,7 @@ document.addEventListener('click',async e=>{
 });
 function renderDue(){
   const box=$('#rDue');if(!box)return;
-  const show=mySections().some(k=>k==='cs.taxinv'||k==='cs.vendorpay');
+  const show=mySections().some(k=>k==='cs.taxinv'||k==='cs.buyinv'||k==='cs.vendorpay');
   const soon=show?invUnpaidSoon(myInv,R?.date||today(),5):[];
   box.innerHTML=soon.length?`<section class="rsec flagbox"><div class="rh"><b>계산서 기한 알림</b><span class="note">기한(익월 10일)이 5일 안으로 남았거나 지난 미처리 계산서예요</span></div>${invTable(soon,R?.date||today(),{uid:meUid})}</section>`:'';
 }
@@ -2160,6 +2165,12 @@ function sectionHtml(key){
     h+=(d.workers||[]).map((w,i)=>carrotWorkerHtml(dk,i,w)).join('')+`<button type="button" class="add" data-addworker>+ 알바 추가</button>`
       +fieldsHtml(dk,[['files','files','급여 자료 업로드 (출퇴근 기록부·급여 정산 엑셀·PDF)','',{accept:'.xlsx,.xls,.csv,.pdf'}],['imgs','imgs','급여 지급 캡쳐 (이체 내역·당근 정산 화면)']],d)
       +`<p class="note" style="margin:6px 0 0">금요일(주간) 보고마다 그 주 근무일을 넣어주세요. 알바급여 탭에서는 한 달 치가 날짜별로 합쳐져 계산돼요.</p>`;
+  }else if(S.type==='taxinv'&&S.lite){
+    const p=`${dk}|files`;const res=d.result;
+    h+=`${fieldHtml(dk+'|kindSel',['kindSel','radio','파일 구분','',{opts:[['auto','자동 구분'],['매입','매입'],['매출','매출']]}],d.kindSel||'auto')}
+      <div class="field"><span class="lb">홈택스 계산서 목록 엑셀 (.xls 그대로 · 여러 개 가능 · 같은 계산서는 한 번만 들어가요)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.files,'.xlsx,.xls,.csv')}</div></div>
+      ${res?`${probHtml(res)}<div class="shipsum"><span class="tag acc">매입 ${res.buys||0}건</span><span class="tag cs">매출 ${res.sales||0}건</span>${res.months?`<span class="note">${esc(res.months)}</span>`:''}<span class="note">${esc(fmtT(res.at))} 계산서 탭에 반영</span></div>`:''}
+      ${(d.files||[]).length?`<button type="button" class="linkbtn" data-reparse="${dk}">다시 정리하기</button>`:''}`;
   }else if(S.type==='taxinv'){
     const p=`${dk}|files`;const res=d.result;
     h+=`${fieldHtml(dk+'|kindSel',['kindSel','radio','파일 구분','',{opts:[['auto','자동 구분'],['매출','매출'],['매입','매입']]}],d.kindSel||'auto')}
@@ -2442,8 +2453,38 @@ function clockStrip(img,o){
 const CLOCK_TRY=[
   {where:'top',hr:0.0112,x:0.80,psm:'7'},{where:'top',hr:0.017,x:0.78,psm:'7'},{where:'top',hr:0.025,x:0.75,psm:'7'},
   {where:'bottom',hr:0.05,x:0.82,psm:'6'},{where:'bottom',hr:0.046,x:0.90,psm:'6'},{where:'bottom',hr:0.07,x:0.88,psm:'6'},{where:'top',hr:0.0112,x:0.62,psm:'7'}];
+// 윈도우 작업표시줄 오른쪽 아래 2줄 시계(오후 5:50 / 2026-11-03)를 글자 덩어리로 찾아 줄마다 크게 키움
+function winClockLines(img){
+  const W=img.naturalWidth,H=img.naturalHeight;const x0=Math.round(W*0.86),h=Math.max(28,Math.round(H*0.06)),y0=H-h,w=W-x0;
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(img,x0,y0,w,h,0,0,w,h);
+  const a=x.getImageData(0,0,w,h).data;const g=new Float32Array(w*h);for(let i=0;i<g.length;i++)g[i]=a[i*4]*.299+a[i*4+1]*.587+a[i*4+2]*.114;
+  const srt=Float32Array.from(g).sort();const bg=srt[srt.length>>1];const ink=new Uint8Array(w*h);for(let i=0;i<g.length;i++)ink[i]=Math.abs(g[i]-bg)>40?1:0;
+  let top=0;for(let y=0;y<h;y++){let n=0;for(let i=0;i<w;i++)n+=ink[y*w+i];if(n>w*0.5)top=y+1;}   // 작업표시줄 경계선 위는 버림
+  const colInk=i=>{for(let y=top;y<h;y++)if(ink[y*w+i])return true;return false;};
+  const cl=[];let s=-1,last=0;for(let i=0;i<=w+6;i++){const v=i<w&&colInk(i);if(v){if(s<0)s=i;last=i;}else if(s>=0&&i-last>=6){cl.push([s,last]);s=-1;}}
+  const out=[];
+  for(const[X0,X1] of cl.filter(q=>q[1]-q[0]>=16).reverse().slice(0,3)){
+    const ln=[];let a1=-1;for(let y=top;y<=h;y++){let v=false;if(y<h)for(let i=X0;i<=X1;i++)if(ink[y*w+i]){v=true;break;}
+      if(v&&a1<0)a1=y;if(!v&&a1>=0){if(y-a1>=4)ln.push([a1,y-1]);a1=-1;}}
+    if(ln.length<2||ln.length>3)continue;   // 윈도우 시계는 시간·날짜 2줄
+    const cvs=ln.map(([b1,b2])=>{const lx=Math.max(0,X0-3),ly=Math.max(0,b1-3),lw=Math.min(w,X1+4)-lx,lh=Math.min(h,b2+4)-ly;const sc=Math.max(3,Math.min(10,Math.round(56/lh)));const pd=20;
+      const k=document.createElement('canvas');k.width=lw*sc+pd*2;k.height=lh*sc+pd*2;const kx=k.getContext('2d');kx.imageSmoothingEnabled=true;kx.imageSmoothingQuality='high';kx.drawImage(c,lx,ly,lw,lh,pd,pd,lw*sc,lh*sc);
+      const id=kx.getImageData(pd,pd,lw*sc,lh*sc);const d=id.data;let mn=255,mx=0;const gg=new Float32Array(d.length/4);for(let i=0;i<gg.length;i++){const v=d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114;gg[i]=v;if(v<mn)mn=v;if(v>mx)mx=v;}
+      const inv=bg<128;const rg=Math.max(1,mx-mn);for(let i=0;i<gg.length;i++){let v=(gg[i]-mn)/rg*255;if(inv)v=255-v;d[i*4]=d[i*4+1]=d[i*4+2]=v;d[i*4+3]=255;}   // 흑백 단계 유지(이진화 안 함) + 밝은 배경·어두운 글자로 통일
+      kx.fillStyle='#fff';kx.fillRect(0,0,k.width,k.height);kx.putImageData(id,pd,pd);return k;});
+    out.push(cvs);
+  }
+  return out;
+}
 async function readCaptureClock(file){
   const img=await loadImg(file);const w=await getOcr();let best=null;
+  try{for(const lines of winClockLines(img)){
+    await w.setParameters({tessedit_pageseg_mode:'7'});const txt=[];
+    for(const k of lines){const{data:{text}}=await w.recognize(k);txt.push(text.trim());}
+    const text=txt.join('\n');const parsed=CLOCK.parse(text);const r={parsed,src:'win',text};
+    if(parsed.mo!=null&&parsed.H!=null)return r;
+    if(!best||(parsed.mo!=null&&best.parsed.mo==null))best=r;
+  }}catch(e){}
   for(const o of CLOCK_TRY){
     await w.setParameters({tessedit_pageseg_mode:o.psm});
     const{data:{text}}=await w.recognize(clockStrip(img,o));
@@ -2765,8 +2806,8 @@ async function readSheets(files){
     const key=f.id||f.tmp;let buf=fileBuf[key];
     if(!buf&&f.id){try{const s=await getDoc(doc(db,'users',meUid,'files',f.id));if(s.exists()){buf=await (await fetch(s.data().data)).arrayBuffer();fileBuf[key]=buf;}}catch(e){}}
     if(!buf){problems.push(`${f.name}: 원본이 보관되지 않아 다시 읽을 수 없어요 (다시 올려주세요)`);continue;}
-    try{const rows=SHIP.rows(XLSX,buf,f.name);sets.push({name:f.name,rows,kind:SHIP.detect(rows)});}
-    catch(e){problems.push(/password|encrypt|protected/i.test(e.message||'')?`${f.name}: 비밀번호가 걸린 파일이에요. 비밀번호를 풀고 다시 저장해서 올려주세요`:`${f.name}: 파일을 읽지 못했어요`);}
+    try{buf=await unlockBuf(buf,f.name);fileBuf[key]=buf;const rows=SHIP.rows(XLSX,buf,f.name);sets.push({name:f.name,rows,kind:SHIP.detect(rows)});}
+    catch(e){problems.push(lockMsg(e,f.name));}
   }
   return{sets,problems};
 }
@@ -2787,9 +2828,9 @@ async function analyzeCount(){
   setP(R.data,['cs_ordercount','result'],{...c,problems,at:new Date().toISOString()});
   R.dirty=true;saveDraft();
 }
-async function analyzeTax(){
-  const d=R.data.cs_taxinv||{};const files=d.files||[];
-  if(!files.length){setP(R.data,['cs_taxinv','result'],null);R.dirty=true;saveDraft();return;}
+async function analyzeTax(dk='cs_taxinv'){
+  const d=R.data[dk]||{};const files=d.files||[];
+  if(!files.length){setP(R.data,[dk,'result'],null);R.dirty=true;saveDraft();return;}
   const{sets,problems}=await readSheetsRaw(files,true);const now=new Date().toISOString();const force=d.kindSel&&d.kindSel!=='auto'?d.kindSel:'';
   const seen=new Map();
   for(const x of sets){
@@ -2807,7 +2848,7 @@ async function analyzeTax(){
     if(++n%400===0){await wb.commit();wb=writeBatch(db);}}
   if(n%400)await wb.commit();
   const vals=[...seen.values()];const months=[...new Set(vals.map(v=>(v.date||'').slice(0,7)).filter(Boolean))].sort();
-  setP(R.data,['cs_taxinv','result'],{sales:vals.filter(v=>v.kind==='매출').length,buys:vals.filter(v=>v.kind==='매입').length,months:months.length?`${months[0]} ~ ${months[months.length-1]}`:'',problems,at:now});R.dirty=true;saveDraft();
+  setP(R.data,[dk,'result'],{sales:vals.filter(v=>v.kind==='매출').length,buys:vals.filter(v=>v.kind==='매입').length,months:months.length?`${months[0]} ~ ${months[months.length-1]}`:'',problems,at:now});R.dirty=true;saveDraft();
 }
 // 날짜를 원래 값(엑셀 일련번호)으로 읽는 버전 — 시간대 때문에 하루 밀리는 문제 방지
 async function readSheetsRaw(files,allSheets){
@@ -2818,15 +2859,16 @@ async function readSheetsRaw(files,allSheets){
     if(!buf&&f.id){try{const s=await getDoc(doc(db,'users',meUid,'files',f.id));if(s.exists()){buf=await (await fetch(s.data().data)).arrayBuffer();fileBuf[key]=buf;}}catch(e){}}
     if(!buf){problems.push(`${f.name}: 원본이 보관되지 않아 다시 읽을 수 없어요 (다시 올려주세요)`);continue;}
     try{
+      buf=await unlockBuf(buf,f.name);if(key)fileBuf[key]=buf;
       let wb;if(/\.csv$/i.test(f.name)){let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){t=new TextDecoder('euc-kr').decode(buf);}wb=XLSX.read(t.replace(/^﻿/,''),{type:'string'});}
       else wb=XLSX.read(buf,{type:'array'});
       const names=allSheets?wb.SheetNames:[wb.SheetNames[0]];
       for(const n of names)sets.push({name:allSheets?n:f.name,file:f.name,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true})});
-    }catch(e){problems.push(/password|encrypt|protected/i.test(e.message||'')?`${f.name}: 비밀번호가 걸린 파일이에요. 비밀번호를 풀고 다시 저장해서 올려주세요`:`${f.name}: 파일을 읽지 못했어요`);}
+    }catch(e){problems.push(lockMsg(e,f.name));}
   }
   return{sets,problems};
 }
-const PARSE={cs_ship:()=>analyzeShip('cs_ship'),cs_satinv:()=>analyzeShip('cs_satinv'),cs_ordercount:()=>analyzeCount(),cs_taxinv:()=>analyzeTax(),cs_dashchk:()=>analyzeDash()};
+const PARSE={cs_ship:()=>analyzeShip('cs_ship'),cs_satinv:()=>analyzeShip('cs_satinv'),cs_ordercount:()=>analyzeCount(),cs_taxinv:()=>analyzeTax('cs_taxinv'),cs_buyinv:()=>analyzeTax('cs_buyinv'),cs_dashchk:()=>analyzeDash()};
 
 /* ---------- 엑셀에서 목록 가져오기 (베스트리뷰·보건증·원재료) ---------- */
 let zipReady=null;
@@ -2905,6 +2947,66 @@ function healthWarn(rows,base){
 
 /* ---------- 한진 × 네이버 대조 실행 ---------- */
 let xlsxReady=null;
+/* ---------- 비밀번호 걸린 엑셀(.xlsx) 풀기: 네이버 주문내역 다운로드 파일 ---------- */
+const XLOCK={
+  cat(...a){const n=a.reduce((s,x)=>s+x.length,0);const o=new Uint8Array(n);let i=0;for(const x of a){o.set(x,i);i+=x.length;}return o;},
+  le32(i){const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,i,true);return b;},
+  b64(t){const s=atob(t);const o=new Uint8Array(s.length);for(let i=0;i<s.length;i++)o[i]=s.charCodeAt(i);return o;},
+  u16(pw){const o=new Uint8Array(pw.length*2);for(let i=0;i<pw.length;i++){const c=pw.charCodeAt(i);o[i*2]=c&255;o[i*2+1]=c>>8;}return o;},
+  async H(alg,...p){return new Uint8Array(await crypto.subtle.digest(alg,XLOCK.cat(...p)));},
+  fit(k,n,f){if(k.length>=n)return k.slice(0,n);const o=new Uint8Array(n).fill(f);o.set(k);return o;},
+  // 패딩 없는 AES-CBC 복호화 (WebCrypto는 패딩을 요구하므로 가짜 패딩 블록을 붙여서 품)
+  async cbc(kb,iv,data){const key=await crypto.subtle.importKey('raw',kb,'AES-CBC',false,['encrypt','decrypt']);
+    const last=data.slice(data.length-16);const e=new Uint8Array(await crypto.subtle.encrypt({name:'AES-CBC',iv:last},key,new Uint8Array(16).fill(16))).slice(0,16);
+    return new Uint8Array(await crypto.subtle.decrypt({name:'AES-CBC',iv},key,XLOCK.cat(data,e)));},
+  parts(buf){
+    const u=new Uint8Array(buf);if(!(u[0]===0xD0&&u[1]===0xCF&&u[2]===0x11&&u[3]===0xE0)||!window.XLSX?.CFB)return null;
+    let cfb;try{cfb=XLSX.CFB.read(u,{type:'array'});}catch(e){return null;}
+    const ei=XLSX.CFB.find(cfb,'EncryptionInfo'),ep=XLSX.CFB.find(cfb,'EncryptedPackage');
+    if(!ei||!ep)return null;return{info:Uint8Array.from(ei.content),pkg:Uint8Array.from(ep.content)};
+  },
+  isLocked(buf){return !!XLOCK.parts(buf);},
+  async open(buf,pw){
+    const P=XLOCK.parts(buf);if(!P)return buf;const{info,pkg}=P;const dv=new DataView(info.buffer);
+    const vMaj=dv.getUint16(0,true),vMin=dv.getUint16(2,true);const pd=new DataView(pkg.buffer);const size=pd.getUint32(0,true)+pd.getUint32(4,true)*4294967296;const body=pkg.subarray(8);
+    let out;
+    if(vMaj===4&&vMin===4){   // Agile (요즘 엑셀·네이버)
+      const xml=new TextDecoder().decode(info.subarray(8));
+      const tag=t=>(xml.match(new RegExp('<(?:\\w+:)?'+t+'\\b[^>]*>'))||[''])[0];const at=(x,n)=>(x.match(new RegExp('\\b'+n+'="([^"]*)"'))||[])[1]||'';
+      const kd=tag('keyData'),ek=tag('encryptedKey');const alg=n=>({SHA1:'SHA-1','SHA-1':'SHA-1',SHA256:'SHA-256',SHA384:'SHA-384',SHA512:'SHA-512'}[n]||'SHA-512');
+      const ha=alg(at(ek,'hashAlgorithm')),spin=+at(ek,'spinCount')||100000,kbits=+at(ek,'keyBits')||256,eSalt=XLOCK.b64(at(ek,'saltValue'));
+      let h=await XLOCK.H(ha,eSalt,XLOCK.u16(pw));for(let i=0;i<spin;i++)h=await XLOCK.H(ha,XLOCK.le32(i),h);
+      const kek=XLOCK.fit(await XLOCK.H(ha,h,new Uint8Array([0x14,0x6e,0x0b,0xe7,0xab,0xac,0xd0,0xd6])),kbits/8,0x36);
+      const bs=+at(ek,'blockSize')||16;
+      const secret=(await XLOCK.cbc(kek,XLOCK.fit(eSalt,bs,0x36),XLOCK.b64(at(ek,'encryptedKeyValue')))).slice(0,(+at(kd,'keyBits')||256)/8);
+      const kha=alg(at(kd,'hashAlgorithm')),kSalt=XLOCK.b64(at(kd,'saltValue')),kbs=+at(kd,'blockSize')||16;const segs=[];
+      for(let i=0,o=0;o<body.length;i++,o+=4096){const iv=XLOCK.fit(await XLOCK.H(kha,kSalt,XLOCK.le32(i)),kbs,0x36);segs.push(await XLOCK.cbc(secret,iv,body.subarray(o,Math.min(body.length,o+4096))));}
+      out=XLOCK.cat(...segs).slice(0,size);
+    }else if((vMaj===3||vMaj===4)&&vMin===2){   // Standard (예전 엑셀)
+      const hs=dv.getUint32(8,true);const hd=new DataView(info.buffer,12,hs);const keyLen=hd.getUint32(16,true)/8||16;
+      const salt=info.slice(12+hs+4,12+hs+20);
+      let h=await XLOCK.H('SHA-1',salt,XLOCK.u16(pw));for(let i=0;i<50000;i++)h=await XLOCK.H('SHA-1',XLOCK.le32(i),h);
+      h=await XLOCK.H('SHA-1',h,XLOCK.le32(0));const b1=new Uint8Array(64).fill(0x36),b2=new Uint8Array(64).fill(0x5c);for(let i=0;i<h.length;i++){b1[i]^=h[i];b2[i]^=h[i];}
+      const key=XLOCK.cat(await XLOCK.H('SHA-1',b1),await XLOCK.H('SHA-1',b2)).slice(0,keyLen);
+      const data=body.subarray(0,body.length-body.length%16);const p=await XLOCK.cbc(key,new Uint8Array(16),data);   // ECB = CBC 결과에서 앞 블록을 다시 XOR
+      for(let i=16;i<p.length;i++)p[i]^=data[i-16];out=p.slice(0,size);
+    }else throw new Error('unsupported');
+    if(!(out[0]===0x50&&out[1]===0x4B))throw new Error('badpw');
+    return out.buffer;
+  }
+};
+// 잠긴 파일이면 비밀번호로 풀어서 돌려줌 (기억한 비밀번호 → 물어보기, 틀리면 다시 물어봄)
+async function unlockBuf(buf,name){
+  if(!XLOCK.isLocked(buf))return buf;
+  let pw=LS.get('xlpw-'+meUid),tries=0,msg=`${name} · 네이버에서 엑셀을 내려받을 때 정한 비밀번호를 넣어주세요`;
+  while(tries<4){
+    if(pw==null||pw===''){pw=await askPw(msg);if(pw==null)throw new Error('password-cancel');}
+    try{const out=await XLOCK.open(buf,pw);if($('#pwKeep').checked)LS.set('xlpw-'+meUid,pw);return out;}
+    catch(e){if(e.message!=='badpw')throw new Error('password-unsupported');LS.set('xlpw-'+meUid,'');pw=null;tries++;msg=`비밀번호가 맞지 않아요. 다시 넣어주세요 (${name})`;}
+  }
+  throw new Error('password-wrong');
+}
+const lockMsg=(e,name)=>e.message==='password-cancel'?`${name}: 비밀번호를 넣지 않아 읽지 못했어요 · "다시 비교하기"를 누르면 다시 물어봐요`:e.message==='password-wrong'?`${name}: 비밀번호가 계속 맞지 않아요. 네이버에서 내려받을 때 정한 비밀번호를 확인해주세요`:e.message==='password-unsupported'?`${name}: 이 방식의 비밀번호 파일은 풀 수 없어요. 엑셀에서 열어 "다른 이름으로 저장 → 도구 → 일반 옵션"에서 비밀번호를 지우고 올려주세요`:/password|encrypt|protected/i.test(e.message||'')?`${name}: 비밀번호가 걸린 파일이에요`:`${name}: 파일을 읽지 못했어요 (${String(e.message||'').slice(0,40)})`;
 function ensureXLSX(){
   if(window.XLSX)return Promise.resolve();
   if(!xlsxReady)xlsxReady=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=res;s.onerror=()=>{xlsxReady=null;rej(new Error('load'));};document.head.appendChild(s);});
@@ -2924,8 +3026,8 @@ async function analyzeShip(dk='cs_ship'){
     if(!buf&&f.id){try{const s=await getDoc(doc(db,'users',meUid,'files',f.id));if(s.exists()){buf=await (await fetch(s.data().data)).arrayBuffer();fileBuf[key]=buf;}}catch(e){}}
     if(!buf){problems.push(`${f.name}: 원본이 보관되지 않아 다시 비교할 수 없어요 (다시 올려주세요)`);continue;}
     let rows;
-    try{rows=SHIP.rows(XLSX,buf,f.name);}
-    catch(e){problems.push(/password|encrypt|protected/i.test(e.message||'')?`${f.name}: 비밀번호가 걸린 파일이에요. 비밀번호를 풀고 다시 저장해서 올려주세요`:`${f.name}: 파일을 읽지 못했어요`);continue;}
+    try{buf=await unlockBuf(buf,f.name);fileBuf[key]=buf;rows=SHIP.rows(XLSX,buf,f.name);}
+    catch(e){problems.push(lockMsg(e,f.name));continue;}
     const kind=SHIP.detect(rows);
     if(kind==='naver')naver.push(...SHIP.parseNaver(rows,f.name));
     else if(kind==='hanjin')hanjin.push(...SHIP.parseHanjin(rows,f.name));
@@ -3105,7 +3207,7 @@ $('#sendBtn').onclick=async()=>{
   if(!R||!editable())return;
   const secs=secsFor(mySections(),R.kind||'daily',{date:R.date,uid:meUid});const miss=[];let firstMiss=null;
   for(const k of secs){const S=SCHEMA[k],d=R.data[DK(k)]||{},lab=ITEM[k].label;
-    const chk=(fields,obj,pre)=>fields.forEach(f=>{if(f[4]?.required&&f[1]==='imgs'&&!(obj?.[f[0]]||[]).length){miss.push(`${pre} ${f[2]}`);firstMiss=firstMiss||DK(k);}});
+    const chk=(fields,obj,pre)=>fields.forEach(f=>{if(f[4]?.required&&(f[1]==='imgs'?!(obj?.[f[0]]||[]).length:f[1]==='check'?!obj?.[f[0]]:false)){miss.push(`${pre} ${f[2]}`);firstMiss=firstMiss||DK(k);}});
     if(S.type==='group')chk(S.fields,d,lab);
     if(S.type==='list')(d.rows||[]).forEach((r,i)=>chk(S.fields,r,`${lab} ${i+1}`));
     if(S.list)(d.rows||[]).forEach((r,i)=>chk(S.list.fields,r,`${lab} ${i+1}`));}
@@ -4012,7 +4114,7 @@ function renderInvTab(){
     <div class="kpi"><div class="l">미처리 전체</div><div class="v">${open.length}<small> / ${all.length}건</small></div></div>`;
   const list=all.filter(v=>(invF==='all'||(invF==='open'?!v.paid:v.paid))&&(!invK||v.kind===invK))
     .sort(invF==='done'?(a,b)=>(b.paidAt||'').localeCompare(a.paidAt||''):(a,b)=>(a.due||'9').localeCompare(b.due||'9')||(a.date||'').localeCompare(b.date||''));
-  $('#invVendor').innerHTML=all.length?vendorPayHtml(all,td,{admin:isAdminUser}):`<div class="empty">아직 정리된 계산서가 없어요. ${isAdminUser?'직원이 ':''}월간보고의 "계산서 조회"에 국세청 엑셀을 올리면 여기에 모여요.</div>`;
+  $('#invVendor').innerHTML=all.length?vendorPayHtml(all,td,{admin:isAdminUser}):`<div class="empty">아직 정리된 계산서가 없어요. ${isAdminUser?'직원이 ':''}일일보고의 "계산서 발행 (매입자료)"나 월간보고의 "계산서 조회"에 국세청 엑셀을 올리면 여기에 모여요.</div>`;
   $('#invList').innerHTML=all.length?invTable(list,td,{admin:isAdminUser}):'';
   const soonAll=invUnpaidSoon(ALL,td,5);
   $('#homeDue').hidden=!soonAll.length;
@@ -4274,6 +4376,9 @@ function sectionView(u,key,d,rv,grp,canReview){
   }else if(S.type==='carrot'){
     body+=carrotViewHtml(d);
     if((d?.files||[]).length)body+=`<div class="files" style="margin-top:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`;
+  }else if(S.type==='taxinv'&&S.lite){
+    body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'<p class="note" style="margin:0">오늘 올린 계산서 없음</p>';
+    const res=d?.result;if(res)body+=`${probHtml(res)}<div class="shipsum"><span class="tag acc">매입 ${res.buys||0}건</span><span class="tag cs">매출 ${res.sales||0}건</span>${res.months?`<span class="note">${esc(res.months)}</span>`:''}</div>`;
   }else if(S.type==='taxinv'){
     body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'';
     const res=d?.result;if(res)body+=`${probHtml(res)}<div class="shipsum"><span class="tag cs">매출 ${res.sales||0}건</span><span class="tag acc">매입 ${res.buys||0}건</span></div>`;
