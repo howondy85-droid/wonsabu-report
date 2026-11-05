@@ -451,12 +451,15 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .octext{margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--sunk)}
 .octext pre{margin:6px 0 0;white-space:pre-wrap;font-family:var(--f-body);font-size:13.5px;line-height:1.7}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .pvship{margin-top:14px;border-top:1px dashed var(--line);padding-top:6px}
+  .pvrow.ok{border-left:4px solid var(--ok)}.pvrow.no{border-left:4px solid var(--bad)}
+  .pvkv{margin:0 0 8px}.pvtext{white-space:pre-wrap;font-weight:600}.pvnote{color:var(--bad);font-weight:600}
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-28</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-29</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -872,7 +875,7 @@ const idToEmail=id=>`${id}@${ID_DOMAIN}`;
 const LIB=[
  {g:'cs-daily',label:'CS · 일일업무',items:[
   ['cs.ship','발송처리 내역','한진 송장 × 네이버 주문 엑셀 대조'],['cs.stickerprint','다음날 스티커 출력 확인','출력물 사진 필수 · 매일'],
-  ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐, 미배송 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
+  ['cs.prevday','전일출고분 특이사항','한진 세부내역 캡쳐 · 미배송 확인 · 출고분 문구·사진 확인'],['cs.quick','퀵/방문수령','출고완료 사진'],
   ['cs.bulk','대량주문 문의','일시·내용·견적서'],['cs.claim','클레임 발생내역','캡쳐 필수'],
   ['cs.consult','진행중 상담','톡톡·카카오채널·인스타DM'],['cs.tasks','진행중 업무','관리자 지시 업무'],
   ['cs.purchase','발주내역','품목·수량·금액·예상입고일 · 캡쳐 자동 인식'],['cs.buyinv','계산서 발행 (매입자료)','국세청 엑셀 수시 업로드 → 계산서 탭 반영'],['cs.notes','특이사항 또는 의견','자유 기재'],['cs.adcharge','스스 광고비 충전','충전화면 캡쳐'],['cs.order','주문접수 완료','마지막 단계 · 5개 채널 캡쳐 17:25 이후']]},
@@ -896,7 +899,7 @@ const CONSULT_DONE='완료 기준: 담당자 마지막 메시지가 "네네! 또
 const SCHEMA={
  'cs.order':{type:'channels',hint:'업무보고 마지막 단계예요. 17:25 이후 채널별 화면을 전체화면으로 캡쳐해 올리면, 화면 오른쪽 위 시계를 읽어 오늘·17:25 이후인지 확인한 뒤 접수 완료를 켤 수 있어요',fields:[['done','check','접수 완료'],['imgs','imgs','전체화면 캡쳐']]},
  'cs.ship':{type:'ship',hint:'한진 송장 엑셀(재출력_세부내역)과 네이버 주문내역 엑셀(전체주문발주발송관리)을 함께 올리면, 이미 송장이 나간 주문(중복)과 미발송 주문을 찾아줘요'},
- 'cs.prevday':{type:'group',hint:'출근 후 · 점심 · 퇴근 전 세 번 한진택배 세부내역으로 배송완료를 확인하고 체크하세요',fields:[['chkAm','tcheck','출근 후 확인','',{from:''}],['chkNoon','tcheck','점심 확인','',{from:'11:30'}],['chkPm','tcheck','퇴근 전 확인','',{from:'17:00'}],['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
+ 'cs.prevday':{type:'group',ship:true,hint:'출근 후 · 점심 · 퇴근 전 세 번 한진택배 세부내역으로 배송완료를 확인하고 체크하세요',fields:[['chkAm','tcheck','출근 후 확인','',{from:''}],['chkNoon','tcheck','점심 확인','',{from:'11:30'}],['chkPm','tcheck','퇴근 전 확인','',{from:'17:00'}],['allDone','radio','배송 상태','',{opts:[['yes','전체 배송완료'],['no','미완료 있음']]}],['imgs','imgs','한진 세부내역 캡쳐']],
    list:{label:'미완료 건',showIf:['allDone','no'],fields:[['name','text','주문자명'],['invoice','text','송장번호'],['note','text','배송완료시각 또는 통화내역']]}},
  'cs.quick':{type:'group',hint:'포장완료 후 매장·픽업대에 올라간 사진. 없으면 비워두세요',fields:[['imgs','imgs','출고완료 사진']],
    list:{label:'퀵/방문 건',fields:[['name','text','주문자명'],['date','date','출고일'],['hour','hour','시간'],['kq','check','카카오퀵 배차 완료'],['notice','check','톡톡·문자 안내 발송 완료'],['note','text','내용 및 특이사항']]}},
@@ -1915,7 +1918,9 @@ function secState(id){
   const dk=id.slice(4);const key=KD(dk);const S=SCHEMA[key];if(!S)return{t:'',c:''};const d=R.data[dk];const rv=R.review?.[dk];
   if(rv?.state==='revise')return{t:'보완 요청',c:'bad'};
   const tf=(S.fields||[]).filter(f=>f[1]==='tcheck');
-  if(tf.length){const n=tf.filter(f=>d?.[f[0]]).length;const extra=hasVal(Object.fromEntries(Object.entries(d||{}).filter(([k])=>!tf.some(f=>f[0]===k))));return{t:`확인 ${n}/${tf.length}${extra?' · 작성':''}`,c:n===tf.length?'ok':n?'acc':''};}
+  if(tf.length){const n=tf.filter(f=>d?.[f[0]]).length;const extra=hasVal(Object.fromEntries(Object.entries(d||{}).filter(([k])=>!tf.some(f=>f[0]===k))));
+    const pv=S.ship?pvCount(d):null;const pvt=pv&&pv.all?` · 출고 ${pv.done}/${pv.all}${pv.bad?` · 이상 ${pv.bad}`:''}`:'';
+    return{t:`확인 ${n}/${tf.length}${pvt||(extra?' · 작성':'')}`,c:pv?.bad?'bad':n===tf.length&&(!pv||pv.done===pv.all)?'ok':n?'acc':''};}
   if(S.type==='dashchk'){const r=d?.result;if(!r)return{t:'미작성',c:''};if(r.err)return{t:'대조 실패',c:'bad'};const up=dcUp(r,R.date);const left=up.filter(x=>x.sev>=2&&!d.done?.[dcKey(x)]).length;return{t:left?`오류 의심 ${left}건`:`확인 ${up.filter(x=>d.done?.[dcKey(x)]).length}/${up.length}`,c:left?'bad':'ok'};}
   if(S.type==='channels'){const n=CHS.filter(([c])=>d?.[c]?.done).length;return{t:`${n}/${CHS.length} 완료`,c:n===CHS.length?'ok':'acc'};}
   if(S.type==='dplan'){const n=dsB(S.bucket).length;if(S.bucket==='this'&&CALC.dsDay(R.date,CAL,meUid)==='mon')return{t:`${n}건 · ${d?.ack?'확인함':'미확인'}`,c:d?.ack?'ok':'acc'};return{t:`${n}건`,c:''};}
@@ -2157,6 +2162,7 @@ function sectionHtml(key){
   }else if(S.type==='group'){
     h+=fieldsHtml(dk,S.fields,d);
     if(S.list){const si=S.list.showIf;h+=`<div ${si?`data-showif="${dk}|${si[0]}" data-showval="${si[1]}"`:''}><div class="field"><span class="lb">${esc(S.list.label)}</span></div>${rowsHtml(dk,S.list,d.rows)}</div>`;}
+    if(S.ship)h+=pvShipHtml(dk,d);
   }else if(S.type==='list'){
     h+=importBtn(dk,S);
     h+=S.table?tableListHtml(dk,S,d.rows,R.date):rowsHtml(dk,{label:S.label,fields:S.fields},d.rows);
@@ -2289,6 +2295,58 @@ const dcKey=x=>[x.type,x.date,x.who,x.prod,x.or?.row||'',x.da?.row||''].join('|'
 const dcUp=(r,base)=>(r?.issues||[]).filter(x=>x.date>=base);
 const DC_T={notYet:'주문서 미등록',diff:'내용 다름',split:'나눠 적기·합쳐 적기',noOrder:'주문서에 없음',noDash:'대시보드에 없음',date:'배송일 다름'};
 const DC_K={typo:'오타 의심',part:'일부만 적힘',blank:'빈칸',diff:'다름',safe:'안심번호'};
+/* ---------- 전일 출고분: 주문서 엑셀 → 주문별 문구·특이사항 + 출고 전 사진 확인 ---------- */
+const pvKey=o=>{const t=[o.date,o.sheet,o.row,o.주문자,o.수취인].join('|');let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return 'o'+h.toString(36);};
+function pvCount(d){const L=d?.shipList||[],st=d?.ship||{};return{all:L.length,done:L.filter(o=>st[o.k]?.st).length,bad:L.filter(o=>st[o.k]?.st==='bad').length,noimg:L.filter(o=>!(st[o.k]?.imgs||[]).length).length};}
+async function analyzePv(){
+  const dk='cs_prevday';const d=R.data[dk]||{};const files=d.shipFiles||[];
+  if(!files.length){setP(R.data,[dk,'shipRes'],null);setP(R.data,[dk,'shipList'],[]);R.dirty=true;saveDraft();return;}
+  const{sets,problems}=await readSheetsRaw(files,true);const now=new Date().toISOString();
+  const kinds=sets.map(x=>({x,k:DC.head(x.rows)?.kind||''}));let use=kinds.filter(z=>z.k==='order');if(!use.length)use=kinds.filter(z=>z.k==='dash');
+  if(!use.length){setP(R.data,[dk,'shipRes'],{err:'주문서 엑셀(배송일·주문자·상품명·문구 열이 있는 시트)을 찾지 못했어요',problems,at:now});R.dirty=true;saveDraft();return;}
+  const base={y:+R.date.slice(0,4),m:+R.date.slice(5,7)};const seen=new Set();
+  const all=use.flatMap(z=>DC.rows(z.x,base)).filter(o=>o.date&&!/취소|환불|반품/.test(o.status||'')).filter(o=>{const k=[o.date,DC.k(o.주문자),DC.k(o.수취인),o.수량,DC.prod(o.상품명),DC.k(o.문구).slice(0,30)].join('|');if(seen.has(k))return false;seen.add(k);return true;});
+  const dates=[...new Set(all.map(o=>o.date))].sort();
+  // 기본: 보고일 바로 전 출고일 (없으면 보고일·마지막 날짜)
+  const pick=d.shipDate&&dates.includes(d.shipDate)?d.shipDate:(dates.filter(x=>x<R.date).pop()||dates.filter(x=>x<=R.date).pop()||dates[dates.length-1]||'');
+  const list=all.filter(o=>o.date===pick).slice(0,300).map(o=>({k:pvKey(o),date:o.date,method:o.배송방법,who:o.주문자,to:o.수취인,prod:o.상품명,add:o.추가,qty:o.수량,box:o.박스,sticker:o.스티커,text:o.문구,note:[...new Map(String(o.특이||'').split(/\s*,\s*/).filter(Boolean).map(x=>[DC.k(x),x])).values()].join(', '),memo:o.배송메모,sheet:o.sheet,row:o.row}));
+  setP(R.data,[dk,'shipDate'],pick);setP(R.data,[dk,'shipList'],list);
+  setP(R.data,[dk,'shipRes'],{dates:dates.slice(-62),count:list.length,problems,at:now});R.dirty=true;saveDraft();
+}
+function pvShipHtml(dk,d){
+  const p=`${dk}|shipFiles`;const L=d.shipList||[],st=d.ship||{},res=d.shipRes;const c=pvCount(d);
+  let h=`<div class="pvship"><h4 class="subh">출고분 주문 확인 <span class="note">주문서(출고분) 엑셀을 올리면 주문마다 문구·특이사항이 정리돼요. 출고 전 사진을 올리고 이상 유무를 체크하세요</span></h4>
+    <div class="field"><span class="lb">출고분 주문서 엑셀 (주문서·대시보드 엑셀 그대로)</span><div class="files" data-files="${p}" data-accept=".xlsx,.xls,.csv">${filesInner(p,d.shipFiles,'.xlsx,.xls,.csv')}</div></div>`;
+  if(res?.err)h+=`<p class="note" style="color:var(--bad)">${esc(res.err)}</p>`;
+  if(res)h+=probHtml(res);
+  if(res&&!res.err){
+    const ds=res.dates||[];
+    h+=`<div class="shipsum"><span class="lb" style="margin:0">출고일</span><select data-pvdate>${ds.slice().reverse().map(x=>`<option value="${x}" ${x===d.shipDate?'selected':''}>${fmtD(x)}(${dayName(x)})</option>`).join('')}</select>
+      <span class="tag">${c.all}건</span><span class="tag ${c.done===c.all&&c.all?'ok':'acc'}">확인 ${c.done}/${c.all}</span>${c.bad?`<span class="tag bad">이상 ${c.bad}</span>`:''}${c.noimg?`<span class="tag">사진 없음 ${c.noimg}</span>`:''}${(d.shipFiles||[]).length?`<button type="button" class="linkbtn" data-reparse="${dk}">다시 정리하기</button>`:''}</div>`;
+    if(!L.length)h+=`<p class="note">${esc(fmtD(d.shipDate||''))} 출고 주문이 없어요. 위에서 출고일을 바꿔보세요.</p>`;
+  }
+  h+=L.map((o,i)=>{const v=st[o.k]||{};const b=`${dk}|ship|${o.k}`;
+    return `<div class="row pvrow ${v.st==='ok'?'ok':v.st==='bad'?'no':''}" data-pvrow="${o.k}"><div class="row-h"><b>${i+1}. ${esc(o.who)}${o.to&&o.to!==o.who?` → ${esc(o.to)}`:''}</b>${o.method?`<span class="tag">${esc(o.method)}</span>`:''}</div>
+      <p class="note" style="margin:0 0 6px">${esc(o.prod)}${o.add?` + ${esc(o.add)}`:''} · ${esc(o.qty)}개${o.box?` · 박스 ${esc(o.box)}`:''}${o.sticker?` · 스티커 ${esc(o.sticker)}`:''}</p>
+      <dl class="kv pvkv"><dt>문구</dt><dd class="pvtext">${esc(o.text)||'<span class="note">없음</span>'}</dd>${o.note?`<dt>특이사항</dt><dd class="pvnote">${esc(o.note)}</dd>`:''}${o.memo?`<dt>배송메모</dt><dd>${esc(o.memo)}</dd>`:''}</dl>
+      ${fieldHtml(b+'|imgs',['imgs','imgs','출고 전 사진'],v.imgs)}
+      ${fieldHtml(b+'|st',['st','radio','이상 유무','',{opts:[['ok','이상 없음'],['bad','이상 있음']]}],v.st)}
+      ${fieldHtml(b+'|memo',['memo','text','이상 내용 (문구 오타·스티커·수량·박스 등)','',{showIf:['st','bad']}],v.memo)}</div>`;}).join('');
+  return h+'</div>';
+}
+function pvShipView(uid,d,grp){
+  const L=d?.shipList||[];if(!L.length)return '';const st=d.ship||{};const c=pvCount(d);
+  return `<h4 class="subh">출고분 주문 확인 · ${esc(fmtD(d.shipDate||''))} 출고</h4><div class="shipsum" style="margin-top:0"><span class="tag">${c.all}건</span><span class="tag ${c.done===c.all?'ok':'acc'}">확인 ${c.done}/${c.all}</span>${c.bad?`<span class="tag bad">이상 ${c.bad}</span>`:''}${c.noimg?`<span class="tag bad">사진 없음 ${c.noimg}</span>`:''}</div>
+    <div class="tbl" style="margin-top:0"><table><thead><tr><th>#</th><th>주문자 → 수취인</th><th>상품·수량</th><th>문구</th><th>특이사항</th><th>출고 전 사진</th><th>이상 유무</th></tr></thead><tbody>${L.map((o,i)=>{const v=st[o.k]||{};
+      return `<tr class="${v.st==='bad'?'warnrow':''}"><td>${i+1}</td><td><b>${esc(o.who)}</b>${o.to&&o.to!==o.who?` → ${esc(o.to)}`:''}${o.method?`<br><span class="note">${esc(o.method)}</span>`:''}</td><td>${esc(o.prod)} ${esc(o.qty)}개${o.box?`<br><span class="note">박스 ${esc(o.box)}${o.sticker?` · 스티커 ${esc(o.sticker)}`:''}</span>`:''}</td><td style="min-width:180px;white-space:pre-wrap">${esc(o.text)}</td><td>${esc(o.note)}${o.memo?`<br><span class="note">${esc(o.memo)}</span>`:''}</td>
+        <td><div class="gthumbs">${(v.imgs||[]).map(im=>galThumb(uid,im,`${o.who} 출고 전`,grp)).join('')||'<span style="color:var(--bad)">없음</span>'}</div></td>
+        <td>${v.st==='ok'?'<span class="tag ok">이상 없음</span>':v.st==='bad'?`<span class="tag bad">이상 있음</span>${v.memo?`<br>${esc(v.memo)}`:''}`:'<span class="tag">미확인</span>'}</td></tr>`;}).join('')}</tbody></table></div>`;
+}
+$('#rForm').addEventListener('change',async e=>{
+  const sd=e.target.closest('[data-pvdate]');if(sd&&editable()){setP(R.data,['cs_prevday','shipDate'],sd.value);await analyzePv();rerenderSection('cs_prevday');return;}
+  const m=(e.target.dataset?.p||'').match(/^cs_prevday\|ship\|(\w+)\|st$/);
+  if(m){const row=e.target.closest('.pvrow');if(row){row.classList.toggle('ok',e.target.value==='ok');row.classList.toggle('no',e.target.value==='bad');}}
+});
 async function analyzeDash(){
   const d=R.data.cs_dashchk||{};const files=d.files||[];
   if(!files.length){setP(R.data,['cs_dashchk','result'],null);R.dirty=true;saveDraft();return;}
@@ -2868,7 +2926,7 @@ async function readSheetsRaw(files,allSheets){
   }
   return{sets,problems};
 }
-const PARSE={cs_ship:()=>analyzeShip('cs_ship'),cs_satinv:()=>analyzeShip('cs_satinv'),cs_ordercount:()=>analyzeCount(),cs_taxinv:()=>analyzeTax('cs_taxinv'),cs_buyinv:()=>analyzeTax('cs_buyinv'),cs_dashchk:()=>analyzeDash()};
+const PARSE={cs_ship:()=>analyzeShip('cs_ship'),cs_satinv:()=>analyzeShip('cs_satinv'),cs_ordercount:()=>analyzeCount(),cs_taxinv:()=>analyzeTax('cs_taxinv'),cs_buyinv:()=>analyzeTax('cs_buyinv'),cs_dashchk:()=>analyzeDash(),cs_prevday:()=>analyzePv()};
 
 /* ---------- 엑셀에서 목록 가져오기 (베스트리뷰·보건증·원재료) ---------- */
 let zipReady=null;
@@ -3212,6 +3270,8 @@ $('#sendBtn').onclick=async()=>{
     if(S.type==='list')(d.rows||[]).forEach((r,i)=>chk(S.fields,r,`${lab} ${i+1}`));
     if(S.list)(d.rows||[]).forEach((r,i)=>chk(S.list.fields,r,`${lab} ${i+1}`));}
   for(const[pid,v] of Object.entries(R.data.incoming||{})){if(v?.ok&&!(v.imgs||[]).length){const pu=myPurch.find(x=>x.id===pid);miss.push(`입고 내역 ${pu?.item||''} 정리 사진`);firstMiss=firstMiss||'incoming';}}
+  if(secs.includes('cs.prevday')){const pv=pvCount(R.data.cs_prevday);
+    if(pv.all&&pv.done<pv.all&&!(await ask(`이상 유무를 체크하지 않은 출고 주문이 ${pv.all-pv.done}건 있어요 (사진 없는 주문 ${pv.noimg}건).\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_prevday')?.scrollIntoView({behavior:'smooth',block:'center'});return;}}
   if(secs.includes('ds.result')){const its=dsThis();const none=its.filter(it=>!R.data.ds_result?.items?.[it.id]?.st);
     if(none.length&&!(await ask(`완료·미완료를 고르지 않은 이번주 업무가 ${none.length}건 있어요:
 ${none.map(x=>x.title).join(', ')}
@@ -4409,6 +4469,7 @@ function sectionView(u,key,d,rv,grp,canReview){
     if(key==='ds.sns')body+=reelViewHtml(d);
     body+=kvHtml(u.uid,S.fields,d,grp);
     if(S.list)body+=(d?.rows||[]).map((r,i)=>`<div class="vrow"><b style="font-size:12.5px">${esc(S.list.label)} ${i+1}</b>${kvHtml(u.uid,S.list.fields,r,grp)}</div>`).join('');
+    if(S.ship)body+=pvShipView(u.uid,d,grp);
   }else{
     const rows=d?.rows||[];const best=key==='cs.bestreview';
     body+=rows.length?rows.map((r,i)=>`<div class="vrow" ${i===0?'style="border-top:0;padding-top:0;margin-top:0"':''}><div class="btnrow"><b style="font-size:12.5px">${esc(S.label)} ${i+1}</b>${best&&r.picked?'<span class="tag ok">선정</span>':''}${best?`<button type="button" class="${r.picked?'secondary':'okbtn'}" data-best="${i}" style="padding:5px 10px;font-size:12px">${r.picked?'선정 취소':'선정'}</button>`:''}</div>${kvHtml(u.uid,S.fields,r,grp)}</div>`).join(''):'';
