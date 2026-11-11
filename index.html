@@ -461,7 +461,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-31</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-32</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -3213,22 +3213,27 @@ const ST_L={todo:'대기',submitted:'확인요청',revise:'보완요청',next:'�
 const ST_C={todo:'',submitted:'acc',revise:'bad',next:'cs',done:'ok'};
 const LOG_L={update:'진행상황',edit:'수정·보완 재전송',revise:'보완사항',next:'다음업무지시',done:'완료 처리'};
 const ORDER={revise:0,submitted:1,next:2,todo:3,done:4};
+// 업무가 이 날짜 보고서에 나타나는지 (그날 보고 업무는 그 날짜부터)
+const tkStarted=(t,date)=>!t.startAt||t.startAt.slice(0,10)<=date;
+// 기한이 있는 업무는 완료될 때까지 매일 진행상황 필수 (확인 요청을 보낸 상태라도 기한 날짜까지는 매일)
+const tkNeedDaily=(t,date)=>!!t.dueAt&&tkStarted(t,date)&&(['todo','revise','next'].includes(t.status)||(t.status==='submitted'&&date<=t.dueAt.slice(0,10)));
+const tkLastProg=t=>(t.log||[]).filter(e=>e.kind==='update'||e.kind==='edit').map(e=>e.at||'').sort().pop()||'';
 function isLate(t){if(t.status==='done')return false;if(t.dueAt)return Date.now()>new Date(t.dueAt).getTime();if(t.today&&t.createdAt){const d=new Date(t.createdAt);d.setHours(23,59,59,0);return Date.now()>d.getTime();}return false;}
 function sortTasks(a,b){return((ORDER[a.status]??9)-(ORDER[b.status]??9))||((a.dueAt||'9999').localeCompare(b.dueAt||'9999'));}
 function taskHead(t,who){
   const late=isLate(t);
-  return `<div class="th1">${who||''}<b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${t.today?'<span class="tag bad">금일 마무리</span>':''}${t.linkFrom?`<span class="tag ds">연계 받음 · ${esc(t.linkFrom)}</span>`:''}${t.linkTo?`<span class="tag ds">연계 → ${esc(t.linkTo)}</span>`:''}${t.status!=='done'&&t.dueAt&&t.dueAt.slice(0,10)===(R?.date||today())?'<span class="tag acc">오늘 마감</span>':''}</div>
-   <div class="when ${late?'late':''}">${t.startAt?esc(fmtDH(t.startAt))+' 시작 · ':''}${t.dueAt?esc(fmtDH(t.dueAt))+' 완료 예정':'완료일시 없음'}${late?' · 기한 지남':''}</div>
+  return `<div class="th1">${who||''}<b>${esc(t.title)}</b><span class="tag ${ST_C[t.status]||''}">${esc(ST_L[t.status]||t.status)}</span>${t.today?'<span class="tag bad">금일 마무리</span>':''}${t.dueAt&&t.status!=='done'?(t.reportMode==='onday'?`<span class="tag cs">📅 ${esc(fmtD(t.dueAt.slice(0,10)))} 보고</span>`:'<span class="tag acc">기한까지 매일 진행보고</span>'):''}${t.linkFrom?`<span class="tag ds">연계 받음 · ${esc(t.linkFrom)}</span>`:''}${t.linkTo?`<span class="tag ds">연계 → ${esc(t.linkTo)}</span>`:''}${t.status!=='done'&&t.dueAt&&t.dueAt.slice(0,10)===(R?.date||today())?'<span class="tag acc">오늘 마감</span>':''}</div>
+   <div class="when ${late?'late':''}">${t.startAt?esc(fmtDH(t.startAt))+' 시작 · ':''}${t.dueAt?esc(fmtDH(t.dueAt))+' 완료 예정':'완료일시 없음'}${late?' · 기한 지남':''}${isAdminUser&&t.dueAt&&t.status!=='done'?(()=>{const lp=tkLastProg(t);const td=today();const need=tkNeedDaily(t,td);return lp?` · 최근 진행보고 ${esc(fmtT(lp))}${need&&new Date(lp).toDateString()!==new Date().toDateString()?' <b style="color:var(--bad)">· 오늘 아직</b>':''}`:need?' · <b style="color:var(--bad)">진행보고 없음</b>':'';})():''}</div>
    ${t.desc?`<p class="desc">${esc(t.desc)}</p>`:''}
    ${(t.imgs||[]).length?`<div class="gthumbs">${t.imgs.map(im=>galThumb(t.uid,im,`${t.title} · 첨부`,'ta-'+t.id)).join('')}</div>`:''}${(t.files||[]).length?`<div class="files" style="margin-top:6px">${t.files.map(f=>fileChip(t.uid,f,null)).join('')}</div>`:''}`;
 }
 function taskLog(t,group){
   const log=(t.log||[]).slice().sort((a,b)=>(a.at||'').localeCompare(b.at||''));
-  return log.length?`<div class="log">${log.map(e=>`<div class="e ${esc(e.kind==='edit'?'update':e.kind)}"><div class="h"><b>${esc(LOG_L[e.kind]||'')}${e.solo?' <span class="tag" style="font-weight:500">개별 전송</span>':''}${e.late?' <span class="tag bad" style="font-weight:500">마감 후</span>':e.solo?' <span class="tag ok" style="font-weight:500">기한 내</span>':''}</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}${(e.imgs||[]).length?`<div class="gthumbs">${e.imgs.map(im=>galThumb(t.uid,im,t.title,group||('t-'+t.id))).join('')}</div>`:''}</div>`).join('')}</div>`:'';
+  return log.length?`<div class="log">${log.map(e=>`<div class="e ${esc(e.kind==='edit'?'update':e.kind)}"><div class="h"><b>${esc(LOG_L[e.kind]||'')}${e.solo?' <span class="tag" style="font-weight:500">개별 전송</span>':''}${e.late?' <span class="tag bad" style="font-weight:500">마감 후</span>':e.solo?' <span class="tag ok" style="font-weight:500">기한 내</span>':''}${e.due?` <span class="tag cs" style="font-weight:500">${e.mode==='onday'?`📅 ${esc(fmtD(e.due.slice(0,10)))} 보고`:`기한 ${esc(fmtDH(e.due))}`}</span>`:''}</b><span class="num">${esc(fmtT(e.at))}</span></div>${e.text?`<p>${esc(e.text)}</p>`:''}${(e.imgs||[]).length?`<div class="gthumbs">${e.imgs.map(im=>galThumb(t.uid,im,t.title,group||('t-'+t.id))).join('')}</div>`:''}</div>`).join('')}</div>`:'';
 }
 function renderTasksBlock(){
   if(!R||!$('#rTasks'))return;
-  const started=t=>!t.startAt||t.startAt.slice(0,10)<=R.date;
+  const started=t=>tkStarted(t,R.date);
   const open=myTasks.filter(t=>t.status!=='done'&&started(t)).sort(sortTasks);
   const upcoming=myTasks.filter(t=>t.status!=='done'&&!started(t)).length;
   const doing=dsThis().filter(it=>it.status==='doing');
@@ -3236,7 +3241,7 @@ function renderTasksBlock(){
   const keep={};$$('#rTasks [data-p]').forEach(el=>{if(el.tagName==='TEXTAREA')keep[el.dataset.p]=el.value;});
   $('#rTasks').innerHTML=`<section class="rsec" id="sec-tasks"><div class="rh"><b>진행중 업무</b><span class="note">대표님이 지시한 업무 · 진행상황과 캡쳐를 적고 보고서와 함께 전송돼요</span></div>${
     open.length?open.map(t=>{const p=`tasks|${t.id}`;const d=R.data.tasks?.[t.id]||{};const sent=t.status==='submitted';const dirty=tkDirty(d);
-      return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}" id="tk-${esc(t.id)}">${taskHead(t)}${dueLeft(t)}${taskLog(t)}<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lknew="task:${esc(t.id)}">이 업무 연계 보내기 →</button></div>
+      return `<div class="task s-${esc(t.status)} ${isLate(t)?'late':''}" id="tk-${esc(t.id)}">${taskHead(t)}${dueLeft(t)}${tkNeedDaily(t,R.date)?`<p class="note" style="margin:4px 0 0;color:var(--acc-ink,#9a6400)"><b>기한이 있는 업무예요.</b> ${t.reportMode==='onday'?'오늘이 보고일이에요. 진행상황(결과)을 적어야 보고서를 전송할 수 있어요.':'완료될 때까지 매일 진행상황을 적어야 보고서를 전송할 수 있어요.'}</p>`:''}${taskLog(t)}<div class="btnrow" style="justify-content:flex-end;margin-top:6px"><button type="button" class="linkbtn" data-lknew="task:${esc(t.id)}">이 업무 연계 보내기 →</button></div>
         ${sent?`<p class="note" style="margin:10px 0 4px">${d.sentAt?`${esc(fmtT(d.sentAt))}에 전송했어요 · `:''}대표님 확인을 기다리는 중이에요. 고칠 내용이 있으면 아래에 적고 <b>다시 전송</b>하세요.</p>`:''}
         <div class="inbox">${fieldHtml(p+'|text',['text','textarea',sent?'수정·보완 내용':t.status==='revise'?'보완한 내용':'진행상황',''],d.text)}${fieldHtml(p+'|imgs',['imgs','imgs','진행 캡쳐'],d.imgs)}
         ${editable()?`<div class="btnrow" style="margin-top:6px"><button type="button" class="primary" data-tsend="${esc(t.id)}" style="padding:8px 14px;font-size:13.5px">${sent||d.sentAt?'수정 내용 다시 전송':'이 업무 전송'}</button><span class="note" data-tkst="${esc(t.id)}">${d.sentAt?(dirty?'전송 후 고친 내용이 있어요':'전송한 내용 그대로예요'):'보고서 최종 전송 전에 이 업무만 먼저 보낼 수 있어요'}</span></div>`:'<p class="note" style="margin:6px 0 0">오늘 보고서는 전송됐어요. 이 업무를 더 고치려면 위의 <b>“전송 후 업무 수정·보완”</b> 칸을 써주세요.</p>'}</div></div>`;}).join('')
@@ -3276,6 +3281,7 @@ $('#sendBtn').onclick=async()=>{
     if(S.type==='list')(d.rows||[]).forEach((r,i)=>chk(S.fields,r,`${lab} ${i+1}`));
     if(S.list)(d.rows||[]).forEach((r,i)=>chk(S.list.fields,r,`${lab} ${i+1}`));}
   for(const[pid,v] of Object.entries(R.data.incoming||{})){if(v?.ok&&!(v.imgs||[]).length){const pu=myPurch.find(x=>x.id===pid);miss.push(`입고 내역 ${pu?.item||''} 정리 사진`);firstMiss=firstMiss||'incoming';}}
+  for(const t of myTasks.filter(t=>tkNeedDaily(t,R.date))){const d=R.data.tasks?.[t.id];if(!(d&&(String(d.text||'').trim()||(d.imgs||[]).length))){miss.push(`업무 "${t.title}" 오늘 진행상황`);firstMiss=firstMiss||'tasks';}}
   if(secs.includes('cs.prevday')){const pv=pvCount(R.data.cs_prevday);
     if(pv.all&&pv.done<pv.all&&!(await ask(`이상 유무를 체크하지 않은 출고 주문이 ${pv.all-pv.done}건 있어요 (사진 없는 주문 ${pv.noimg}건).\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_prevday')?.scrollIntoView({behavior:'smooth',block:'center'});return;}}
   if(secs.includes('ds.result')){const its=dsThis();const none=its.filter(it=>!R.data.ds_result?.items?.[it.id]?.st);
@@ -3796,6 +3802,8 @@ function notiEvents(){
     (typeof LINKS!=='undefined'?LINKS:[]).forEach(l=>{if(l.status==='request')add(`l|${l.id}|${l.updatedAt}`,l.updatedAt||l.createdAt,'🔗 업무 연계 승인 요청',`${l.from?.name||''} → ${l.to?.name||''} · ${l.title||''}`,{tab:'link'});});
     Object.values(users||{}).forEach(u=>{if(u.status==='pending')add(`u|${u.uid}`,u.createdAt||u.requestedAt,'🙋 가입 승인 요청',`${u.name||''} (${u.part||''})`,{tab:'req'});});
   }else{
+    myTasks.forEach(t=>(t.log||[]).forEach(e=>{if(!['revise','next','done'].includes(e.kind))return;
+      add(`f|${t.id}|${e.at}`,e.at,{revise:'✏️ 업무 보완 요청',next:'➡️ 다음 업무 지시',done:'✅ 업무 완료 처리'}[e.kind],`${t.title||''}${e.due?` · ${e.mode==='onday'?`${fmtD(e.due.slice(0,10))} 보고`:`기한 ${fmtDH(e.due)}`}`:''}${e.text?`\n${String(e.text).slice(0,80)}`:''}`,{sec:'rTasks'});}));
     myTasks.forEach(t=>{if(t.status==='done')return;add(`t|${t.id}`,t.createdAt,t.id.startsWith('lk_')?'🔗 연계 업무 도착':'📌 새 업무지시',`${t.title||''}${t.dueAt?` · 마감 ${fmtT(t.dueAt)}`:''}`,{sec:'rTasks'});});
     myReps.forEach(r=>{if(!r.reviewedAt||!['approved','hold'].includes(r.status)&&!Object.values(r.review||{}).some(v=>v?.state==='revise'))return;
       const nRev=Object.values(r.review||{}).filter(v=>v?.state==='revise').length;
@@ -4650,7 +4658,9 @@ function reportView(u,r,date,live){
   h+=`<div class="btnrow" style="justify-content:flex-end;margin:4px 0 16px"><button type="button" class="danger" data-repdel="${esc(u.uid)}|${esc(date)}">이 보고서 삭제</button></div>`;
   return h;
 }
-function taskFbBar(t){return `<div class="rvbar"><textarea data-k="fb-${esc(t.id)}" data-r="fb" rows="2" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)" placeholder="보완사항 또는 다음 업무 지시 (완료는 비워도 돼요)" aria-label="${esc(t.title)} 피드백"></textarea>
+function taskFbBar(t){return `<div class="rvbar" style="flex-wrap:wrap"><textarea data-k="fb-${esc(t.id)}" data-r="fb" rows="2" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)" placeholder="보완사항 또는 다음 업무 지시 (완료는 비워도 돼요)" aria-label="${esc(t.title)} 피드백"></textarea>
+  <div class="fbdue" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%;order:3;font-size:13px"><span class="note" style="margin:0">기한</span><input type="date" data-r="fbdate" min="${today()}" aria-label="기한 날짜" style="padding:6px 8px"><input type="time" data-r="fbtime" value="18:00" aria-label="기한 시각" style="padding:6px 8px">
+    <select data-r="fbmode" aria-label="보고 방식" style="padding:6px 8px;width:auto;min-width:150px"><option value="onday">그 날짜에만 보고</option><option value="daily">기한까지 매일 보고</option></select><span class="note" style="margin:0">다음업무·보완에 적용 · 비우면 기존 기한 유지</span></div>
   <div class="btnrow"><button type="button" class="okbtn" data-fb="done">완료</button><button type="button" class="danger" data-fb="revise">보완</button><button type="button" class="secondary" data-fb="next">다음업무</button></div></div>`;}
 
 const reShowAll={};
@@ -4761,8 +4771,13 @@ async function taskFeedback(e){
   if(fb){const kind=fb.dataset.fb;const ta=el.querySelector('[data-r=fb]');const text=ta.value.trim();
     if(kind!=='done'&&!text){toast(kind==='revise'?'보완할 내용을 적어주세요':'다음 업무 내용을 적어주세요');ta.focus();return;}
     fb.disabled=true;
-    try{const now=new Date().toISOString();ta.value='';await updateDoc(doc(db,'users',uid,'tasks',tid),{log:arrayUnion({kind,at:now,text}),status:kind,updatedAt:now});
-      toast({revise:'보완사항을 보냈어요',next:'다음 업무를 지시했어요',done:'완료 처리했어요'}[kind]);}catch(err){ta.value=text;toast(authMsg(err));fb.disabled=false;}
+    const dd=el.querySelector('[data-r=fbdate]')?.value||'',tm=el.querySelector('[data-r=fbtime]')?.value||'18:00',mode=el.querySelector('[data-r=fbmode]')?.value||'onday';
+    if(dd&&dd<today()){toast('기한은 오늘 이후로 정해주세요');fb.disabled=false;return;}
+    try{const now=new Date().toISOString();ta.value='';const ent={kind,at:now,text};const up={status:kind,updatedAt:now};
+      if(dd&&kind!=='done'){const due=`${dd}T${tm}`;ent.due=due;up.dueAt=due;
+        if(kind==='next'){ent.mode=mode;up.reportMode=mode;up.startAt=mode==='onday'?`${dd}T00:00`:'';}else up.reportMode='daily';}
+      up.log=arrayUnion(ent);await updateDoc(doc(db,'users',uid,'tasks',tid),up);
+      toast(dd&&kind!=='done'?`${{revise:'보완사항을',next:'다음 업무를'}[kind]} 보냈어요 · ${fmtD(dd)} ${kind==='next'&&mode==='onday'?'보고서에 나타나요':'기한까지 매일 진행보고'}`:{revise:'보완사항을 보냈어요',next:'다음 업무를 지시했어요',done:'완료 처리했어요'}[kind]);}catch(err){ta.value=text;toast(authMsg(err));fb.disabled=false;}
     return;}
   if(e.target.closest('[data-tdel]')){const t=(tasksBy[uid]||[]).find(x=>x.id===tid);if(!t)return;
     if(!(await ask(`'${t.title}' 업무를 삭제할까요? 첨부 캡쳐도 함께 지워지고 되돌릴 수 없어요.`,'삭제')))return;
