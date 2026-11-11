@@ -454,12 +454,14 @@ tr.off td{opacity:.45;text-decoration:line-through}
   .pvship{margin-top:14px;border-top:1px dashed var(--line);padding-top:6px}
   .pvrow.ok{border-left:4px solid var(--ok)}.pvrow.no{border-left:4px solid var(--bad)}
   .pvkv{margin:0 0 8px}.pvtext{white-space:pre-wrap;font-weight:600}.pvnote{color:var(--bad);font-weight:600}
+  #notiBtn.need{border-color:var(--acc,#FCB426);box-shadow:0 0 0 3px rgba(252,180,38,.25)}
+  @media (max-width:520px){#notiBtn .nl{display:none}}
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-29</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-31</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -477,6 +479,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     <button data-tab="data" aria-pressed="false">데이터 관리</button>
     <button data-tab="ops" aria-pressed="false">운영 점검<span class="dot" id="opsDot" hidden></span></button>
   </div>
+  <button class="ghost" id="notiBtn" hidden title="이 기기에서 알림 받기">🔔<span class="nl"> 알림 켜기</span></button>
   <button class="ghost" id="installBtn" hidden>앱 설치</button>
   <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
 </header>
@@ -723,6 +726,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 
   <section id="tabOps" hidden>
     <div class="panel"><div class="btnrow" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">자동 점검 <span class="s">운영에 필요한 설정을 사이트가 직접 확인해요</span></h2><div class="btnrow"><button type="button" class="secondary" data-help="admin">대표님용 사용 안내</button><button type="button" class="secondary" id="opsRe">다시 점검</button></div></div><ul class="ops" id="opsList"></ul></div>
+    <div class="panel" id="opsPush"></div>
     <div class="panel" id="opsHol"></div>
     <div class="panel"><h2>데이터 백업 <span class="s">한 달에 한 번 내려받아 보관하세요 · 사진 원본은 들어가지 않아요</span></h2>
       <div class="btnrow" style="margin-bottom:8px"><button type="button" class="primary" id="bkXlsx" style="padding:9px 16px;font-size:14px">엑셀 백업 내려받기</button><button type="button" class="secondary" id="bkJson">복구용 원본(JSON) 내려받기</button></div>
@@ -854,6 +858,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getMessaging, getToken, deleteToken, isSupported as fcmSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, orderBy, limit, onSnapshot, writeBatch, arrayUnion, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1564,7 +1569,7 @@ const dayName=s=>'일월화수목금토'[new Date(s+'T00:00').getDay()];
 const kb=n=>n>1048576?(n/1048576).toFixed(1)+'MB':Math.round(n/1024)+'KB';
 function hourOpts(sel){let o=`<option value="">시</option>`;for(let h=0;h<24;h++){const v=pad(h);o+=`<option value="${v}" ${v===sel?'selected':''}>${h}시</option>`;}return o;}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),2800);}
-function ask(msg,yes='확인'){return new Promise(res=>{$('#cfMsg').textContent=msg;$('#cfYes').textContent=yes;$('#cf').hidden=false;const done=v=>{$('#cf').hidden=true;res(v);};$('#cfYes').onclick=()=>done(true);$('#cfNo').onclick=()=>done(false);});}
+function ask(msg,yes='확인',no='취소'){return new Promise(res=>{$('#cfMsg').textContent=msg;$('#cfYes').textContent=yes;$('#cfNo').textContent=no;$('#cf').hidden=false;const done=v=>{$('#cf').hidden=true;res(v);};$('#cfYes').onclick=()=>done(true);$('#cfNo').onclick=()=>done(false);});}
 function askPw(msg){return new Promise(res=>{$('#pwMsg').textContent=msg;$('#pwIn').value='';$('#pw').hidden=false;setTimeout(()=>$('#pwIn').focus(),30);
   const done=v=>{$('#pw').hidden=true;$('#pwIn').onkeydown=null;res(v);};$('#pwYes').onclick=()=>done($('#pwIn').value);$('#pwNo').onclick=()=>done(null);$('#pwIn').onkeydown=e=>{if(e.key==='Enter')done($('#pwIn').value);};});}
 function popup(t,m){return new Promise(res=>{$('#popTitle').textContent=t;$('#popMsg').textContent=m;$('#pop').hidden=false;$('#popOk').onclick=()=>{$('#pop').hidden=true;res();};});}
@@ -1672,7 +1677,7 @@ $('#signupForm').addEventListener('submit',async e=>{
     pendingSignup=null;$('#signupForm').reset();toast('가입 신청이 접수됐어요');watchMe(cred.user.uid);
   }catch(err){pendingSignup=null;toast(authMsg(err));}finally{b.disabled=false;}
 });
-const logout=async()=>{cleanup();await signOut(auth);};
+const logout=async()=>{await pushOff(true);cleanup();await signOut(auth);};
 $('#logoutBtn').onclick=logout;$('#waitLogout').onclick=logout;
 
 /* ===================== 세션 ===================== */
@@ -1688,12 +1693,12 @@ function cleanup(){
   unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];
   [thumbSubs,taskSubs,repSubs,invSubs,planSubs,agSubs,puSubs].forEach(m=>Object.values(m).forEach(u=>{try{u();}catch(e){}}));agSubs={};puSubs={};agBy={};puBy={};statCache={};planSubs={};planBy={};myPlan=[];
   thumbSubs={};thumbs={};taskSubs={};tasksBy={};repSubs={};repsBy={};usersSig='';users={};invSubs={};invBy={};prices={};payCache={};
-  if(repUnsub){repUnsub();repUnsub=null;}clearTimeout(saveT);R=null;me=null;myTasks=[];myPurch=[];myAgenda=[];myInv=[];
+  if(repUnsub){repUnsub();repUnsub=null;}clearTimeout(saveT);R=null;me=null;myReps=[];NOTI.ready=false;NOTI.seen=new Set();clearTimeout(NOTI.t);NOTI.t=null;PUSH.tok='';myTasks=[];myPurch=[];myAgenda=[];myInv=[];
 }
 onAuthStateChanged(auth,user=>{
-  cleanup();$('#adminTabs').hidden=true;$('#logoutBtn').hidden=!user;$('#barSub').textContent='업무보고';
+  cleanup();$('#adminTabs').hidden=true;$('#logoutBtn').hidden=!user;$('#notiBtn').hidden=!user;$('#barSub').textContent='업무보고';
   if(!user){isAdminUser=false;meUid=null;show('vLogin');return;}
-  meUid=user.uid;isAdminUser=(user.email===ADMIN_EMAIL);
+  meUid=user.uid;isAdminUser=(user.email===ADMIN_EMAIL);setTimeout(notiBtnPaint,50);setTimeout(pushInit,1200);
   if(isAdminUser){startAdmin();return;}
   if(pendingSignup)return;
   watchMe(user.uid);
@@ -1753,7 +1758,8 @@ function startStaff(first){
   $('#stPart').textContent=me.part||'';$('#stPart').className='tag '+(me.part==='디자인'?'ds':'cs');
   if(first){
     $('#rDate').value=today();show('vStaff');
-    unsubs.push(onSnapshot(query(collection(db,'users',meUid,'tasks'),orderBy('createdAt','desc'),limit(100)),q=>{myTasks=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(R)renderTasksBlock();},()=>{}));
+    unsubs.push(onSnapshot(query(collection(db,'users',meUid,'tasks'),orderBy('createdAt','desc'),limit(100)),q=>{myTasks=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(R)renderTasksBlock();notiScanSoon();},()=>{}));
+    unsubs.push(onSnapshot(query(collection(db,'users',meUid,'reports'),orderBy('date','desc'),limit(10)),q=>{myReps=q.docs.map(x=>({...x.data(),id:x.id}));notiScanSoon();},()=>{}));
     unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};if(R&&R.loaded&&CALC.kind(R.date,CAL,meUid)!==R.kind)renderReport();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'purchases'),q=>{myPurch=q.docs.map(x=>({...x.data(),id:x.id}));if(R)renderIncoming();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(stTab==='inv'){invBy={[meUid]:myInv};renderInvTab();}if(R&&R.loaded){renderDue();['cs_taxinv','cs_buyinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
@@ -3372,8 +3378,8 @@ let loginsSynced=false;
 async function syncLogins(){if(loginsSynced||!Object.keys(users).length)return;loginsSynced=true;
   try{const have=new Set((await getDocs(collection(db,'logins'))).docs.map(x=>x.id));
     for(const u of Object.values(users)){if(!u.loginId||have.has(u.loginId))continue;await setDoc(doc(db,'logins',u.loginId),{email:u.authEmail||idToEmail(u.loginId),uid:u.uid,createdAt:new Date().toISOString()}).catch(()=>{});}}catch(e){loginsSynced=false;}}
-let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','live','stat','task','dsg','link','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='live')renderLive();if(t==='link')renderLinkTab();if(t==='ops')renderOps(true);if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
+let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);notiScanSoon();}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','live','stat','task','dsg','link','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='live')renderLive();if(t==='link')renderLinkTab();if(t==='ops'){renderOps(true);renderPushPanel();}if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -3771,6 +3777,124 @@ $('#installBtn').onclick=async()=>{
 };
 showInstall();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.update().catch(()=>{});}).catch(()=>{});});}
+/* ---------- 알림: 업무지시·보고·연계가 올라오면 이 기기에 알림 (앱이 켜져 있거나 최소화돼 있을 때) ---------- */
+let myReps=[];
+const NOTI={ready:false,seen:new Set(),t:null,unread:0,
+  ok(){return 'Notification' in window;},
+  key(){return 'noti-at-'+(meUid||'');},
+  last(){return LS.get(NOTI.key())||'';},
+  setLast(v){if(v>NOTI.last())LS.set(NOTI.key(),v);}
+};
+function notiScanSoon(){if(NOTI.t)return;NOTI.t=setTimeout(()=>{NOTI.t=null;notiScan();},1500);}   // 변경이 몰려도 1.5초마다 한 번 확인
+function notiEvents(){
+  const ev=[];const add=(key,at,title,body,go)=>{if(at)ev.push({key,at,title,body,go});};
+  if(isAdminUser){
+    Object.values(users||{}).forEach(u=>{
+      (repsBy[u.uid]||[]).forEach(r=>{if(r.status==='submitted')add(`r|${u.uid}|${r.date}|${r.submittedAt}`,r.submittedAt,`📋 ${u.name} 업무보고 도착`,`${fmtD(r.date)}(${dayName(r.date)}) ${({daily:'일일',weekly:'주간',monthly:'월간'})[r.kind]||''}보고${r.resubmit?' · 보완 후 재전송':''}`,{tab:'rep',open:`${u.uid}|${r.date}`});});
+      (tasksBy[u.uid]||[]).forEach(t=>{if(t.status!=='submitted')return;const lg=(t.log||[]).filter(x=>x.kind==='update'||x.kind==='edit').pop();if(lg)add(`t|${u.uid}|${t.id}|${lg.at}`,lg.at,`✅ ${u.name} 업무 전송`,`${t.title||''}${lg.late?' · 마감 지남':''}${lg.text?`\n${String(lg.text).slice(0,80)}`:''}`,{tab:'task'});});
+    });
+    (typeof LINKS!=='undefined'?LINKS:[]).forEach(l=>{if(l.status==='request')add(`l|${l.id}|${l.updatedAt}`,l.updatedAt||l.createdAt,'🔗 업무 연계 승인 요청',`${l.from?.name||''} → ${l.to?.name||''} · ${l.title||''}`,{tab:'link'});});
+    Object.values(users||{}).forEach(u=>{if(u.status==='pending')add(`u|${u.uid}`,u.createdAt||u.requestedAt,'🙋 가입 승인 요청',`${u.name||''} (${u.part||''})`,{tab:'req'});});
+  }else{
+    myTasks.forEach(t=>{if(t.status==='done')return;add(`t|${t.id}`,t.createdAt,t.id.startsWith('lk_')?'🔗 연계 업무 도착':'📌 새 업무지시',`${t.title||''}${t.dueAt?` · 마감 ${fmtT(t.dueAt)}`:''}`,{sec:'rTasks'});});
+    myReps.forEach(r=>{if(!r.reviewedAt||!['approved','hold'].includes(r.status)&&!Object.values(r.review||{}).some(v=>v?.state==='revise'))return;
+      const nRev=Object.values(r.review||{}).filter(v=>v?.state==='revise').length;
+      add(`r|${r.id}|${r.reviewedAt}`,r.reviewedAt,nRev?'✏️ 보고서 보완 요청':r.status==='hold'?'⏸ 보고서 보류':'👍 보고서 승인',`${fmtD(r.date||r.id)} 보고${nRev?` · 보완 ${nRev}건`:''}${r.reviewNote?` · ${String(r.reviewNote).slice(0,60)}`:''}`,{date:r.date||r.id});});
+    (myLinksOut||[]).forEach(l=>{if(['revise','hold','rejected'].includes(l.status))add(`lo|${l.id}|${l.updatedAt}`,l.updatedAt,`🔗 연계 요청 ${LK_L[l.status]}`,`${l.to?.name||''} · ${l.title||''}`,{});});
+  }
+  return ev;
+}
+async function notiScan(){
+  if(!meUid)return;const ev=notiEvents();const now=new Date().toISOString();
+  if(!NOTI.ready){NOTI.ready=true;
+    const last=NOTI.last();ev.forEach(e=>NOTI.seen.add(e.key));
+    if(!last){NOTI.setLast(now);return;}   // 이 기기에서 처음: 지난 것은 알리지 않음
+    const miss=ev.filter(e=>e.at>last);NOTI.setLast(now);
+    if(miss.length===1)notiShow(miss[0]);
+    else if(miss.length>1)notiShow({key:'sum',title:`🔔 확인하지 않은 알림 ${miss.length}건`,body:miss.slice(0,4).map(e=>e.title.replace(/^\S+\s/,'')).join(' · '),go:miss[0].go});
+    return;}
+  for(const e of ev){if(NOTI.seen.has(e.key))continue;NOTI.seen.add(e.key);if(e.at>=NOTI.last()||Date.now()-new Date(e.at).getTime()<10*60*1000)notiShow(e);}
+  NOTI.setLast(now);
+}
+async function notiShow(e,force){
+  const focused=!force&&document.visibilityState==='visible'&&document.hasFocus();
+  if(focused||LS.get('noti-off-'+meUid)==='1'||!NOTI.ok()||Notification.permission!=='granted'){toast(`${e.title} · ${e.body.split('\n')[0]}`);if(focused)return;}
+  if(!NOTI.ok()||Notification.permission!=='granted'||LS.get('noti-off-'+meUid)==='1')return;
+  if(!force&&PUSH.live())return;   // 서버 푸시가 이미 보내줌
+  NOTI.unread++;try{navigator.setAppBadge?.(NOTI.unread);}catch(x){}
+  const opt={body:e.body,tag:e.key,icon:'icons/icon-192.png',badge:'icons/favicon-32.png',renotify:true,data:{go:e.go||{}}};
+  try{const reg=await navigator.serviceWorker?.getRegistration();if(reg){await reg.showNotification(e.title,opt);return;}}catch(x){}
+  try{const n=new Notification(e.title,opt);n.onclick=()=>{window.focus();notiGo(e.go);n.close();};}catch(x){}
+}
+function notiGo(go){
+  if(!go)return;
+  if(isAdminUser&&go.tab){setTab(go.tab);if(go.open)setTimeout(()=>{const el=document.querySelector(`[data-openrep="${CSS.escape(go.open)}"]`);if(el)el.click();else{const[uid,d]=go.open.split('|');if($('#arDate')){$('#arDate').value=d;$('#arDate').dispatchEvent(new Event('change'));}setTimeout(()=>document.querySelector(`[data-openrep="${CSS.escape(go.open)}"]`)?.click(),400);}},300);return;}
+  if(!isAdminUser){if(go.date&&R&&R.date!==go.date){$('#rDate').value=go.date;openReport(go.date);}if(go.sec)setTimeout(()=>$('#'+go.sec)?.scrollIntoView({behavior:'smooth',block:'start'}),400);}
+}
+function notiClear(){NOTI.unread=0;try{navigator.clearAppBadge?.();}catch(x){}}
+window.addEventListener('focus',notiClear);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')notiClear();});
+navigator.serviceWorker?.addEventListener('message',m=>{if(m.data?.type==='noti-go'){notiClear();notiGo(m.data.go);}if(m.data?.type==='push-seen'&&meUid)LS.set('push-ok-'+meUid,String(Date.now()));});
+/* ---------- 서버 푸시(앱이 닫혀 있어도 도착): Firebase 클라우드 메시징 ---------- */
+const PUSH={vapid:'',tok:'',err:'',
+  live(){const t=+LS.get('push-ok-'+meUid)||0;return !!PUSH.tok&&Date.now()-t<14*864e5;}   // 최근 2주 안에 푸시가 실제로 도착한 기기
+};
+async function tokId(t){const h=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)));return [...h].slice(0,16).map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function pushInit(){
+  if(!meUid)return;PUSH.err='';
+  try{
+    if(!PUSH.vapid){const c=await getDoc(doc(db,'config','notify'));PUSH.vapid=(c.exists()&&c.data().vapid)||'';}
+    if(!PUSH.vapid){PUSH.err='관리자 설정 전';return;}
+    if(!NOTI.ok()||Notification.permission!=='granted'||LS.get('noti-off-'+meUid)==='1'){PUSH.err='이 기기 알림 꺼짐';return;}
+    if(!(await fcmSupported())){PUSH.err='이 브라우저는 푸시 미지원';return;}
+    const reg=await navigator.serviceWorker.ready;
+    const t=await getToken(getMessaging(app),{vapidKey:PUSH.vapid,serviceWorkerRegistration:reg});
+    if(!t){PUSH.err='토큰 없음';return;}
+    PUSH.tok=t;
+    await setDoc(doc(db,'pushTokens',await tokId(t)),{uid:meUid,name:me?.name||(isAdminUser?'대표님':''),token:t,ua:navigator.userAgent.slice(0,160),
+      dev:/iPhone|iPad/.test(navigator.userAgent)?'아이폰':/Android/.test(navigator.userAgent)?'안드로이드':/Windows/.test(navigator.userAgent)?'윈도우 PC':/Mac/.test(navigator.userAgent)?'맥':'기타',at:new Date().toISOString()});
+  }catch(e){PUSH.err=String(e.code||e.message||e).slice(0,80);}
+  if(isAdminUser&&!$('#tabOps').hidden)renderPushPanel();
+}
+async function pushOff(keepTok){
+  try{if(PUSH.tok){await deleteDoc(doc(db,'pushTokens',await tokId(PUSH.tok)));if(!keepTok){await deleteToken(getMessaging(app));}}}catch(e){}
+  PUSH.tok='';
+}
+let pushList=null;
+async function renderPushPanel(){
+  const el=$('#opsPush');if(!el)return;
+  let rows='';try{const q=await getDocs(collection(db,'pushTokens'));pushList=q.docs.map(x=>({...x.data(),id:x.id}));}catch(e){pushList=null;}
+  if(pushList){const by={};pushList.forEach(t=>{(by[t.uid]=by[t.uid]||[]).push(t);});
+    const ppl=[{uid:meUid,name:'대표님(관리자)'},...Object.values(users).filter(u=>u.status==='approved')];
+    rows=`<div class="tbl" style="margin-top:8px"><table><thead><tr><th>이름</th><th>알림 받는 기기</th></tr></thead><tbody>${ppl.map(u=>{const l=by[u.uid]||[];return `<tr><td>${esc(u.name||'')}</td><td>${l.length?l.map(t=>`<span class="tag ok">${esc(t.dev||'기기')}</span>`).join(' '):'<span class="tag">없음 · 상단 🔔 알림 켜기 필요</span>'}</td></tr>`;}).join('')}</tbody></table></div>`;}
+  el.innerHTML=`<h2>푸시 알림 <span class="s">앱이 닫혀 있어도 휴대폰·PC로 알림 · 서버 함수 배포 후 사용</span></h2>
+    <div class="field"><label for="vapidIn">웹 푸시 인증서 키 (Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서 → 키 쌍)</label>
+      <div class="btnrow"><input id="vapidIn" style="flex:1;min-width:220px" value="${esc(PUSH.vapid)}" placeholder="B로 시작하는 긴 키를 붙여넣으세요" autocomplete="off" spellcheck="false"><button type="button" class="primary" id="vapidSave" style="padding:9px 16px;font-size:14px">저장</button></div></div>
+    <p class="note" style="margin:4px 0 0">이 기기 상태: ${PUSH.tok?(PUSH.live()?'<span class="tag ok">푸시 수신 확인됨</span>':'<span class="tag acc">등록됨 · 아직 푸시 도착 기록 없음</span>'):`<span class="tag">${esc(PUSH.err||'미등록')}</span>`}</p>
+    ${pushList?rows:'<p class="flagnote" style="margin-top:8px">기기 목록을 읽지 못했어요. 최신 firestore.rules를 게시했는지 확인해주세요.</p>'}`;
+}
+document.addEventListener('click',async e=>{
+  if(e.target.id!=='vapidSave')return;const v=$('#vapidIn').value.trim();
+  if(v&&!/^B[A-Za-z0-9_-]{60,}$/.test(v)){toast('키 모양이 이상해요. "키 쌍"의 긴 값을 그대로 복사해주세요');return;}
+  try{await setDoc(doc(db,'config','notify'),{vapid:v,updatedAt:new Date().toISOString()},{merge:true});PUSH.vapid=v;toast('저장했어요. 이 기기를 등록하는 중…');await pushInit();renderPushPanel();}catch(err){toast(authMsg(err));}
+});
+function notiBtnPaint(){
+  const b=$('#notiBtn');if(!b)return;const off=LS.get('noti-off-'+meUid)==='1';
+  const st=!NOTI.ok()?'none':Notification.permission;
+  b.classList.toggle('need',st==='default');
+  b.querySelector('.nl').textContent=st==='granted'?(off?' 알림 꺼짐':' 알림 켜짐'):st==='denied'?' 알림 차단됨':' 알림 켜기';
+  b.firstChild.textContent=st==='granted'&&!off?'🔔':'🔕';
+}
+$('#notiBtn').addEventListener('click',async()=>{
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(!NOTI.ok()){popup('알림을 쓸 수 없는 화면이에요',ios&&!standalone?'아이폰·아이패드는 사파리에서 [공유 → 홈 화면에 추가]로 앱을 설치한 뒤, 설치된 앱에서 이 버튼을 눌러주세요. (iOS 16.4 이상)':'크롬·엣지·사파리 최신 버전에서 열어주세요.');return;}
+  if(Notification.permission==='denied'){popup('알림이 차단돼 있어요','주소창 왼쪽 자물쇠(또는 설정) → 사이트 설정 → 알림 → "허용"으로 바꾼 뒤 새로고침해주세요.\n\n윈도우: 설정 → 시스템 → 알림에서 크롬(또는 엣지)·원사부 업무보고 알림이 켜져 있는지도 확인해주세요.');return;}
+  if(Notification.permission==='default'){const r=await Notification.requestPermission();notiBtnPaint();if(r==='granted'){LS.set('noti-off-'+meUid,'');pushInit();notiShow({key:'test-'+Date.now(),title:'🔔 알림이 켜졌어요',body:isAdminUser?'직원 업무보고·업무 전송·연계 요청이 올라오면 알려드려요.':'업무지시·연계 업무·보고서 검토 결과가 오면 알려드려요.',go:{}},true);}return;}
+  const off=LS.get('noti-off-'+meUid)==='1';
+  if(off){LS.set('noti-off-'+meUid,'');notiBtnPaint();pushInit();toast('이 기기 알림을 다시 켰어요');return;}
+  if(await ask('이 기기의 알림이 켜져 있어요.\n\n시험 알림을 보내볼까요? ("그만 받기"를 누르면 이 기기에서는 알림을 끕니다)','시험 알림 보내기','그만 받기')){
+    toast('3초 뒤 시험 알림을 보내요');setTimeout(()=>notiShow({key:'test-'+Date.now(),title:'🔔 시험 알림',body:'알림이 잘 오고 있어요.',go:{}},true),3000);}
+  else{LS.set('noti-off-'+meUid,'1');notiBtnPaint();pushOff();toast('이 기기에서는 알림을 받지 않아요');}
+});
 function netBanner(){let b=document.getElementById('netOff');if(navigator.onLine){if(b)b.remove();return;}if(!b){b=document.createElement('div');b.id='netOff';b.className='banner';b.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:90;background:var(--bad);color:#fff;border:0;justify-content:center';b.textContent='인터넷 연결이 끊겼어요. 다시 연결될 때까지 창을 닫지 말아주세요 (입력 내용은 연결되면 저장돼요).';document.body.appendChild(b);}}
 window.addEventListener('online',netBanner);window.addEventListener('offline',netBanner);netBanner();
 
@@ -3892,7 +4016,7 @@ async function lkArrive(){const now=new Date().toISOString();
       await updateDoc(doc(db,'links',l.id),{status:'active',toTask:{uid:meUid,id:tid},updatedAt:now,thread:arrayUnion({at:now,by:me?.name||'',kind:'arrive',text:''})});toast(`${l.from?.name||''}님에게서 연계 업무가 도착했어요`);}catch(e){}
     lkBusy.delete(l.id);}}
 function watchLinks(){
-  unsubs.push(onSnapshot(query(collection(db,'links'),where('to.uid','==',meUid)),q=>{myLinksIn=q.docs.map(x=>({...x.data(),id:x.id}));renderMyLinks();lkArrive();},()=>{}));
+  unsubs.push(onSnapshot(query(collection(db,'links'),where('to.uid','==',meUid)),q=>{myLinksIn=q.docs.map(x=>({...x.data(),id:x.id}));renderMyLinks();lkArrive();notiScanSoon();},()=>{}));
   unsubs.push(onSnapshot(query(collection(db,'links'),where('from.uid','==',meUid)),q=>{myLinksOut=q.docs.map(x=>({...x.data(),id:x.id})).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));renderMyLinks();},()=>{}));
   unsubs.push(onSnapshot(doc(db,'config','staffdir'),s=>{STAFFDIR=s.exists()?(s.data().list||[]):[];if(lkNew)renderMyLinks();},()=>{}));
 }
