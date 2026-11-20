@@ -458,13 +458,15 @@ tr.off td{opacity:.45;text-decoration:line-through}
   @media (max-width:520px){#notiBtn .nl{display:none}}
   .cwbox{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;background:var(--surface)}
   .cwbox .imgs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cwtbl{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}.cwtbl tr.cwin td:first-child{box-shadow:inset 3px 0 0 var(--acc,#FCB426)}
+  details.cwdet>summary{cursor:pointer;font-size:13px;font-weight:600;padding:4px 0}
   .cwf{display:inline-flex;align-items:center;margin-right:6px}.cwx{border:0;background:none;font-size:18px;line-height:1;padding:4px 6px;cursor:pointer;color:var(--muted)}.cwx:hover{color:var(--bad)}
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-33</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-34</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -2084,17 +2086,77 @@ function carrotUpView(uid,up,mon,grp){
   if((up?.files||[]).length)h+=`<div class="files" style="margin-bottom:6px">${up.files.map(x=>fileChip(uid,x,null)).join('')}</div>`;
   if((up?.imgs||[]).length)h+=`<div class="gthumbs">${up.imgs.map(im=>galThumb(uid,im,'알바 급여 자료',grp||'carrot')).join('')}</div>`;
   if(up?.memo)h+=`<p class="note" style="margin:6px 0 0">${esc(up.memo)}</p>`;
+  if(up?.sheet?.rows?.length){const sm=up.sheet.rows.filter(r=>!mon||(r.d>=mon&&r.d<=cwSun(mon)));
+    h+=`<details class="cwdet" style="margin-top:8px"><summary>근무 정리표 · 전체 ${up.sheet.rows.length}건${mon?` (이 주 ${sm.length}건 · ${won(sm.reduce((a,r)=>a+(r.net||0),0))})`:''}</summary>${cwTable(up.sheet,mon,{key:cwKeep(uid+'|'+(mon||'x')+'|r',up.sheet,mon)})}</details>`;}
   return h;
 }
 // 보고서 칸: 업로드 여부만 보여주고, 보고서에 결과를 연동해 저장
 function carrotRepHtml(dk,d){
   const mon=cwMon(R.date);const c=carrotDocs[mon];const i=cwInfo(c,mon);
-  const up=i.has?{week:mon,at:i.at,late:i.late,files:c.files||[],imgs:c.imgs||[],memo:c.memo||''}:null;
+  const up=i.has?{week:mon,at:i.at,late:i.late,files:c.files||[],imgs:c.imgs||[],memo:c.memo||'',sheet:c.sheet||null}:null;
   if(editable()&&JSON.stringify(up)!==JSON.stringify(d.up||null)){setP(R.data,[dk,'up'],up);R.dirty=true;setTimeout(()=>scheduleSave(),0);}
   return `<div class="cwrep">${carrotUpView(meUid,up,mon,'r-'+R.date)}
     ${i.has?'<p class="note" style="margin:6px 0 0">업로드돼서 이 업무는 완료됐어요. 고치려면 알바급여 탭에서 바꾸면 여기 자동 반영돼요.</p>':`<p class="note" style="margin:0 0 8px">상단 <b>알바급여</b> 탭에서 이번 주 출퇴근 기록부·급여 자료를 올리면 자동으로 완료돼요.</p>`}
     <button type="button" class="${i.has?'linkbtn':'secondary'}" data-gocarrot="${mon}">${i.has?'알바급여 탭에서 보기 →':'알바급여 탭에서 올리기 →'}</button></div>`;
 }
+/* 단시간근무자 급여명세서(당근알바) 엑셀: 시트 = 알바 1명 → 근무일별 표 */
+const CW={
+  norm:x=>String(x??'').replace(/\s/g,''),
+  num(v){if(v==null||v==='')return null;const n=typeof v==='number'?v:parseFloat(String(v).replace(/[^\d.-]/g,''));return isNaN(n)?null:n;},
+  hm(v){if(v==null||v==='')return '';if(typeof v==='number'){const m=Math.round((v%1)*1440);return `${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}const m=String(v).match(/(\d{1,2})\s*:\s*(\d{2})/);return m?`${m[1].padStart(2,'0')}:${m[2]}`:'';},
+  day(v){const p2=n=>String(n).padStart(2,'0');if(typeof v==='number'&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);return `${d.y}-${p2(d.m)}-${p2(d.d)}`;}
+    const m=String(v??'').match(/(20\d{2})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})/);return m?`${m[1]}-${p2(m[2])}-${p2(m[3])}`:'';},
+  sheet(rows,title){
+    const find=lab=>{for(let r=0;r<Math.min(rows.length,80);r++){const c=(rows[r]||[]).findIndex(x=>CW.norm(x)===lab);if(c>=0)return[r,c];}return null;};
+    const nm=find('성명');if(!nm)return null;
+    const H=(rows[nm[0]]||[]).map(CW.norm),V=rows[nm[0]+1]||[];const at=l=>{const c=H.indexOf(l);return c>=0?String(V[c]??'').trim():'';};
+    const o={title,name:at('성명'),rrn:at('주민등록번호'),phone:at('연락처'),bank:at('계좌번호'),wage:null,net:null,days:[]};
+    const sw=find('시급');if(sw){const h=(rows[sw[0]]||[]).map(CW.norm),v=rows[sw[0]+1]||[];o.wage=CW.num(v[h.indexOf('시급')]);const ni=h.findIndex(x=>x.startsWith('실지급'));if(ni>=0)o.net=CW.num(v[ni]);}
+    const dh=find('일자');
+    if(dh){const h=(rows[dh[0]]||[]).map(CW.norm);const ci=k=>h.findIndex(x=>x.startsWith(k));const cI=ci('출근'),cO=ci('퇴근'),cH=ci('근무시간');const brs=h.map((x,i)=>x.startsWith('휴게')?i:-1).filter(i=>i>=0);
+      for(let r=dh[0]+1;r<rows.length;r++){const row=rows[r]||[];const d=CW.day(row[dh[1]]);if(!d){if(o.days.length&&/^</.test(String(row[dh[1]]??'').trim()))break;continue;}
+        const i=cI>=0?CW.hm(row[cI]):'',x=cO>=0?CW.hm(row[cO]):'';let hr=cH>=0?CW.num(row[cH]):null;if(!i&&!x&&!hr)continue;
+        const br=Math.round(brs.reduce((s,c)=>s+(CW.num(row[c])||0),0)*100)/100;
+        if(hr==null&&i&&x){const mm=t=>+t.slice(0,2)*60+ +t.slice(3);let dm=mm(x)-mm(i);if(dm<0)dm+=1440;hr=dm/60-br;}   // 계산값이 비어 있으면 시간으로 다시 계산
+        o.days.push({d,in:i,out:x,br,h:Math.round((hr||0)*100)/100});}}
+    // 실지급액(주휴수당 포함 시트 합계)을 근무시간 비율로 나눠 날짜별로 표시 (합계는 시트와 같게)
+    const HS=o.days.reduce((a,x)=>a+x.h,0);if(o.net==null&&o.wage)o.net=HS*o.wage*(1-0.033);   // 실지급액 칸이 비면 시급×시간−3.3%
+    const tot=Math.round(o.net??0);let left=tot;
+    o.days.forEach((x,k)=>{const v=k===o.days.length-1?left:Math.round(tot*(HS?x.h/HS:1/o.days.length));x.net=v;left-=v;});o.net=tot;
+    return o;
+  },
+  book(buf,file){
+    const wb=XLSX.read(buf,{type:'array'});const ppl=[],dups=[],empty=[],other=[];const seen=new Map();
+    for(const sn of wb.SheetNames){const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});const p=CW.sheet(rows,sn);
+      if(!p){other.push(sn);continue;}if(!p.days.length){empty.push(sn);continue;}
+      const sig=[CW.norm(p.name),p.days.map(x=>x.d+x.in+x.out).join(','),p.net].join('|');   // 이름·날짜·시간·금액이 모두 같으면 같은 시트
+      if(seen.has(sig)){dups.push({sheet:sn,same:seen.get(sig),name:p.name});continue;}seen.set(sig,sn);ppl.push(p);}
+    const dk=new Map(),rows=[];
+    ppl.forEach(p=>p.days.forEach(x=>{const k=[CW.norm(p.name),x.d,x.in,x.out].join('|');const r={...x,name:p.name,rrn:p.rrn,phone:p.phone,bank:p.bank,wage:p.wage,sheet:p.title};
+      if(dk.has(k))r.warn=`같은 날짜·시간이 "${dk.get(k)}" 시트에도 있어요`;else dk.set(k,p.title);
+      if(p.title&&!CW.norm(p.title).includes(CW.norm(p.name)))r.note=`시트 이름 "${p.title}"`;rows.push(r);}));
+    rows.sort((a,b)=>a.d.localeCompare(b.d)||a.in.localeCompare(b.in)||a.name.localeCompare(b.name));
+    return{file,at:new Date().toISOString(),sheets:wb.SheetNames.length,people:ppl.length,rows,dups,empty:empty.length,other};
+  }
+};
+let cwRrn=false,cwOnly=false;
+function cwTable(sh,week,opt={}){
+  if(!sh?.rows?.length)return '';
+  const all=sh.rows;const rows=cwOnly&&week?all.filter(r=>r.d>=week&&r.d<=cwSun(week)):all;
+  const sum=rows.reduce((a,r)=>a+(r.net||0),0),ppl=new Set(rows.map(r=>CW.norm(r.name)+r.rrn)).size,warn=rows.filter(r=>r.warn).length;
+  const fmtBr=v=>v?String(+v):'-';
+  return `<div class="cwtbl"><div class="shipsum" style="margin:0 0 6px"><b style="font-size:14px">근무 정리표</b><span class="note">${esc(sh.file||'')} · 시트 ${sh.sheets}개</span>
+      <span class="tag">${rows.length}건</span><span class="tag">${ppl}명</span><span class="tag acc">실지급 합계 ${won(sum)}</span>${sh.dups?.length?`<span class="tag">중복 시트 ${sh.dups.length}개 제외</span>`:''}${warn?`<span class="tag bad">확인 필요 ${warn}건</span>`:''}</div>
+    <div class="btnrow" style="margin-bottom:6px;font-size:13px">${week?`<label class="opt" style="padding:3px 8px"><input type="checkbox" data-cwonly ${cwOnly?'checked':''}> 선택한 주만</label>`:''}<label class="opt" style="padding:3px 8px"><input type="checkbox" data-cwrrn ${cwRrn?'checked':''}> 주민번호 전체 보기</label><button type="button" class="linkbtn" data-cwxlsx="${esc(opt.key||'')}">엑셀 내려받기</button></div>
+    ${sh.dups?.length?`<p class="note" style="margin:0 0 6px">중복이라 뺀 시트: ${sh.dups.map(x=>`"${esc(x.sheet)}"(="${esc(x.same)}")`).join(', ')}</p>`:''}
+    <div class="tbl" style="margin-top:0"><table><thead><tr><th>근무일</th><th>출퇴근</th><th>휴게</th><th>이름</th><th>주민등록번호</th><th>연락처</th><th>계좌번호</th><th>시급</th><th>실지급액</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr class="${r.warn?'warnrow':''}${week&&r.d>=week&&r.d<=cwSun(week)?' cwin':''}"><td class="num">${esc(fmtD(r.d))}(${dayName(r.d)})</td><td class="num">${esc(r.in)}~${esc(r.out)}</td><td class="num">${fmtBr(r.br)}</td>
+      <td><b>${esc(r.name)}</b>${r.note?`<br><span class="note">${esc(r.note)}</span>`:''}${r.warn?`<br><span class="note" style="color:var(--bad)">⚠ ${esc(r.warn)}</span>`:''}</td><td class="num">${esc(cwRrn?r.rrn:maskRrn(r.rrn))}</td><td class="num">${esc(r.phone)}</td><td class="num">${esc(r.bank)}</td><td class="num">${won(r.wage)}</td><td class="num"><b>${won(r.net)}</b></td></tr>`).join('')}
+    <tr class="sumrow"><td colspan="8"><b>합계 (${rows.length}건 · ${ppl}명)</b></td><td class="num"><b>${won(sum)}</b></td></tr></tbody></table></div>
+    <p class="note" style="margin:4px 0 0">실지급액은 시트의 실지급액(주휴수당·3.3% 공제 반영)을 근무시간 비율로 날짜별로 나눈 값이에요. 이름·날짜·시간·금액이 모두 같은 시트는 1번만 넣었어요.</p></div>`;
+}
+const CW_SHEETS={};   // 엑셀 내려받기용
+function cwKeep(key,sh,week){CW_SHEETS[key]={sh,week};return key;}
 function renderCarrotBox(){
   const box=$('#carrotBox');if(!box)return;
   if(isAdminUser){renderCarrotAdmin();return;}
@@ -2108,11 +2170,13 @@ function renderCarrotBox(){
     <div class="field"><span class="lb">출퇴근 기록부·급여 정산 파일 (엑셀·PDF · 700KB 이하)</span><div class="files">${(c.files||[]).map((f,i)=>`<span class="cwf">${fileChip(meUid,f,null)}<button type="button" class="cwx" data-cwrm="files|${i}" aria-label="${esc(f.name)} 삭제">×</button></span>`).join('')}<label class="attach"><input type="file" multiple accept=".xlsx,.xls,.csv,.pdf" data-cwfile>＋ 파일</label></div></div>
     <div class="field"><span class="lb">사진·캡쳐 (출퇴근 기록부 사진, 이체 내역, 당근 정산 화면)</span><div class="imgs">${(c.imgs||[]).map((im,i)=>`<span class="ti">${galThumb(meUid,im,'알바 급여 자료','cw-'+carrotWeek)}<button type="button" class="x" data-cwrm="imgs|${i}" aria-label="사진 삭제">×</button></span>`).join('')}<label class="attach"><input type="file" accept="image/*" multiple data-cwimg>＋ 사진</label></div></div>
     <div class="field"><label class="lb" for="cwMemo">메모 (선택)</label><input id="cwMemo" value="${esc(c.memo||'')}" placeholder="예: 3명 · 총 지급 482,300원 · 11/21 이체"></div>
-    <p class="note" style="margin:0">올리면 바로 이번 주 금요일 업무보고의 "당근알바 출퇴근 기록부·급여"가 완료로 바뀌어요. 언제든 올리고 바꿀 수 있어요.</p></div>`;
+    <p class="note" style="margin:0">올리면 바로 이번 주 금요일 업무보고의 "당근알바 출퇴근 기록부·급여"가 완료로 바뀌어요. 언제든 올리고 바꿀 수 있어요. 급여명세서 엑셀(시트마다 1명)을 올리면 아래에 근무 정리표가 만들어져요.</p>
+    ${c.sheet?cwTable(c.sheet,carrotWeek,{key:cwKeep('me|'+carrotWeek,c.sheet,carrotWeek)}):''}</div>`;
 }
 async function cwSave(patch){
   const w=carrotWeek;const cur=carrotDocs[w]||{};const nx={...cur,...patch};const has=((nx.files||[]).length+(nx.imgs||[]).length)>0;const now=new Date().toISOString();
-  const data={week:w,files:nx.files||[],imgs:nx.imgs||[],memo:nx.memo||'',name:me?.name||'',updatedAt:now,doneAt:has?(cur.doneAt&&((cur.files||[]).length+(cur.imgs||[]).length)?cur.doneAt:now):''};
+  if(!(nx.files||[]).length)nx.sheet=null;
+  const data={week:w,files:nx.files||[],imgs:nx.imgs||[],memo:nx.memo||'',sheet:nx.sheet||null,name:me?.name||'',updatedAt:now,doneAt:has?(cur.doneAt&&((cur.files||[]).length+(cur.imgs||[]).length)?cur.doneAt:now):''};
   carrotDocs[w]=data;renderCarrotBox();
   await setDoc(doc(db,'users',meUid,'carrot',w),data);
 }
@@ -2121,21 +2185,39 @@ document.addEventListener('change',async e=>{
   if(e.target.id==='cwMemo'){try{await cwSave({memo:e.target.value.trim()});toast('메모를 저장했어요');}catch(err){toast(authMsg(err));}return;}
   const fi=e.target.closest('[data-cwfile],[data-cwimg]');if(!fi)return;
   const w=carrotWeek;const isImg=fi.hasAttribute('data-cwimg');const lab=fi.closest('.attach');lab.classList.add('busy');
-  const cur=carrotDocs[w]||{};const arr=(isImg?cur.imgs:cur.files||[])?.slice()||[];let n=0;
+  const cur=carrotDocs[w]||{};const arr=(isImg?cur.imgs:cur.files||[])?.slice()||[];let n=0,cwSheet=null;
   for(const f of [...fi.files]){
     try{
       if(isImg){arr.push(await uploadImg(meUid,f,{section:'cs_carrot',report:w}));n++;continue;}
       const ext=(f.name.split('.').pop()||'').toLowerCase();if(!['xlsx','xls','csv','pdf'].includes(ext)){toast(`${f.name}: 엑셀·PDF 파일만 올릴 수 있어요 (사진은 아래 사진 칸에)`);continue;}
-      if(f.size>FILE_MAX){toast(`${f.name}: 파일이 너무 커요 (${kb(f.size)}). 700KB 이하로 줄이거나 화면 캡쳐를 사진 칸에 올려주세요`);continue;}
+      let sheet=null;
+      if(['xlsx','xls'].includes(ext)){try{await ensureXLSX();let buf=await f.arrayBuffer();buf=await unlockBuf(buf,f.name);const r=CW.book(buf,f.name);if(r.rows.length)sheet=r;}catch(err){toast(`${f.name}: 근무 정리표를 만들지 못했어요 (${lockMsg(err,'파일').replace(/^파일: /,'')})`);}}
+      if(sheet)cwSheet=sheet;
+      if(f.size>FILE_MAX){if(sheet){arr.push({id:'',name:f.name,size:f.size});n++;toast(`${f.name}: 700KB가 넘어 원본은 보관하지 않고 정리표만 저장해요`);continue;}
+        toast(`${f.name}: 파일이 너무 커요 (${kb(f.size)}). 700KB 이하로 줄이거나 화면 캡쳐를 사진 칸에 올려주세요`);continue;}
       const data=await readDataURL(f);const fid=rid();
       await setDoc(doc(db,'users',meUid,'files',fid),{name:f.name,type:f.type||'',size:f.size,data,createdAt:new Date().toISOString(),section:'cs_carrot',report:w});
       arr.push({id:fid,name:f.name,size:f.size});n++;
     }catch(err){toast(`${f.name}: 올리지 못했어요`);}
   }
   fi.value='';lab.classList.remove('busy');
-  if(n){try{await cwSave(isImg?{imgs:arr}:{files:arr});toast(`올렸어요 · ${cwLabel(w)} 알바급여 업무 완료`);}catch(err){toast(authMsg(err));}}
+  if(n){try{await cwSave(isImg?{imgs:arr}:cwSheet?{files:arr,sheet:cwSheet}:{files:arr});toast(cwSheet?`올렸어요 · 근무 ${cwSheet.rows.length}건 정리${cwSheet.dups.length?` (중복 시트 ${cwSheet.dups.length}개 제외)`:''} · 알바급여 업무 완료`:`올렸어요 · ${cwLabel(w)} 알바급여 업무 완료`);}catch(err){toast(authMsg(err));}}
+});
+document.addEventListener('change',e=>{
+  const o=e.target.closest('[data-cwonly],[data-cwrrn]');if(!o)return;
+  if(o.hasAttribute('data-cwonly'))cwOnly=o.checked;else cwRrn=o.checked;
+  const det=o.closest('details');const open=det?[...document.querySelectorAll('details.cwdet')].indexOf(det):-1;
+  if(stTab==='pay'||isAdminUser&&!$('#tabPay').hidden)renderCarrotBox();
+  if(R&&$('#sec-cs_carrot')&&!isAdminUser)rerenderSection('cs_carrot');
+  if(open>=0)setTimeout(()=>{const d=document.querySelectorAll('details.cwdet')[open];if(d)d.open=true;},50);
 });
 document.addEventListener('click',async e=>{
+  const xb=e.target.closest('[data-cwxlsx]');if(xb){const k=CW_SHEETS[xb.dataset.cwxlsx];if(!k)return;await ensureXLSX();
+    const rows=(cwOnly&&k.week?k.sh.rows.filter(r=>r.d>=k.week&&r.d<=cwSun(k.week)):k.sh.rows);
+    const aoa=[['근무일','요일','출근','퇴근','휴게(시간)','근무시간','이름','주민등록번호','연락처','계좌번호','시급','실지급액','확인']].concat(rows.map(r=>[r.d,dayName(r.d),r.in,r.out,r.br||0,r.h,r.name,r.rrn,r.phone,r.bank,r.wage,r.net,[r.warn,r.note].filter(Boolean).join(' / ')]));
+    aoa.push(['합계','','','','','','','','','','',rows.reduce((a,r)=>a+(r.net||0),0),'']);
+    const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:11},{wch:4},{wch:6},{wch:6},{wch:8},{wch:8},{wch:8},{wch:16},{wch:14},{wch:24},{wch:8},{wch:10},{wch:30}];
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'근무정리');XLSX.writeFile(wb,`당근알바_근무정리_${k.week||today()}.xlsx`);return;}
   const g=e.target.closest('[data-gocarrot]');if(g){carrotWeek=g.dataset.gocarrot;staffTab('pay');return;}
   const rm=e.target.closest('[data-cwrm]');if(!rm)return;
   const[k,i]=rm.dataset.cwrm.split('|');const cur=carrotDocs[carrotWeek]||{};const arr=(cur[k]||[]).slice();const it=arr[+i];if(!it)return;
@@ -2152,7 +2234,7 @@ async function renderCarrotAdmin(){
   if(($('#payMonth').value||today().slice(0,7))!==m)return;
   box.innerHTML=`<div class="cwbox"><b style="font-size:15px">주간 출퇴근 기록부·급여 업로드 현황</b> <span class="note">기한: 매주 금요일 오후 5시</span>
     <div class="tbl" style="margin-top:8px"><table><thead><tr><th>주</th>${staff.map(u=>`<th>${esc(u.name)}</th>`).join('')}</tr></thead><tbody>${weeks.map(w=>`<tr><td class="num">${cwLabel(w)}</td>${staff.map(u=>{const c=by[u.uid]?.[w];if(by[u.uid]===null)return '<td><span class="note">읽기 권한 없음 · 규칙 게시 필요</span></td>';
-      return `<td>${cwStatus(c,w)}${(c?.files||[]).length?`<div class="files" style="margin-top:4px">${c.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:''}${(c?.imgs||[]).length?`<div class="gthumbs" style="margin-top:4px">${c.imgs.map(im=>galThumb(u.uid,im,`${u.name} 알바 급여`,'cwa-'+w)).join('')}</div>`:''}${c?.memo?`<p class="note" style="margin:4px 0 0">${esc(c.memo)}</p>`:''}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+      return `<td>${cwStatus(c,w)}${(c?.files||[]).length?`<div class="files" style="margin-top:4px">${c.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:''}${(c?.imgs||[]).length?`<div class="gthumbs" style="margin-top:4px">${c.imgs.map(im=>galThumb(u.uid,im,`${u.name} 알바 급여`,'cwa-'+w)).join('')}</div>`:''}${c?.memo?`<p class="note" style="margin:4px 0 0">${esc(c.memo)}</p>`:''}${c?.sheet?.rows?.length?`<details class="cwdet"><summary>근무 정리표 ${c.sheet.rows.length}건</summary>${cwTable(c.sheet,w,{key:cwKeep(u.uid+'|'+w,c.sheet,w)})}</details>`:''}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div></div>`;
 }
 function carrotViewHtml(d){
   const ws=d?.workers||[];if(!ws.length)return '<p class="note" style="margin:0">작성 내용 없음</p>';
