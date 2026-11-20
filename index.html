@@ -456,12 +456,15 @@ tr.off td{opacity:.45;text-decoration:line-through}
   .pvkv{margin:0 0 8px}.pvtext{white-space:pre-wrap;font-weight:600}.pvnote{color:var(--bad);font-weight:600}
   #notiBtn.need{border-color:var(--acc,#FCB426);box-shadow:0 0 0 3px rgba(252,180,38,.25)}
   @media (max-width:520px){#notiBtn .nl{display:none}}
+  .cwbox{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;background:var(--surface)}
+  .cwbox .imgs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cwf{display:inline-flex;align-items:center;margin-right:6px}.cwx{border:0;background:none;font-size:18px;line-height:1;padding:4px 6px;cursor:pointer;color:var(--muted)}.cwx:hover{color:var(--bad)}
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-32</small></div>
+  <div class="brand"><i></i>원사부쿠키 <small id="barSub">업무보고</small><small class="ver" title="사이트 버전 · 새 파일을 올린 뒤 이 숫자가 바뀌었는지 확인하세요">v1011-33</small></div>
   <div class="seg" id="adminTabs" hidden>
     <button data-tab="home" aria-pressed="true">홈</button>
     <button data-tab="rep" aria-pressed="false">업무보고<span class="dot" id="repDot" hidden></span></button>
@@ -697,13 +700,14 @@ tr.off td{opacity:.45;text-decoration:line-through}
   <section id="tabPay" hidden>
     <div class="panel">
       <div class="btnrow" style="justify-content:space-between;margin-bottom:12px">
-        <h2 style="margin:0">당근알바 급여 <span class="s">월간 보고서의 출퇴근 기록부를 모아 보여줘요</span></h2>
+        <h2 style="margin:0">당근알바 급여 <span class="s">주마다 출퇴근 기록부·급여 자료 업로드 (기한 금 17시)</span></h2>
         <div class="btnrow" style="align-items:flex-end">
           <div class="field" style="margin:0"><label for="payMonth" class="lb">월</label><input type="month" id="payMonth"></div>
           <button class="secondary" id="payReload" type="button">새로고침</button>
           <button class="primary" id="payXlsx" type="button" style="padding:9px 14px;font-size:14px">엑셀 내려받기</button>
         </div>
       </div>
+      <div id="carrotBox"></div>
       <div id="payBody"></div>
     </div>
   </section>
@@ -887,7 +891,7 @@ const LIB=[
  {g:'cs-weekly',label:'CS · 주간업무 (한 주의 마지막 근무일)',items:[
   ['cs.sticker','스티커 로스 체크','종류·수량·사유'],['cs.satinv','토요일 발송처리 내역','한진 송장 × 네이버 주문 대조 (토요일 출고분)'],
   ['cs.supplies','부자재 체크','발주 여부'],
-  ['cs.store','매장 관리품목 훼손여부','사진'],['cs.callfwd','전화 착신전환','퇴근 전 확인'],['cs.carrot','당근알바 출퇴근 기록부·급여','금요일(주간)·말일 보고 · 근무기록 입력과 급여 자료 업로드']]},
+  ['cs.store','매장 관리품목 훼손여부','사진'],['cs.callfwd','전화 착신전환','퇴근 전 확인'],['cs.carrot','당근알바 출퇴근 기록부·급여','금요일 보고 · 알바급여 탭에서 업로드하면 자동 완료 · 기한 금 17시']]},
  {g:'cs-monthly',label:'CS · 월간업무 (말일)',items:[
   ['cs.payslip','고정알바 급여명세서 전달',''],['cs.bestreview','베스트리뷰 선정',''],
   ['cs.ordercount','주문서 카운팅','상품별 판매수량'],['cs.material','원재료 납품가 정리',''],['cs.health','직원 보건증 체크',''],
@@ -924,7 +928,7 @@ const SCHEMA={
  'cs.callfwd':{type:'group',hint:'퇴근 전 전화 착신전환이 됐는지 확인하세요',fields:[['done','check','착신전환 완료'],['to','text','착신 번호 (선택)']]},
  // ----- 월간 -----
  'cs.dashchk':{type:'dashchk',hint:'대시보드 엑셀과 주문서 엑셀을 함께 올리면 날짜·주문자별로 맞춰 보고, 수량·상품·박스·스티커·문구·수취인·연락처·주소가 다른 곳과 빠진 주문을 찾아줘요'},
- 'cs.carrot':{type:'carrot',hint:'알바별로 근무일을 입력하면 근무시간·주휴수당·급여합계·실지급액(3.3% 공제)이 자동 계산돼요'},
+ 'cs.carrot':{type:'carrot',hint:'상단 "알바급여" 탭에서 이번 주 출퇴근 기록부·급여 자료를 올리면 여기서 자동으로 완료돼요 (기한: 금요일 오후 5시)'},
  'cs.payslip':{type:'group',fields:[['sent','check','급여명세서 전달 완료'],['files','files','급여명세서','',{accept:'.pdf,.xlsx,.xls'}],['memo','text','전달 대상·방법']]},
  'cs.bestreview':{type:'list',label:'후보 리뷰',importer:'best',hint:'후보 리뷰 엑셀(리뷰글번호·작성날짜·아이디·리뷰내용 캡쳐·주문자명·구매내역)을 그대로 가져올 수 있어요. 대표님이 선정하면 다음날 회신 업무가 자동 등록돼요',fields:[['no','text','리뷰글번호'],['date','date','작성날짜'],['who','text','아이디'],['imgs','imgs','리뷰내용 (캡쳐)'],['buyer','text','주문자명'],['items','text','구매내역']]},
  'cs.ordercount':{type:'ordercount',hint:'이번 달 네이버 주문내역 엑셀을 올리면 답례품·호텔8종·틴·선물세트·커스텀·낱개쿠키로 나눠 세어줘요. 다른 채널은 아래에 분류를 골라 더하고, 숫자가 다르면 "보고 수량"을 고쳐주세요'},
@@ -1583,7 +1587,7 @@ async function loginEmail(id){
   return idToEmail(id);
 }
 function authMsg(e){
-  const c=e&&e.code||'';
+  const c=String(e&&e.code||'');
   if(c==='retired')return '바뀐 아이디예요. 새 아이디로 로그인해주세요.';
   if(c==='id-taken')return '이미 사용 중인 아이디예요. 다른 아이디를 입력해주세요.';
   if(c.includes('requires-recent-login'))return '보안을 위해 로그아웃 후 다시 로그인한 뒤 바꿔주세요.';
@@ -1762,6 +1766,7 @@ function startStaff(first){
     unsubs.push(onSnapshot(query(collection(db,'users',meUid,'reports'),orderBy('date','desc'),limit(10)),q=>{myReps=q.docs.map(x=>({...x.data(),id:x.id}));notiScanSoon();},()=>{}));
     unsubs.push(onSnapshot(doc(db,'config','calendar'),s=>{CAL=s.exists()?{holidays:[],leave:{},...s.data()}:{holidays:[],leave:{}};if(R&&R.loaded&&CALC.kind(R.date,CAL,meUid)!==R.kind)renderReport();},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'purchases'),q=>{myPurch=q.docs.map(x=>({...x.data(),id:x.id}));if(R)renderIncoming();},()=>{}));
+    unsubs.push(onSnapshot(collection(db,'users',meUid,'carrot'),q=>{carrotDocs={};q.docs.forEach(x=>carrotDocs[x.id]=x.data());if(stTab==='pay')renderCarrotBox();if(R&&R.loaded&&$('#sec-cs_carrot'))rerenderSection('cs_carrot');},()=>{}));
     unsubs.push(onSnapshot(collection(db,'users',meUid,'invoices'),q=>{myInv=q.docs.map(x=>({...x.data(),id:x.id,uid:meUid}));if(stTab==='inv'){invBy={[meUid]:myInv};renderInvTab();}if(R&&R.loaded){renderDue();['cs_taxinv','cs_buyinv','cs_vendorpay'].forEach(dk=>{if(!busyIn(dk))rerenderSection(dk);});}},()=>{}));
     watchLinks();pingPresence(true);
     if(me.part==='CS'){watchInq();initStaffTabs();}else $('#rInq').innerHTML='';
@@ -1923,6 +1928,7 @@ function secState(id){
   if(id==='sec-incoming'){const l=Object.values(R.data.incoming||{});const n=l.filter(v=>v.ok).length;return{t:`${n}/${$$('#rIncoming .row').length} 확인`,c:''};}
   const dk=id.slice(4);const key=KD(dk);const S=SCHEMA[key];if(!S)return{t:'',c:''};const d=R.data[dk];const rv=R.review?.[dk];
   if(rv?.state==='revise')return{t:'보완 요청',c:'bad'};
+  if(S.type==='carrot'&&!(d?.workers||[]).length){const up=d?.up;return up?.at?{t:up.late?'업로드 (기한 후)':'업로드 완료',c:up.late?'acc':'ok'}:{t:'미업로드',c:''};}
   const tf=(S.fields||[]).filter(f=>f[1]==='tcheck');
   if(tf.length){const n=tf.filter(f=>d?.[f[0]]).length;const extra=hasVal(Object.fromEntries(Object.entries(d||{}).filter(([k])=>!tf.some(f=>f[0]===k))));
     const pv=S.ship?pvCount(d):null;const pvt=pv&&pv.all?` · 출고 ${pv.done}/${pv.all}${pv.bad?` · 이상 ${pv.bad}`:''}`:'';
@@ -2062,6 +2068,92 @@ function refreshWorker(i){
   const s=$(`[data-paysum="${i}"]`);if(s)s.innerHTML=paySumHtml(c);const n=$(`[data-wname="${i}"]`);if(n)n.textContent=w.name||`알바 ${i+1}`;
 }
 const maskRrn=v=>{const s=String(v||'');return s.length>8?s.slice(0,8)+'******':s;};
+/* ---------- 당근알바 주간 업로드 (알바급여 탭) ---------- */
+let carrotDocs={},carrotWeek='';
+const cwMon=d=>{const t=new Date(d+'T00:00');t.setDate(t.getDate()-(t.getDay()+6)%7);return ymd(t);};   // 그 주 월요일
+const cwFri=mon=>{const t=new Date(mon+'T00:00');t.setDate(t.getDate()+4);return ymd(t);};
+const cwSun=mon=>{const t=new Date(mon+'T00:00');t.setDate(t.getDate()+6);return ymd(t);};
+const cwDue=mon=>new Date(cwFri(mon)+'T17:00');
+const cwLabel=mon=>`${fmtD(mon)}(월) ~ ${fmtD(cwSun(mon))}(일)`;
+function cwInfo(c,mon){const has=!!c&&((c.files||[]).length+(c.imgs||[]).length)>0;return{has,at:has?c.doneAt||c.updatedAt:'',late:has&&new Date(c.doneAt||c.updatedAt)>cwDue(mon)};}
+function cwStatus(c,mon){const i=cwInfo(c,mon);
+  if(i.has)return `<span class="tag ${i.late?'acc':'ok'}">✓ 업로드 완료 · ${esc(fmtT(i.at))}${i.late?' · 기한 후':''}</span>`;
+  return new Date()>cwDue(mon)?`<span class="tag bad">미업로드 · 기한 지남 (${esc(fmtD(cwFri(mon)))} 17시)</span>`:`<span class="tag">미업로드 · 기한 ${esc(fmtD(cwFri(mon)))}(금) 오후 5시</span>`;}
+function carrotUpView(uid,up,mon,grp){
+  let h=`<p style="margin:0 0 6px">${mon?cwLabel(mon)+' · ':''}${up?.at?`<span class="tag ${up.late?'acc':'ok'}">✓ 업로드 완료 · ${esc(fmtT(up.at))}${up.late?' · 기한(금 17시) 후':''}</span>`:'<span class="tag bad">미업로드</span>'}</p>`;
+  if((up?.files||[]).length)h+=`<div class="files" style="margin-bottom:6px">${up.files.map(x=>fileChip(uid,x,null)).join('')}</div>`;
+  if((up?.imgs||[]).length)h+=`<div class="gthumbs">${up.imgs.map(im=>galThumb(uid,im,'알바 급여 자료',grp||'carrot')).join('')}</div>`;
+  if(up?.memo)h+=`<p class="note" style="margin:6px 0 0">${esc(up.memo)}</p>`;
+  return h;
+}
+// 보고서 칸: 업로드 여부만 보여주고, 보고서에 결과를 연동해 저장
+function carrotRepHtml(dk,d){
+  const mon=cwMon(R.date);const c=carrotDocs[mon];const i=cwInfo(c,mon);
+  const up=i.has?{week:mon,at:i.at,late:i.late,files:c.files||[],imgs:c.imgs||[],memo:c.memo||''}:null;
+  if(editable()&&JSON.stringify(up)!==JSON.stringify(d.up||null)){setP(R.data,[dk,'up'],up);R.dirty=true;setTimeout(()=>scheduleSave(),0);}
+  return `<div class="cwrep">${carrotUpView(meUid,up,mon,'r-'+R.date)}
+    ${i.has?'<p class="note" style="margin:6px 0 0">업로드돼서 이 업무는 완료됐어요. 고치려면 알바급여 탭에서 바꾸면 여기 자동 반영돼요.</p>':`<p class="note" style="margin:0 0 8px">상단 <b>알바급여</b> 탭에서 이번 주 출퇴근 기록부·급여 자료를 올리면 자동으로 완료돼요.</p>`}
+    <button type="button" class="${i.has?'linkbtn':'secondary'}" data-gocarrot="${mon}">${i.has?'알바급여 탭에서 보기 →':'알바급여 탭에서 올리기 →'}</button></div>`;
+}
+function renderCarrotBox(){
+  const box=$('#carrotBox');if(!box)return;
+  if(isAdminUser){renderCarrotAdmin();return;}
+  const cur=cwMon(today());if(!carrotWeek)carrotWeek=cur;
+  const weeks=[];for(let k=-1;k<=8;k++){const t=new Date(cur+'T00:00');t.setDate(t.getDate()-7*k);weeks.push(ymd(t));}
+  if(!weeks.includes(carrotWeek))weeks.push(carrotWeek);
+  const c=carrotDocs[carrotWeek]||{};
+  box.innerHTML=`<div class="cwbox"><div class="btnrow" style="justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">주간 출퇴근 기록부·급여 업로드</b>
+      <select id="cwSel" aria-label="주 선택" style="width:auto">${weeks.sort().reverse().map(w=>`<option value="${w}" ${w===carrotWeek?'selected':''}>${cwLabel(w)}${w===cur?' · 이번 주':''}${cwInfo(carrotDocs[w],w).has?' ✓':''}</option>`).join('')}</select></div>
+    <p style="margin:0 0 10px">${cwStatus(c,carrotWeek)}</p>
+    <div class="field"><span class="lb">출퇴근 기록부·급여 정산 파일 (엑셀·PDF · 700KB 이하)</span><div class="files">${(c.files||[]).map((f,i)=>`<span class="cwf">${fileChip(meUid,f,null)}<button type="button" class="cwx" data-cwrm="files|${i}" aria-label="${esc(f.name)} 삭제">×</button></span>`).join('')}<label class="attach"><input type="file" multiple accept=".xlsx,.xls,.csv,.pdf" data-cwfile>＋ 파일</label></div></div>
+    <div class="field"><span class="lb">사진·캡쳐 (출퇴근 기록부 사진, 이체 내역, 당근 정산 화면)</span><div class="imgs">${(c.imgs||[]).map((im,i)=>`<span class="ti">${galThumb(meUid,im,'알바 급여 자료','cw-'+carrotWeek)}<button type="button" class="x" data-cwrm="imgs|${i}" aria-label="사진 삭제">×</button></span>`).join('')}<label class="attach"><input type="file" accept="image/*" multiple data-cwimg>＋ 사진</label></div></div>
+    <div class="field"><label class="lb" for="cwMemo">메모 (선택)</label><input id="cwMemo" value="${esc(c.memo||'')}" placeholder="예: 3명 · 총 지급 482,300원 · 11/21 이체"></div>
+    <p class="note" style="margin:0">올리면 바로 이번 주 금요일 업무보고의 "당근알바 출퇴근 기록부·급여"가 완료로 바뀌어요. 언제든 올리고 바꿀 수 있어요.</p></div>`;
+}
+async function cwSave(patch){
+  const w=carrotWeek;const cur=carrotDocs[w]||{};const nx={...cur,...patch};const has=((nx.files||[]).length+(nx.imgs||[]).length)>0;const now=new Date().toISOString();
+  const data={week:w,files:nx.files||[],imgs:nx.imgs||[],memo:nx.memo||'',name:me?.name||'',updatedAt:now,doneAt:has?(cur.doneAt&&((cur.files||[]).length+(cur.imgs||[]).length)?cur.doneAt:now):''};
+  carrotDocs[w]=data;renderCarrotBox();
+  await setDoc(doc(db,'users',meUid,'carrot',w),data);
+}
+document.addEventListener('change',async e=>{
+  if(e.target.id==='cwSel'){carrotWeek=e.target.value;renderCarrotBox();return;}
+  if(e.target.id==='cwMemo'){try{await cwSave({memo:e.target.value.trim()});toast('메모를 저장했어요');}catch(err){toast(authMsg(err));}return;}
+  const fi=e.target.closest('[data-cwfile],[data-cwimg]');if(!fi)return;
+  const w=carrotWeek;const isImg=fi.hasAttribute('data-cwimg');const lab=fi.closest('.attach');lab.classList.add('busy');
+  const cur=carrotDocs[w]||{};const arr=(isImg?cur.imgs:cur.files||[])?.slice()||[];let n=0;
+  for(const f of [...fi.files]){
+    try{
+      if(isImg){arr.push(await uploadImg(meUid,f,{section:'cs_carrot',report:w}));n++;continue;}
+      const ext=(f.name.split('.').pop()||'').toLowerCase();if(!['xlsx','xls','csv','pdf'].includes(ext)){toast(`${f.name}: 엑셀·PDF 파일만 올릴 수 있어요 (사진은 아래 사진 칸에)`);continue;}
+      if(f.size>FILE_MAX){toast(`${f.name}: 파일이 너무 커요 (${kb(f.size)}). 700KB 이하로 줄이거나 화면 캡쳐를 사진 칸에 올려주세요`);continue;}
+      const data=await readDataURL(f);const fid=rid();
+      await setDoc(doc(db,'users',meUid,'files',fid),{name:f.name,type:f.type||'',size:f.size,data,createdAt:new Date().toISOString(),section:'cs_carrot',report:w});
+      arr.push({id:fid,name:f.name,size:f.size});n++;
+    }catch(err){toast(`${f.name}: 올리지 못했어요`);}
+  }
+  fi.value='';lab.classList.remove('busy');
+  if(n){try{await cwSave(isImg?{imgs:arr}:{files:arr});toast(`올렸어요 · ${cwLabel(w)} 알바급여 업무 완료`);}catch(err){toast(authMsg(err));}}
+});
+document.addEventListener('click',async e=>{
+  const g=e.target.closest('[data-gocarrot]');if(g){carrotWeek=g.dataset.gocarrot;staffTab('pay');return;}
+  const rm=e.target.closest('[data-cwrm]');if(!rm)return;
+  const[k,i]=rm.dataset.cwrm.split('|');const cur=carrotDocs[carrotWeek]||{};const arr=(cur[k]||[]).slice();const it=arr[+i];if(!it)return;
+  if(!(await ask(`${k==='files'?it.name:'이 사진'}을(를) 지울까요?`,'삭제')))return;
+  arr.splice(+i,1);try{await cwSave({[k]:arr});}catch(err){toast(authMsg(err));}
+});
+// 관리자: 직원별 주간 업로드 현황
+async function renderCarrotAdmin(){
+  const box=$('#carrotBox');const m=$('#payMonth').value||today().slice(0,7);
+  const staff=Object.values(users||{}).filter(u=>u.status==='approved'&&u.part==='CS');if(!staff.length){box.innerHTML='';return;}
+  const weeks=[];let t=new Date(cwMon(m+'-01')+'T00:00');while(true){const w=ymd(t);if(w>m+'-31'||(w.slice(0,7)>m))break;if(cwFri(w).slice(0,7)===m)weeks.push(w);t.setDate(t.getDate()+7);}
+  box.innerHTML='<p class="note">주간 업로드 현황 불러오는 중…</p>';
+  const by={};for(const u of staff){try{by[u.uid]={};(await getDocs(collection(db,'users',u.uid,'carrot'))).docs.forEach(x=>by[u.uid][x.id]=x.data());}catch(e){by[u.uid]=null;}}
+  if(($('#payMonth').value||today().slice(0,7))!==m)return;
+  box.innerHTML=`<div class="cwbox"><b style="font-size:15px">주간 출퇴근 기록부·급여 업로드 현황</b> <span class="note">기한: 매주 금요일 오후 5시</span>
+    <div class="tbl" style="margin-top:8px"><table><thead><tr><th>주</th>${staff.map(u=>`<th>${esc(u.name)}</th>`).join('')}</tr></thead><tbody>${weeks.map(w=>`<tr><td class="num">${cwLabel(w)}</td>${staff.map(u=>{const c=by[u.uid]?.[w];if(by[u.uid]===null)return '<td><span class="note">읽기 권한 없음 · 규칙 게시 필요</span></td>';
+      return `<td>${cwStatus(c,w)}${(c?.files||[]).length?`<div class="files" style="margin-top:4px">${c.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:''}${(c?.imgs||[]).length?`<div class="gthumbs" style="margin-top:4px">${c.imgs.map(im=>galThumb(u.uid,im,`${u.name} 알바 급여`,'cwa-'+w)).join('')}</div>`:''}${c?.memo?`<p class="note" style="margin:4px 0 0">${esc(c.memo)}</p>`:''}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
 function carrotViewHtml(d){
   const ws=d?.workers||[];if(!ws.length)return '<p class="note" style="margin:0">작성 내용 없음</p>';
   return `<div class="tbl"><table><thead><tr><th>이름</th><th>주민등록번호</th><th>연락처</th><th>시급</th><th>근무일수</th><th>근무시간</th><th>급여합계</th><th>공제</th><th>실지급액</th></tr></thead><tbody>${ws.map(w=>{const c=PAY.calc(w);
@@ -2172,6 +2264,8 @@ function sectionHtml(key){
   }else if(S.type==='list'){
     h+=importBtn(dk,S);
     h+=S.table?tableListHtml(dk,S,d.rows,R.date):rowsHtml(dk,{label:S.label,fields:S.fields},d.rows);
+  }else if(S.type==='carrot'&&!(d.workers||[]).length){
+    h+=carrotRepHtml(dk,d);
   }else if(S.type==='carrot'){
     if(editable()&&!(d.workers||[]).length)h+=`<div class="btnrow" style="margin-bottom:8px"><button type="button" class="secondary" data-carrotprev>지난 보고의 알바 불러오기</button><span class="note">이름·주민번호·연락처·계좌·시급을 그대로 가져오고, 근무일만 새로 넣으면 돼요</span></div>`;
     h+=(d.workers||[]).map((w,i)=>carrotWorkerHtml(dk,i,w)).join('')+`<button type="button" class="add" data-addworker>+ 알바 추가</button>`
@@ -3282,6 +3376,8 @@ $('#sendBtn').onclick=async()=>{
     if(S.list)(d.rows||[]).forEach((r,i)=>chk(S.list.fields,r,`${lab} ${i+1}`));}
   for(const[pid,v] of Object.entries(R.data.incoming||{})){if(v?.ok&&!(v.imgs||[]).length){const pu=myPurch.find(x=>x.id===pid);miss.push(`입고 내역 ${pu?.item||''} 정리 사진`);firstMiss=firstMiss||'incoming';}}
   for(const t of myTasks.filter(t=>tkNeedDaily(t,R.date))){const d=R.data.tasks?.[t.id];if(!(d&&(String(d.text||'').trim()||(d.imgs||[]).length))){miss.push(`업무 "${t.title}" 오늘 진행상황`);firstMiss=firstMiss||'tasks';}}
+  if(secs.includes('cs.carrot')&&!R.data.cs_carrot?.up?.at&&!(R.data.cs_carrot?.workers||[]).length){
+    if(!(await ask(`이번 주 당근알바 출퇴근 기록부·급여가 아직 업로드되지 않았어요 (기한 ${fmtD(cwFri(cwMon(R.date)))} 오후 5시).\n\n"알바급여" 탭에서 올리면 자동으로 완료돼요. 그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_carrot')?.scrollIntoView({behavior:'smooth',block:'center'});return;}}
   if(secs.includes('cs.prevday')){const pv=pvCount(R.data.cs_prevday);
     if(pv.all&&pv.done<pv.all&&!(await ask(`이상 유무를 체크하지 않은 출고 주문이 ${pv.all-pv.done}건 있어요 (사진 없는 주문 ${pv.noimg}건).\n\n그래도 전송할까요?`,'그래도 전송'))){$('#sec-cs_prevday')?.scrollIntoView({behavior:'smooth',block:'center'});return;}}
   if(secs.includes('ds.result')){const its=dsThis();const none=its.filter(it=>!R.data.ds_result?.items?.[it.id]?.st);
@@ -3385,7 +3481,7 @@ async function syncLogins(){if(loginsSynced||!Object.keys(users).length)return;l
   try{const have=new Set((await getDocs(collection(db,'logins'))).docs.map(x=>x.id));
     for(const u of Object.values(users)){if(!u.loginId||have.has(u.loginId))continue;await setDoc(doc(db,'logins',u.loginId),{email:u.authEmail||idToEmail(u.loginId),uid:u.uid,createdAt:new Date().toISOString()}).catch(()=>{});}}catch(e){loginsSynced=false;}}
 let rqT=null;function queueRender(){clearTimeout(rqT);rqT=setTimeout(renderAdmin,60);notiScanSoon();}
-function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','live','stat','task','dsg','link','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='live')renderLive();if(t==='link')renderLinkTab();if(t==='ops'){renderOps(true);renderPushPanel();}if(t==='pay')renderPayTab();if(t==='data')dmInit();if(t==='stat')renderStats();}
+function setTab(t){$$('#adminTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));['home','rep','live','stat','task','dsg','link','req','staff','cal','pay','mat','inv','data','ops'].forEach(k=>$('#tab'+k[0].toUpperCase()+k.slice(1)).hidden=k!==t);if(t==='live')renderLive();if(t==='link')renderLinkTab();if(t==='ops'){renderOps(true);renderPushPanel();}if(t==='pay'){renderPayTab();renderCarrotBox();}if(t==='data')dmInit();if(t==='stat')renderStats();}
 $$('#adminTabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function partTag(p){return p?`<span class="tag ${p==='디자인'?'ds':'cs'}">${esc(p)}</span>`:'';}
 const RS_L={none:'미작성',draft:'작성 중',submitted:'확인 대기',approved:'승인',hold:'보류'};
@@ -3689,7 +3785,7 @@ function opsItems(){
   const unpaid=invUnpaidSoon(allInv(),td,0);if(unpaid.length)it.push({c:'bad',t:`기한이 지난 미지급 계산서 ${unpaid.length}건`,go:'inv'});
   return it;
 }
-async function checkRules(){try{await getDoc(doc(db,'logins','__rulecheck'));opsRules=true;}catch(e){opsRules=!/permission/i.test(e.code||e.message||'');}renderOps();}
+async function checkRules(){try{await getDoc(doc(db,'logins','__rulecheck'));await getDocs(query(collection(db,'users',meUid,'carrot'),limit(1)));opsRules=true;}catch(e){opsRules=!/permission/i.test(e.code||e.message||'');}renderOps();}
 function renderOps(first){
   if(first&&opsRules===null)checkRules();
   const it=opsItems();const n=it.filter(x=>x.c==='bad'||x.c==='warn').length;$('#opsDot').hidden=!n;$('#opsDot').textContent=n;
@@ -4425,7 +4521,7 @@ async function staffTab(t){
   LOOK.forEach(([k,id])=>$('#'+id).hidden=k!==t);
   if(t==='rep')return;
   users={[meUid]:{...me,uid:meUid}};invBy={[meUid]:myInv};
-  if(t==='pay'){if(!$('#payMonth').value)$('#payMonth').value=today().slice(0,7);renderPayTab();}
+  if(t==='pay'){if(!$('#payMonth').value)$('#payMonth').value=today().slice(0,7);renderCarrotBox();renderPayTab();}
   else if(t==='inv')renderInvTab();
   else if(t==='mat'){
     if(!lookPrices){lookPrices=onSnapshot(collection(db,'prices'),q=>{prices={};q.docs.forEach(x=>prices[x.id]=x.data());if(stTab==='mat')renderMatTab();},()=>{});unsubs.push(()=>{try{lookPrices&&lookPrices();}catch(e){}lookPrices=null;});}
@@ -4468,8 +4564,8 @@ function payDetailHtml(w,c){
   return `<div class="paygrid"><div class="fx"><table><thead><tr><th>일자</th><th>요일</th><th>주차</th><th>출근</th><th>퇴근</th><th>휴게</th><th>근무시간</th></tr></thead><tbody>${c.rows.filter(r=>r.h>0).map(r=>`<tr><td class="num">${esc(r.d)}</td><td>${r.wd}</td><td>${r.wk}주</td><td class="num">${esc(r.in||'')}</td><td class="num">${esc(r.out||'')}</td><td class="num">${(+r.b1||0)+(+r.b2||0)}h</td><td class="num">${fmtH(r.h)}</td></tr>`).join('')}</tbody></table></div>
     <div class="fx"><table><thead><tr><th>주차</th><th>근무시간</th><th>급여</th><th>주휴수당</th><th>합계</th></tr></thead><tbody>${c.weeks.filter(x=>x.h>0).map(x=>`<tr><td>${x.wk}주</td><td class="num">${fmtH(x.h)}</td><td class="num">${won(x.pay)}</td><td class="num">${won(x.hol)}</td><td class="num">${won(x.sum)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
-$('#payMonth').addEventListener('change',()=>renderPayTab());
-$('#payReload').addEventListener('click',()=>renderPayTab(true));
+$('#payMonth').addEventListener('change',()=>{renderPayTab();if(isAdminUser)renderCarrotAdmin();});
+$('#payReload').addEventListener('click',()=>{renderPayTab(true);renderCarrotBox();});
 $('#payBody').addEventListener('click',e=>{
   if(e.target.id==='payRrn'){payShowRrn=e.target.checked;renderPayTab();return;}
   const r=e.target.closest('[data-payi]');if(r){const d=$(`[data-paydet="${r.dataset.payi}"]`);if(d)d.hidden=!d.hidden;}
@@ -4566,7 +4662,8 @@ function sectionView(u,key,d,rv,grp,canReview){
       return `<tr class="${v.st==='undone'||!v.st?'warnrow':''}"><td><b>${esc(it.title)}</b>${it.carried?' <span class="tag bad">지난주 미완료</span>':''}</td><td>${v.st==='done'?'<span class="tag ok">완료</span>':v.st==='undone'?'<span class="tag bad">미완료</span>':'<span class="tag">선택 안 함</span>'}</td><td>${esc(v.note||'')}</td><td><div class="gthumbs">${(v.imgs||[]).map(im=>galThumb(u.uid,im,it.title,grp)).join('')}</div></td></tr>`;}).join('')}</tbody></table></div>`:'<p class="note" style="margin:0">이번주 업무 없음</p>';
     if((d?.rows||[]).length)body+=`<h4 class="subh">계획에 없던 완료 업무</h4>`+d.rows.map((r,i)=>`<div class="vrow">${kvHtml(u.uid,S.fields,r,grp)}</div>`).join('');
   }else if(S.type==='carrot'){
-    body+=carrotViewHtml(d);
+    body+=carrotUpView(u.uid,d?.up,d?.up?.week||'',grp);
+    if((d?.workers||[]).length)body+=carrotViewHtml(d);
     if((d?.files||[]).length)body+=`<div class="files" style="margin-top:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`;
   }else if(S.type==='taxinv'&&S.lite){
     body+=(d?.files||[]).length?`<div class="files" style="margin-bottom:8px">${d.files.map(x=>fileChip(u.uid,x,null)).join('')}</div>`:'<p class="note" style="margin:0">오늘 올린 계산서 없음</p>';
